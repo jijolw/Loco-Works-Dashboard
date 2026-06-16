@@ -234,20 +234,25 @@ def upsert_manual_coach_updates_bulk(payload):
 
 # --- erp_active_coaches ---
 
-def sync_active_coaches_to_supabase(coaches_list):
-    """Sync active ERP coaches to Supabase (clear and insert in chunks)."""
-    # 1. Clear old entries
-    url_delete = f"{SUPABASE_URL}/erp_active_coaches?coachno=neq."
-    resp = requests.delete(url_delete, headers=get_headers())
-    resp.raise_for_status()
+def sync_active_coaches_to_supabase(coaches_list, clear_table=True):
+    """Sync active ERP coaches to Supabase (clear or upsert in chunks)."""
+    # 1. Clear old entries only if requested (full sync)
+    if clear_table:
+        logger.info("Clearing erp_active_coaches table for full sync...")
+        url_delete = f"{SUPABASE_URL}/erp_active_coaches?coachno=neq."
+        resp = requests.delete(url_delete, headers=get_headers())
+        resp.raise_for_status()
+    else:
+        logger.info("Incremental sync: keeping existing table, upserting recent records...")
     
-    # 2. Insert new entries in chunks of 1000
+    # 2. Insert/upsert new entries in chunks of 1000
     if coaches_list:
         chunk_size = 1000
         url_insert = f"{SUPABASE_URL}/erp_active_coaches"
+        headers = get_headers(prefer="resolution=merge-duplicates" if not clear_table else None)
         for i in range(0, len(coaches_list), chunk_size):
             chunk = coaches_list[i : i + chunk_size]
-            resp = requests.post(url_insert, data=json.dumps(chunk), headers=get_headers())
+            resp = requests.post(url_insert, data=json.dumps(chunk), headers=headers)
             resp.raise_for_status()
             logger.info("Uploaded chunk of %d records (total synced: %d/%d)", len(chunk), min(i + chunk_size, len(coaches_list)), len(coaches_list))
 

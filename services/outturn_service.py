@@ -53,8 +53,7 @@ def get_outturn_data(start_date_str=None, end_date_str=None):
         
     logger.info("get_outturn_data (Supabase): filtering from %s to %s", start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
     
-    # Candidate coaches: entry date should be before end_date,
-    # and no earlier than 365 days before start_date (buffer for long-stay)
+    # Candidate coaches: entry date or despatch date should be within lookback range
     cutoff_start = start_date - timedelta(days=365)
     
     master = fetch_master()
@@ -67,10 +66,22 @@ def get_outturn_data(start_date_str=None, end_date_str=None):
             
         recd_str = rec.get("recd_date") or rec.get("recddate")
         recd_dt = _parse_date(recd_str)
-        if not recd_dt:
-            continue
+        
+        desp_str = rec.get("desp_date") or rec.get("despdate")
+        desp_dt = _parse_date(desp_str)
+        
+        act_desp_str = rec.get("actualdespdate")
+        act_desp_dt = _parse_date(act_desp_str)
+        
+        is_candidate = False
+        if recd_dt and cutoff_start <= recd_dt <= end_date:
+            is_candidate = True
+        if desp_dt and cutoff_start <= desp_dt <= end_date:
+            is_candidate = True
+        if act_desp_dt and cutoff_start <= act_desp_dt <= end_date:
+            is_candidate = True
             
-        if cutoff_start <= recd_dt <= end_date:
+        if is_candidate:
             candidates.append(rec)
             
     logger.info("get_outturn_data (Supabase): found %d candidate records based on entry date", len(candidates))

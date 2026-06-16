@@ -23,14 +23,30 @@ logging.basicConfig(
 )
 logger = logging.getLogger("SupabaseSyncClient")
 
-# Add parent ERP folder to path to use local intranet ERP services
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ERP")))
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+# 1. Load config from local directory first and cache it
+current_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, current_dir)
+import config
+sys.path.remove(current_dir)
+
+# 2. Add parent ERP folder to path to use local intranet ERP services
+sys.path.insert(0, os.path.abspath(os.path.join(current_dir, "..", "ERP")))
+sys.path.append(current_dir)
+
+# 3. Load Supabase db_service directly via importlib to avoid collision with local ERP services
+import importlib.util
+spec = importlib.util.spec_from_file_location(
+    "supabase_db_service",
+    os.path.join(current_dir, "services", "db_service.py")
+)
+supabase_db_service = importlib.util.module_from_spec(spec)
+sys.modules["supabase_db_service"] = supabase_db_service
+spec.loader.exec_module(supabase_db_service)
+sync_active_coaches_to_supabase = supabase_db_service.sync_active_coaches_to_supabase
 
 from services.sync_service import sync_targets
 from services.live_service import get_live_data, _resolve_division
 from services.erp_service import fetch_master, fetch_single, fetch_year_built, _parse_date
-from services.db_service import sync_active_coaches_to_supabase
 from services.decoders import decode_repair
 
 CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "erp_coaches_cache.json")
@@ -309,8 +325,8 @@ def sync_cycle(full_sync=False):
                 "make": make_packed
             })
 
-        # B. Process historical coaches (received since 1990-04-01 or last 7 days for incremental sync)
-        cutoff = datetime(1990, 4, 1) if full_sync else datetime.now() - timedelta(days=7)
+        # B. Process historical coaches (received since 1990-04-01 or last 45 days for incremental sync)
+        cutoff = datetime(1990, 4, 1) if full_sync else datetime.now() - timedelta(days=45)
         logger.info("Processing historical/despatched coaches received since: %s", cutoff.strftime("%Y-%m-%d"))
         historical_count = 0
         
@@ -485,7 +501,7 @@ def sync_cycle(full_sync=False):
             deduped_payload.append(item)
             
         logger.info(f"Syncing {len(deduped_payload)} unique items (total generated: {len(payload)}, active coaches: {len(active_coaches)}, historical: {historical_count}, locos: {len(locos)}) to Supabase...")
-        sync_active_coaches_to_supabase(deduped_payload)
+        sync_active_coaches_to_supabase(deduped_payload, clear_table=full_sync)
         logger.info("ERP Sync complete!")
         
     except Exception as e:
