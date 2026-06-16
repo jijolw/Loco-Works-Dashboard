@@ -17,13 +17,17 @@ app = Flask(
 )
 
 
-# =====================================================
-# FRONTEND — serve the SPA
-# =====================================================
-
 @app.route("/")
+def landing():
+    """Serve the central welcome landing portal."""
+    return render_template("landing.html")
+
+
+@app.route("/cr")
 def index():
+    """Serve the Carriage Repair (CR) Shop SPA dashboard."""
     return render_template("index.html")
+
 
 
 @app.route("/coach/reports/aerialview/print.html")

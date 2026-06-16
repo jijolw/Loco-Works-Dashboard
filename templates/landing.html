@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="LW/PER Workshop Intelligence Portal — Southern Railway Loco Works Perambur Dashboard Hub.">
+    <title>LW/PER Workshop Intelligence Portal</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-base: #0a0f1d;
+            --bg-card: rgba(20, 28, 52, 0.6);
+            --bg-card-hover: rgba(28, 39, 72, 0.8);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(59, 130, 246, 0.5);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 45%);
+            background-attachment: fixed;
+        }
+
+        /* Header Styles */
+        header {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            font-size: 32px;
+            filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.5));
+        }
+
+        .logo-text {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-subtitle {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--accent-blue);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: block;
+            margin-top: -2px;
+        }
+
+        .railway-banner {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(5px);
+        }
+
+        /* Main Portal Container */
+        .portal-container {
+            flex: 1;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 24px 80px 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .welcome-section {
+            text-align: center;
+            margin-bottom: 60px;
+            animation: fadeInDown 0.8s ease;
+        }
+
+        .welcome-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: clamp(32px, 5vw, 52px);
+            font-weight: 700;
+            line-height: 1.15;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #ffffff 40%, #a5b4fc, #6366f1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-desc {
+            font-size: clamp(16px, 2vw, 18px);
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* Shop Grid */
+        .shop-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        /* Card Styles */
+        .shop-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-height: 280px;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(10px);
+            transition: var(--transition);
+        }
+
+        .shop-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05), rgba(139, 92, 246, 0.05));
+            opacity: 0;
+            transition: var(--transition);
+            z-index: 0;
+        }
+
+        .shop-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--border-hover);
+            box-shadow: 0 20px 40px rgba(59, 130, 246, 0.15);
+        }
+
+        .shop-card:hover::before {
+            opacity: 1;
+        }
+
+        .shop-card.disabled {
+            cursor: not-allowed;
+            opacity: 0.65;
+        }
+
+        .shop-card.disabled:hover {
+            transform: none;
+            border-color: var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .shop-card.disabled::before {
+            display: none;
+        }
+
+        .card-header {
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-icon-wrapper {
+            width: 56px;
+            height: 56px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 24px;
+            transition: var(--transition);
+        }
+
+        .shop-card:hover .card-icon-wrapper {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--border-hover);
+            transform: scale(1.1);
+        }
+
+        .shop-card.disabled:hover .card-icon-wrapper {
+            background: rgba(255, 255, 255, 0.03);
+            border-color: var(--border);
+            transform: none;
+        }
+
+        .card-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-primary);
+        }
+
+        .card-desc {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .card-footer {
+            margin-top: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .badge {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 4px 10px;
+            border-radius: 6px;
+        }
+
+        .badge-active {
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .badge-pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+        }
+
+        .action-arrow {
+            font-size: 18px;
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+
+        .shop-card:hover .action-arrow {
+            color: var(--accent-blue);
+            transform: translateX(6px);
+        }
+
+        .shop-card.disabled:hover .action-arrow {
+            color: var(--text-muted);
+            transform: none;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--text-muted);
+            font-size: 12px;
+            border-top: 1px solid var(--border);
+            background: rgba(10, 15, 29, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        /* Keyframes */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <div class="logo-icon">🚂</div>
+            <div>
+                <span class="logo-text">LW/PER</span>
+                <span class="logo-subtitle">Workshop Intelligence</span>
+            </div>
+        </div>
+        <div class="railway-banner">Loco Works Perambur</div>
+    </header>
+
+    <div class="portal-container">
+        
+        <section class="welcome-section">
+            <h1 class="welcome-title">Workshop Intelligence Portal</h1>
+            <p class="welcome-desc">A centralized intelligence platform for rolling stock tracking, scheduling, machine telemetry, and analytical outturn audits.</p>
+        </section>
+
+        <div class="shop-grid">
+            
+            <!-- 1. Carriage Repair Shop -->
+            <a href="/cr" class="shop-card">
+                <div class="card-header">
+                    <div class="card-icon-wrapper">🚆</div>
+                    <h2 class="card-title">Carriage Repair (CR) Shop</h2>
+                    <p class="card-desc">ERP-integrated coach tracking, active pit aerial view layouts, outturn audit summaries, corrosion analysis, and POH metrics.</p>
+                </div>
+                <div class="card-footer">
+                    <span class="badge badge-active">Active</span>
+                    <span class="action-arrow">➔</span>
+                </div>
+            </a>
+
+            <!-- 2. Wheel & Tyre Shop -->
+            <a href="#" class="shop-card disabled" onclick="event.preventDefault(); alert('Wheel & Tyre Shop Dashboard is currently under development.');">
+                <div class="card-header">
+                    <div class="card-icon-wrapper">⚙️</div>
+                    <h2 class="card-title">Wheel & Tyre (WT) Shop</h2>
+                    <p class="card-desc">Wheel outturn, axle matching, machining telemetry logs, and component inspection records synchronized from Google Sheets.</p>
+                </div>
+                <div class="card-footer">
+                    <span class="badge badge-pending">Under Development</span>
+                    <span class="action-arrow">➔</span>
+                </div>
+            </a>
+
+            <!-- 3. M&PR Bogie Shop -->
+            <a href="#" class="shop-card disabled" onclick="event.preventDefault(); alert('M&PR Bogie Shop Dashboard is currently under development.');">
+                <div class="card-header">
+                    <div class="card-icon-wrapper">🛠️</div>
+                    <h2 class="card-title">M&PR Bogie Shop</h2>
+                    <p class="card-desc">IOH & POH Bogie targets, spring testing stand details, damper calibrations, and component assembly tracking logs.</p>
+                </div>
+                <div class="card-footer">
+                    <span class="badge badge-pending">Under Development</span>
+                    <span class="action-arrow">➔</span>
+                </div>
+            </a>
+
+            <!-- 4. Machine Shop -->
+            <a href="#" class="shop-card disabled" onclick="event.preventDefault(); alert('Machine Shop (MW) Dashboard is currently under development.');">
+                <div class="card-header">
+                    <div class="card-icon-wrapper">🔌</div>
+                    <h2 class="card-title">Machine Shop (MW)</h2>
+                    <p class="card-desc">Workshop machinery breakdown logs, uptime trackers, preventive maintenance schedules, and machine telemetry reports.</p>
+                </div>
+                <div class="card-footer">
+                    <span class="badge badge-pending">Under Development</span>
+                    <span class="action-arrow">➔</span>
+                </div>
+            </a>
+
+        </div>
+
+    </div>
+
+    <footer>
+        Southern Railway &copy; 2026. Loco Works Perambur Intelligence Portal. All rights reserved.
+    </footer>
+
+</body>
+</html>
