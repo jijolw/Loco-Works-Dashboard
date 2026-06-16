@@ -1,0 +1,30 @@
+# Secrets
+.env
+.env.local
+
+# Python caches and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+.venv/
+env/
+.env/
+
+# IDE / Editor configurations
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Local databases and caches
+db.sqlite
+erp_coaches_cache.json
+supabase_sync.log
+
+# Log files
+*.log

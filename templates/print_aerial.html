@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Progress of LW/PER</title>
+    <style>
+        /* Base styles */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+            color: #111111;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 15px;
+            font-size: 8px;
+            line-height: 1.15;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 1.5px solid #111;
+            padding-bottom: 2px;
+            margin-bottom: 8px;
+        }
+
+        .header-title {
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .header-date {
+            font-size: 9.5px;
+            font-weight: 700;
+        }
+
+        .print-container {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .print-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 0;
+        }
+
+        .print-card {
+            border: 1px solid #111;
+            background-color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+        }
+
+        .print-card-header {
+            background-color: #f1f5f9;
+            font-weight: 700;
+            font-size: 9px;
+            padding: 2px 4px;
+            border-bottom: 1px solid #111;
+        }
+
+        table.card-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table.card-table td {
+            padding: 2px 4px;
+            border-bottom: 0.5px solid #ddd;
+            vertical-align: middle;
+            font-size: 8px;
+        }
+
+        table.card-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        table.card-table-grid {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+        }
+
+        table.card-table-grid th, table.card-table-grid td {
+            border: 1px solid #111;
+            padding: 2px 3px;
+            font-size: 7.5px;
+        }
+
+        table.card-table-grid th {
+            background-color: #f8fafc;
+            font-weight: 700;
+        }
+
+        .incoming-box {
+            border-top: 1px solid #111;
+            padding: 3px 4px;
+            background-color: #fafafa;
+            font-size: 8px;
+        }
+
+        .yard-section-title {
+            font-weight: 700;
+            font-size: 9.5px;
+            margin-top: 10px;
+            border-bottom: 1.5px solid #111;
+            padding-bottom: 2px;
+            margin-bottom: 4px;
+        }
+
+        /* Details Section Styles */
+        .details-section {
+            margin-top: 20px;
+            font-size: 9px;
+            line-height: 1.25;
+        }
+
+        .details-section-header {
+            font-size: 11px;
+            font-weight: 700;
+            border-bottom: 2px solid #111;
+            padding-bottom: 3px;
+            margin-top: 25px;
+            margin-bottom: 5px;
+            color: #111;
+        }
+
+        table.details-grid-table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: center;
+            margin-top: 6px;
+            font-size: 8px;
+        }
+
+        table.details-grid-table th, table.details-grid-table td {
+            border: 0.5px solid #444;
+            padding: 3px 4px;
+            font-size: 8px;
+        }
+
+        table.details-grid-table th {
+            background-color: #f1f5f9;
+            font-weight: 700;
+        }
+
+        table.details-grid-table tr:nth-child(even) td {
+            background-color: #fafafa;
+        }
+
+        /* Loading Overlay */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            font-size: 16px;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Print specific rules */
+        .page-break {
+            page-break-after: always;
+            break-after: page;
+        }
+
+        @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            body {
+                padding: 0;
+                margin: 0;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-card {
+                page-break-inside: avoid;
+            }
+            table.details-grid-table {
+                page-break-inside: auto;
+            }
+            table.details-grid-table tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            @page {
+                size: A4 portrait;
+                margin: 0.6cm;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="loading-screen" id="loading">
+        <div class="spinner"></div>
+        <div>Generating report layout... Please wait...</div>
+    </div>
+
+    <!-- Page 1 Wrapper to ensure it prints on exactly one page -->
+    <div class="page-1 page-break">
+        <!-- Page Header -->
+        <div class="header-container">
+            <div class="header-title" id="progress-header">Daily Progress of LW/PER as on [Date] end of the day</div>
+            <div class="header-date" id="date-header">Date: [Date]</div>
+        </div>
+
+        <!-- Main 2-Column Shops Layout -->
+        <div class="print-container">
+            <!-- Left Column -->
+            <div class="print-column">
+                <!-- Paint Shop -->
+                <div class="print-card">
+                    <div class="print-card-header">Paint Shop</div>
+                    <table class="card-table">
+                        <tbody id="paint-body"></tbody>
+                    </table>
+                    <div id="paint-incoming" style="display:none;"></div>
+                </div>
+                
+                <!-- DEMU Shop B Line -->
+                <div class="print-card">
+                    <div class="print-card-header">DEMU Shop B Line : -</div>
+                    <table class="card-table-grid">
+                        <thead>
+                            <tr>
+                                <th>Line No.</th>
+                                <th>DIV</th>
+                                <th>Type.</th>
+                                <th>RS No.</th>
+                                <th>Date</th>
+                                <th>Rep. Type</th>
+                                <th>Cal Days</th>
+                            </tr>
+                        </thead>
+                        <tbody id="demu-body"></tbody>
+                    </table>
+                </div>
+                
+                <!-- Heavy Corr. Shop -->
+                <div class="print-card">
+                    <div class="print-card-header">Heavy Corr. Shop</div>
+                    <table class="card-table-grid">
+                        <thead>
+                            <tr>
+                                <th>Line No.</th>
+                                <th>Type.</th>
+                                <th>DIV</th>
+                                <th>Coach</th>
+                                <th>Placed</th>
+                                <th>Cal Days</th>
+                            </tr>
+                        </thead>
+                        <tbody id="heavy-body"></tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Right Column -->
+            <div class="print-column">
+                <!-- LBR Shed -->
+                <div class="print-card">
+                    <div class="print-card-header">LBR Shed</div>
+                    <table class="card-table">
+                        <tbody id="lbr-body"></tbody>
+                    </table>
+                </div>
+                
+                <!-- Augmented Shop -->
+                <div class="print-card">
+                    <div class="print-card-header">Augmented Shop</div>
+                    <table class="card-table">
+                        <tbody id="aug-body"></tbody>
+                    </table>
+                </div>
+                
+                <!-- Light Corr. Bay -->
+                <div class="print-card">
+                    <div class="print-card-header">Light Corr. Bay</div>
+                    <table class="card-table-grid">
+                        <thead>
+                            <tr>
+                                <th>Line No.</th>
+                                <th>Type.</th>
+                                <th>DIV</th>
+                                <th>Coach No.</th>
+                                <th>Date</th>
+                                <th>Cal Days</th>
+                            </tr>
+                        </thead>
+                        <tbody id="light-body"></tbody>
+                    </table>
+                </div>
+                
+                <!-- AC LOCO Bay -->
+                <div class="print-card">
+                    <div class="print-card-header">AC LOCO Bay</div>
+                    <table class="card-table-grid">
+                        <thead>
+                            <tr>
+                                <th>Line No.</th>
+                                <th>Type.</th>
+                                <th>Loco No.</th>
+                                <th>R.Type.</th>
+                                <th>Shed</th>
+                                <th>Date</th>
+                                <th>Cal Days</th>
+                            </tr>
+                        </thead>
+                        <tbody id="acloco-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yard Count Section -->
+        <div class="yard-section-title">Yard - Count: <span id="yard-count">0</span></div>
+        <div class="print-container">
+            <!-- Yard Left Table -->
+            <div class="print-column">
+                <table class="card-table-grid">
+                    <thead>
+                        <tr>
+                            <th style="width: 8%;">Sl No.</th>
+                            <th style="width: 12%;">Div.</th>
+                            <th style="width: 25%;">Type.</th>
+                            <th style="width: 25%;">Coach</th>
+                            <th style="width: 15%;">Date</th>
+                            <th style="width: 15%;">Cal Days</th>
+                        </tr>
+                    </thead>
+                    <tbody id="yard-left-body"></tbody>
+                </table>
+            </div>
+            
+            <!-- Yard Right Table -->
+            <div class="print-column">
+                <table class="card-table-grid">
+                    <thead>
+                        <tr>
+                            <th style="width: 8%;">Sl No.</th>
+                            <th style="width: 12%;">Div.</th>
+                            <th style="width: 25%;">Type.</th>
+                            <th style="width: 25%;">Coach</th>
+                            <th style="width: 15%;">Date</th>
+                            <th style="width: 15%;">Cal Days</th>
+                        </tr>
+                    </thead>
+                    <tbody id="yard-right-body"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Outturn Footer Section -->
+        <div class="outturn-footer" style="margin-top: 8px; font-size: 8.5px; border-top: 1px solid #111; padding-top: 4px;">
+            <div><strong>Outturn:</strong> <span id="outturn-list">-</span></div>
+            <div style="margin-top: 2px;"><strong>Physical Despatch:</strong> <span id="despatch-list">-</span></div>
+        </div>
+    </div>
+
+    <!-- Page 2 onwards: Detailed coach lists by family -->
+    <div class="details-section">
+        <!-- AC Loco Details -->
+        <div>
+            <div class="details-section-header">Details of AC Loco available at LW/PER as of now</div>
+            <table class="details-grid-table">
+                <thead>
+                    <tr>
+                        <th style="width: 4%;">#</th>
+                        <th style="width: 8%;">POH Priority</th>
+                        <th style="width: 8%;">Loco No</th>
+                        <th style="width: 8%;">Nature of Repair</th>
+                        <th style="width: 8%;">Recd. Date</th>
+                        <th style="width: 8%;">TFR.</th>
+                        <th style="width: 8%;">No. of W. Days</th>
+                        <th style="width: 8%;">Shed</th>
+                        <th style="width: 8%;">De-wheeling</th>
+                        <th style="width: 8%;">Wheel Receipt</th>
+                        <th style="width: 8%;">Wheeling 19th W. Day</th>
+                        <th style="width: 8%;">Test & Trial 20th W. Day</th>
+                        <th style="width: 8%;">ICO 22nd W. Day</th>
+                        <th>Remarks/ PDC</th>
+                    </tr>
+                </thead>
+                <tbody id="details-acloco-body">
+                    <tr><td colspan="14" style="text-align:center;color:#666;">No locomotives found</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- LHB Details -->
+        <div>
+            <div class="details-section-header">Details of LHB coaches available at LW/PER as of now</div>
+            <div class="type-breakup" id="lhb-breakup"></div>
+            <table class="details-grid-table">
+                <thead>
+                    <tr>
+                        <th style="width: 3%;">#</th>
+                        <th style="width: 9%;">PIT</th>
+                        <th style="width: 7%;">Type</th>
+                        <th style="width: 7%;">Coach No.</th>
+                        <th style="width: 5%;">RLY</th>
+                        <th style="width: 5%;">BASE</th>
+                        <th style="width: 10%;">Rep Type</th>
+                        <th style="width: 7%;">Last POH Stn</th>
+                        <th style="width: 5%;">Type</th>
+                        <th style="width: 7%;">Recd On</th>
+                        <th style="width: 7%;">TFR</th>
+                        <th style="width: 4%;">Days</th>
+                        <th style="width: 7%;">Corr Placed</th>
+                        <th style="width: 7%;">Corr. Comp.</th>
+                        <th>Pre Hrs</th>
+                    </tr>
+                </thead>
+                <tbody id="details-lhb-body">
+                    <tr><td colspan="15" style="text-align:center;color:#666;">No LHB coaches found</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ICF Details -->
+        <div>
+            <div class="details-section-header">Details of coaches available at LW/PER as of now</div>
+            <div class="type-breakup" id="icf-breakup"></div>
+            <table class="details-grid-table">
+                <thead>
+                    <tr>
+                        <th style="width: 3%;">#</th>
+                        <th style="width: 9%;">PIT</th>
+                        <th style="width: 7%;">Type</th>
+                        <th style="width: 7%;">Coach No.</th>
+                        <th style="width: 5%;">BASE</th>
+                        <th style="width: 10%;">Rep Type</th>
+                        <th style="width: 5%;">Coupl.</th>
+                        <th style="width: 7%;">Last POH Stn</th>
+                        <th style="width: 5%;">Type</th>
+                        <th style="width: 7%;">Recd On</th>
+                        <th style="width: 7%;">TFR</th>
+                        <th style="width: 4%;">Days</th>
+                        <th style="width: 7%;">Corr Placed</th>
+                        <th style="width: 7%;">Corr. Comp.</th>
+                        <th>Pre Hrs</th>
+                    </tr>
+                </thead>
+                <tbody id="details-icf-body">
+                    <tr><td colspan="15" style="text-align:center;color:#666;">No ICF coaches found</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Conversion Coaches Details -->
+        <div>
+            <div class="details-section-header">Details of Conversion Coaches available at LW/PER as of now</div>
+            <div class="type-breakup" id="conversion-breakup"></div>
+            <table class="details-grid-table">
+                <thead>
+                    <tr>
+                        <th style="width: 3%;">#</th>
+                        <th style="width: 9%;">PIT</th>
+                        <th style="width: 7%;">Type</th>
+                        <th style="width: 7%;">Coach No.</th>
+                        <th style="width: 5%;">BASE</th>
+                        <th style="width: 10%;">Rep Type</th>
+                        <th style="width: 5%;">Coupl.</th>
+                        <th style="width: 7%;">Last POH Stn</th>
+                        <th style="width: 5%;">Type</th>
+                        <th style="width: 7%;">Recd On</th>
+                        <th style="width: 7%;">TFR</th>
+                        <th style="width: 4%;">Days</th>
+                        <th style="width: 7%;">Corr Placed</th>
+                        <th style="width: 7%;">Corr. Comp.</th>
+                        <th>Pre Hrs</th>
+                    </tr>
+                </thead>
+                <tbody id="details-conversion-body">
+                    <tr><td colspan="15" style="text-align:center;color:#666;">No conversion coaches found</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- DEMU / MEMU / VB Details -->
+        <div>
+            <div class="details-section-header">Details of DEMU / MEMU / VB Coaches available at LW/PER as of now</div>
+            <div class="type-breakup" id="other-breakup"></div>
+            <table class="details-grid-table">
+                <thead>
+                    <tr>
+                        <th style="width: 3%;">#</th>
+                        <th style="width: 9%;">PIT</th>
+                        <th style="width: 7%;">Type</th>
+                        <th style="width: 7%;">Coach No.</th>
+                        <th style="width: 5%;">BASE</th>
+                        <th style="width: 10%;">Rep Type</th>
+                        <th style="width: 5%;">Coupl.</th>
+                        <th style="width: 7%;">Last POH Stn</th>
+                        <th style="width: 5%;">Type</th>
+                        <th style="width: 7%;">Recd On</th>
+                        <th style="width: 7%;">TFR</th>
+                        <th style="width: 4%;">Days</th>
+                        <th style="width: 7%;">Corr Placed</th>
+                        <th style="width: 7%;">Corr. Comp.</th>
+                        <th>Pre Hrs</th>
+                    </tr>
+                </thead>
+                <tbody id="details-other-body">
+                    <tr><td colspan="15" style="text-align:center;color:#666;">No DEMU/MEMU/VB coaches found</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Pit Name Aliases and mappings
+        const PIT_DISPLAY_NAMES = {
+            'SY/WP': 'Pit 2',
+            'SY/P1': 'Pit 1',
+        };
+
+        const TWO_SLOT_LABELS = {
+            'SY/WP': ['WP', 'WP2'],
+        };
+
+        // Date Helpers
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            const match = String(dateStr).match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+            if (match) {
+                const dd = parseInt(match[1], 10);
+                const mm = parseInt(match[2], 10) - 1;
+                let yy = parseInt(match[3], 10);
+                if (yy < 100) {
+                    yy += 2000;
+                }
+                return new Date(yy, mm, dd);
+            }
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+                return d;
+            }
+            return null;
+        }
+
+        function getDaysDiff(dateStr, today) {
+            const dt = parseDate(dateStr);
+            if (!dt) return 0;
+            const d1 = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            const d2 = new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+            const diffMs = d1 - d2;
+            return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+        }
+
+        function formatShortDate(dateStr) {
+            if (!dateStr) return '';
+            const match = String(dateStr).match(/^(\d{1,2})[\/\-](\d{1,2})/);
+            if (match) {
+                return `${match[1].padStart(2, '0')}/${match[2].padStart(2, '0')}`;
+            }
+            return dateStr;
+        }
+
+        function formatDetailDate(dateStr) {
+            if (!dateStr || dateStr.toLowerCase() === 'none' || dateStr.toLowerCase() === 'nan') return '—';
+            const match = String(dateStr).match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+            if (match) {
+                const dd = match[1].padStart(2, '0');
+                const mm = match[2].padStart(2, '0');
+                let yy = match[3];
+                if (yy.length === 4) yy = yy.slice(-2);
+                return `${dd}/${mm}/${yy}`;
+            }
+            const d = new Date(dateStr);
+            if (!isNaN(d.getTime())) {
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const yy = String(d.getFullYear()).slice(-2);
+                return `${dd}/${mm}/${yy}`;
+            }
+            return dateStr;
+        }
+
+        // HTML Escape helper
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Format Coach displaying (with / C indicator for corrosion)
+        function formatCoachNo(coach) {
+            if (!coach) return '';
+            const num = coach.coachno || coach.coach_num || '';
+            const hasCorr = coach.corr_place || coach.AERIAL_STATUS === 'UNDER CORROSION' || coach.AERIAL_STATUS === 'CORROSION DONE';
+            return hasCorr ? `${num} / C` : num;
+        }
+
+        // Helper to check styling color (blue for corrosion, red for stranger/special stock)
+        // Helper to check styling color (only yellow-gold for outturn taken coaches)
+        function getCoachColorStyle(c, defaultColor) {
+            if (!c) return '';
+            const pit = String(c.pitnum || c.location || '').toUpperCase().trim();
+            const despDate = String(c.desp_date || c.actualdespdate || c.despdate || '').trim();
+            const isDesp = pit.includes('DESP') || c.AERIAL_STATUS === 'PDC ASSIGNED' || (despDate !== '' && despDate.toLowerCase() !== 'none' && despDate.toLowerCase() !== 'nan');
+            
+            // 1. First Despatch / Outturned
+            if (isDesp) {
+                return 'color: #c69c00; font-weight: 700;'; // yellow-gold (highly legible yellow on white background)
+            }
+            return ''; // default styling (standard black)
+        }
+
+        // Helper to derive railway zone from base code
+        function getRailwayZone(dvn) {
+            const d = String(dvn || '').toUpperCase().trim();
+            if (!d) return 'SR';
+            if (['TVC', 'MAS', 'PGT', 'SA', 'TPJ', 'MDU', 'NCJ', 'ED', 'CBE', 'SRR', 'VM', 'GOC'].includes(d)) return 'SR';
+            if (['SC'].includes(d)) return 'SCR';
+            if (['JP'].includes(d)) return 'NWR';
+            if (['CSTM', 'BB', 'CR'].includes(d)) return 'CR';
+            if (['HWH', 'SDAH', 'ER'].includes(d)) return 'ER';
+            return 'SR';
+        }
+
+        // Dynamic typewise breakup rendering
+        function renderTypeBreakup(familyCoaches, familyLabel) {
+            const counts = {};
+            let total = 0;
+            familyCoaches.forEach(c => {
+                const type = c.coach_desc || c.family || 'UNKNOWN';
+                counts[type] = (counts[type] || 0) + 1;
+                total++;
+            });
+            
+            const sortedTypes = Object.keys(counts).sort();
+            if (sortedTypes.length === 0) return '';
+            
+            // Get current date formatted as DD/MM/YY
+            const d = new Date();
+            const dd = String(d.getDate()).padStart(2, '0');
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const yy = String(d.getFullYear()).slice(-2);
+            const todayStr = `${dd}/${mm}/${yy}`;
+            
+            let html = `<div style="margin: 6px 0; border: 1px solid #111; display: inline-block; background-color: #ffffff; width: auto; max-width: 100%;">`;
+            // Header row
+            html += `<div style="background-color: #f1f5f9; padding: 3px 6px; border-bottom: 1px solid #111; font-weight: 700; font-size: 8px;">`;
+            html += `Type-Wise Break-up of ${escapeHtml(familyLabel)} holdings (Maximum Holding Capacity at LW/PER is 45.) &nbsp;&nbsp;&nbsp; Date: ${todayStr}`;
+            html += `</div>`;
+            
+            // Table values
+            html += `<table style="width:100%; border-collapse:collapse; text-align:center; font-size:7.5px;">`;
+            html += `<tr>`;
+            sortedTypes.forEach(t => {
+                html += `<th style="border-right: 1px solid #111; border-bottom: 1px solid #111; padding: 2px 6px; background:#fafafa; font-weight:700;">${escapeHtml(t)}</th>`;
+            });
+            html += `<th style="border-bottom: 1px solid #111; padding: 2px 6px; background:#fafafa; font-weight:700;">Total</th>`;
+            html += `</tr><tr>`;
+            sortedTypes.forEach(t => {
+                html += `<td style="border-right: 1px solid #111; padding: 2px 6px; font-weight:700;">${counts[t]}</td>`;
+            });
+            html += `<td style="padding: 2px 6px; font-weight:700; background-color: #f8fafc;">${total}</td>`;
+            html += `</tr></table>`;
+            html += `</div>`;
+            return html;
+        }
+
+        // Detail row rendering helper
+        function renderDetailRow(c, idx, hasCoupl, hasRly) {
+            const shortRecd = formatDetailDate(c.recd_date);
+            const shortTfr = formatDetailDate(c.tfr_date);
+            const shortCorrPlaced = formatDetailDate(c.corr_place);
+            const shortCorrComp = formatDetailDate(c.corr_comp);
+            
+            const rlyCell = hasRly ? `<td>${escapeHtml(getRailwayZone(c.dvnid))}</td>` : '';
+            const baseCode = c.dvnid || '—';
+            const couplCell = hasCoupl ? `<td>${escapeHtml(c.coupl || '—')}</td>` : '';
+            
+            return `<tr>
+                <td>${idx + 1}</td>
+                <td style="font-weight:600;">${escapeHtml(c.pitnum || c.location || '—')}</td>
+                <td>${escapeHtml(c.coach_desc || c.family || '—')}</td>
+                <td><span style="${getCoachColorStyle(c)}">${escapeHtml(formatCoachNo(c))}</span></td>
+                ${rlyCell}
+                <td>${escapeHtml(baseCode)}</td>
+                <td>${escapeHtml(c.repair_type || '—')}</td>
+                ${couplCell}
+                <td>${escapeHtml(c.last_poh || '—')}</td>
+                <td>${escapeHtml(c.make || '—')}</td>
+                <td>${escapeHtml(shortRecd)}</td>
+                <td>${escapeHtml(shortTfr)}</td>
+                <td style="font-weight:600;">${c.IN_DAYS !== null ? c.IN_DAYS : ''}</td>
+                <td>${escapeHtml(shortCorrPlaced)}</td>
+                <td>${escapeHtml(shortCorrComp)}</td>
+                <td>${escapeHtml(c.presurveyhrs || c.effective_hours || '—')}</td>
+            </tr>`;
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Setup dynamic dates
+            const now = new Date();
+            const yesterday = new Date();
+            yesterday.setDate(now.getDate() - 1);
+
+            const formatHeaderDate = (d, separator) => {
+                const dd = String(d.getDate()).padStart(2, '0');
+                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                const yy = String(d.getFullYear()).slice(-2);
+                return `${dd}${separator}${mm}${separator}${yy}`;
+            };
+
+            document.getElementById('progress-header').textContent = `Daily Progress of LW/PER as on ${formatHeaderDate(yesterday, '-')} end of the day`;
+            document.getElementById('date-header').textContent = `Date: ${formatHeaderDate(now, '/')}`;
+
+            try {
+                const response = await fetch('/api/aerial');
+                if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+                const data = await response.json();
+
+                // Merge AC Locos into coaches list
+                const acCoaches = (data.ac_locos || [])
+                    .filter(l => l.loco_no && String(l.loco_no).trim() !== '')
+                    .map(l => {
+                        const recdDays = getDaysDiff(l.date_recd, now);
+                        const tfrDays = getDaysDiff(l.tfr_date, now);
+                        return {
+                            coachno: String(l.loco_no).trim(),
+                            coach_desc: String(l.loco_desc || 'WAP7').trim(),
+                            pitnum: String(l.pitnum).trim().replace('ACB/', 'AC/'),
+                            family: 'AC LOCO',
+                            recd_date: l.date_recd,
+                            AERIAL_STATUS: 'NORMAL',
+                            status: 'NORMAL',
+                            IN_DAYS: recdDays,
+                            tfr_days: tfrDays,
+                            tfr_date: l.tfr_date,
+                            last_poh: l.last_poh || 'GOC',
+                            slno: l.slno,
+                            division: l.division || l.shed || '',
+                            dvnid: l.dvnid || l.shed || '',
+                            dewheel: l.dewheel || '',
+                            stripping: l.stripping || '',
+                            super_str: l.super_str || '',
+                            tm: l.tm || '',
+                            wheeling: l.wheeling || '',
+                            test_trial: l.test_trial || '',
+                            ico_tm: l.ico_tm || '',
+                            traffic: l.traffic || '',
+                            pdc: l.pdc || ''
+                        };
+                    });
+                const coaches = [...(data.coaches || []), ...acCoaches];
+                
+                const twoSlotLines = data.two_slot_lines || [];
+                const aliases = data.pitnum_aliases || {};
+
+                // Lookup helpers
+                function getCoachesForPit(prefix) {
+                    const prefixes = [prefix];
+                    for (const [alias, canonical] of Object.entries(aliases)) {
+                        if (canonical === prefix) prefixes.push(alias);
+                        if (alias === prefix) prefixes.push(canonical);
+                    }
+                    return coaches.filter(c => {
+                        const pit = (c.pitnum || c.location || '').toUpperCase().trim();
+                        for (const pfx of prefixes) {
+                            const up = pfx.toUpperCase();
+                            if (pit === up) return true;
+                            if (pit === up + '_1' || pit === up + '_2') return true;
+                            if (pit.startsWith(up) && /^_?\d?$/.test(pit.slice(up.length))) return true;
+                        }
+                        return false;
+                    });
+                }
+
+                function getCoachAtSlot(prefix, slot) {
+                    const all = getCoachesForPit(prefix);
+                    const slotStr = prefix.toUpperCase() + '_' + slot;
+                    const exact = all.find(c => (c.pitnum || c.location || '').toUpperCase().trim() === slotStr);
+                    if (exact) return exact;
+
+                    if (slot === 1) {
+                        const plain = all.find(c => (c.pitnum || c.location || '').toUpperCase().trim() === prefix.toUpperCase());
+                        if (plain) return plain;
+                    }
+
+                    for (const [alias, canonical] of Object.entries(aliases)) {
+                        if (canonical.toUpperCase() === prefix.toUpperCase()) {
+                            const parts = alias.split('_');
+                            const aliasSlot = parts[parts.length - 1];
+                            if (aliasSlot === String(slot)) {
+                                const match = all.find(c => (c.pitnum || c.location || '').toUpperCase().trim() === alias.toUpperCase());
+                                if (match) return match;
+                            }
+                        }
+                    }
+                    return null;
+                }
+
+                function findCoachForPit(prefix) {
+                    const all = getCoachesForPit(prefix);
+                    return all.length > 0 ? all[0] : null;
+                }
+
+                // ── 1. RENDER PAINT SHOP ──
+                const paintLines = ['PS/P2', 'PS/L2', 'PS/L1', 'PS/P1'];
+                let paintHtml = '';
+                paintLines.forEach(pit => {
+                    const label = PIT_DISPLAY_NAMES[pit] || pit.split('/')[1].replace('P', 'Pit ').replace('L', 'Line ');
+                    const isTwoSlot = twoSlotLines.includes(pit);
+                    if (isTwoSlot) {
+                        const c1 = getCoachAtSlot(pit, 1);
+                        const c2 = getCoachAtSlot(pit, 2);
+                        const str1 = c1 ? `${c1.coach_desc || c1.family} - <span style="${getCoachColorStyle(c1)}">${formatCoachNo(c1)}</span>` : '-';
+                        const str2 = c2 ? `${c2.coach_desc || c2.family} - <span style="${getCoachColorStyle(c2)}">${formatCoachNo(c2)}</span>` : '-';
+                        paintHtml += `<tr><td style="font-weight:700;width:20%;">${label}</td><td style="width:40%;">${str1}</td><td style="width:40%;">${str2}</td></tr>`;
+                    } else {
+                        const all = getCoachesForPit(pit);
+                        const strList = all.map(c => `${c.coach_desc || c.family} - <span style="${getCoachColorStyle(c)}">${formatCoachNo(c)}</span>`);
+                        const display = strList.length > 0 ? strList.join(', ') : '-';
+                        paintHtml += `<tr><td style="font-weight:700;width:20%;">${label}</td><td colspan="2">${display}</td></tr>`;
+                    }
+                });
+                document.getElementById('paint-body').innerHTML = paintHtml;
+
+                // Incoming (OT/IN)
+                const incCoaches = getCoachesForPit('OT/IN');
+                const paintInc = document.getElementById('paint-incoming');
+                if (incCoaches.length > 0) {
+                    paintInc.style.display = 'block';
+                    let incHtml = `<div class="incoming-box">`;
+                    incHtml += `<div style="font-weight:700;margin-bottom:4px;">Incoming : Total Count: ${incCoaches.length}</div>`;
+                    incCoaches.forEach(c => {
+                        incHtml += `<div style="margin-bottom: 2px;">${c.coach_desc || c.family} &nbsp;<span style="${getCoachColorStyle(c)}">${formatCoachNo(c)}</span></div>`;
+                    });
+                    incHtml += `</div>`;
+                    paintInc.innerHTML = incHtml;
+                }
+
+                // ── 2. RENDER LBR SHED ──
+                const lbrLines = ['SY/WP', 'SY/L4', 'SY/L3', 'SY/L2', 'SY/P1', 'SY/L1'];
+                let lbrHtml = '';
+                lbrLines.forEach(pit => {
+                    const label = PIT_DISPLAY_NAMES[pit] || pit.split('/')[1].replace('P', 'Pit ').replace('L', 'Line ');
+                    const isTwoSlot = twoSlotLines.includes(pit);
+                    if (isTwoSlot) {
+                        const c1 = getCoachAtSlot(pit, 1);
+                        const c2 = getCoachAtSlot(pit, 2);
+                        const str1 = c1 ? `${c1.coach_desc || c1.family} - <span style="${getCoachColorStyle(c1)}">${formatCoachNo(c1)}</span>` : '-';
+                        const str2 = c2 ? `${c2.coach_desc || c2.family} - <span style="${getCoachColorStyle(c2)}">${formatCoachNo(c2)}</span>` : '-';
+                        lbrHtml += `<tr><td style="font-weight:700;width:20%;">${label}</td><td style="width:40%;">${str1}</td><td style="width:40%;">${str2}</td></tr>`;
+                    } else {
+                        const all = getCoachesForPit(pit);
+                        const strList = all.map(c => `${c.coach_desc || c.family} - <span style="${getCoachColorStyle(c)}">${formatCoachNo(c)}</span>`);
+                        const display = strList.length > 0 ? strList.join(', ') : '-';
+                        lbrHtml += `<tr><td style="font-weight:700;width:20%;">${label}</td><td colspan="2">${display}</td></tr>`;
+                    }
+                });
+                document.getElementById('lbr-body').innerHTML = lbrHtml;
+
+                // ── 3. RENDER AUGMENTED SHOP ──
+                const augLines = ['AS/L6', 'AS/L5', 'AS/P4', 'AS/P3', 'AS/P2', 'AS/L1'];
+                let augHtml = '';
+                augLines.forEach(pit => {
+                    const label = pit.split('/')[1].replace('P', 'Pit ').replace('L', 'Line ');
+                    const isTwoSlot = twoSlotLines.includes(pit);
+                    if (isTwoSlot) {
+                        const c1 = getCoachAtSlot(pit, 1);
+                        const c2 = getCoachAtSlot(pit, 2);
+                        const str1 = c1 ? `${c1.coach_desc || c1.family} - <span style="${getCoachColorStyle(c1)}">${formatCoachNo(c1)}</span>` : '-';
+                        const str2 = c2 ? `${c2.coach_desc || c2.family} - <span style="${getCoachColorStyle(c2)}">${formatCoachNo(c2)}</span>` : '-';
+                        augHtml += `<tr><td style="font-weight:700;width:20%;">${label}</td><td style="width:40%;">${str1}</td><td style="width:40%;">${str2}</td></tr>`;
+                    } else {
+                        const all = getCoachesForPit(pit);
+                        const strList = all.map(c => `${c.coach_desc || c.family} - <span style="${getCoachColorStyle(c)}">${formatCoachNo(c)}</span>`);
+                        const display = strList.length > 0 ? strList.join(', ') : '-';
+                        augHtml += `<tr><td style="font-weight:700;width:20%;">${label}</td><td colspan="2">${display}</td></tr>`;
+                    }
+                });
+                document.getElementById('aug-body').innerHTML = augHtml;
+
+                // ── 4. RENDER DEMU SHOP ──
+                const demuLines = [
+                    { id: 'DM/L32A', label: 'Line 32A' },
+                    { id: 'DM/L32', label: 'Line 32' },
+                    { id: 'DM/L31', label: 'Line 31' },
+                    { id: 'DM/L30', label: 'Line 30' },
+                    { id: 'DM/L29', label: 'Line 29' },
+                    { id: 'DM/L28', label: 'Line 28' },
+                    { id: 'DM/L27', label: 'Line 27' },
+                    { id: 'DM/C', label: 'C. Line' }
+                ];
+                let demuHtml = '';
+                demuLines.forEach(line => {
+                    const c = findCoachForPit(line.id);
+                    if (c) {
+                        const shortDate = formatShortDate(c.recd_date);
+                        demuHtml += `<tr>
+                            <td style="font-weight:700;">${line.label}</td>
+                            <td>${escapeHtml(c.dvnid || '')}</td>
+                            <td>${escapeHtml(c.coach_desc || c.family || '')}</td>
+                            <td><span style="${getCoachColorStyle(c, '#d11a2a')}">${escapeHtml(formatCoachNo(c))}</span></td>
+                            <td>${escapeHtml(shortDate)}</td>
+                            <td>${escapeHtml(c.repair_type || '')}</td>
+                            <td>${c.IN_DAYS !== null ? c.IN_DAYS : ''}</td>
+                        </tr>`;
+                    } else {
+                        demuHtml += `<tr>
+                            <td style="font-weight:700;">${line.label}</td>
+                            <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                        </tr>`;
+                    }
+                });
+                document.getElementById('demu-body').innerHTML = demuHtml;
+
+                // ── 5. RENDER LIGHT CORROSION BAY ──
+                const lightLines = [
+                    { id: 'LCB/L16A', label: 'Line 16A' },
+                    { id: 'LCB/L16', label: 'Line 16' },
+                    { id: 'LCB/L15', label: 'Line 15' },
+                    { id: 'LCB/P14', label: 'Pit 14' },
+                    { id: 'LCB/L13', label: 'Line 13' },
+                    { id: 'LCB/L12', label: 'Line 12' },
+                    { id: 'LCB/L11', label: 'Line 11' },
+                    { id: 'LCB/C', label: 'C. Line' }
+                ];
+                let lightHtml = '';
+                lightLines.forEach(line => {
+                    const c = findCoachForPit(line.id);
+                    if (c) {
+                        const shortDate = formatShortDate(c.recd_date);
+                        lightHtml += `<tr>
+                            <td style="font-weight:700;">${line.label}</td>
+                            <td>${escapeHtml(c.coach_desc || c.family || '')}</td>
+                            <td>${escapeHtml(c.dvnid || '')}</td>
+                            <td><span style="${getCoachColorStyle(c)}">${escapeHtml(formatCoachNo(c))}</span></td>
+                            <td>${escapeHtml(shortDate)}</td>
+                            <td>${c.IN_DAYS !== null ? c.IN_DAYS : ''}</td>
+                        </tr>`;
+                    } else {
+                        lightHtml += `<tr>
+                            <td style="font-weight:700;">${line.label}</td>
+                            <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                        </tr>`;
+                    }
+                });
+                document.getElementById('light-body').innerHTML = lightHtml;
+
+                // ── 6. RENDER HEAVY CORROSION SHOP ──
+                const heavyLines = [
+                    { id: 'HCB/L26', label: 'Line 26' },
+                    { id: 'HCB/L25', label: 'Line 25' },
+                    { id: 'HCB/L24', label: 'Line 24' },
+                    { id: 'HCB/L23', label: 'Line 23' },
+                    { id: 'HCB/L22', label: 'Line 22' },
+                    { id: 'HCB/L21', label: 'Line 21' },
+                    { id: 'HCB/L20', label: 'Line 20' },
+                    { id: 'HCB/L19', label: 'Line 19' },
+                    { id: 'HCB/L18', label: 'Line 18' },
+                    { id: 'HCB/L17', label: 'Line 17' },
+                    { id: 'HCB/DESP', label: 'Despatch Line' }
+                ];
+                let heavyHtml = '';
+                heavyLines.forEach(line => {
+                    const c = findCoachForPit(line.id);
+                    if (c) {
+                        const shortDate = formatShortDate(c.recd_date);
+                        heavyHtml += `<tr>
+                            <td style="font-weight:700;">${line.label}</td>
+                            <td>${escapeHtml(c.coach_desc || c.family || '')}</td>
+                            <td>${escapeHtml(c.dvnid || '')}</td>
+                            <td><span style="${getCoachColorStyle(c, '#1a5fb4')}">${escapeHtml(formatCoachNo(c))}</span></td>
+                            <td>${escapeHtml(shortDate)}</td>
+                            <td>${c.IN_DAYS !== null ? c.IN_DAYS : ''}</td>
+                        </tr>`;
+                    } else {
+                        heavyHtml += `<tr>
+                            <td style="font-weight:700;">${line.label}</td>
+                            <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                        </tr>`;
+                    }
+                });
+                document.getElementById('heavy-body').innerHTML = heavyHtml;
+
+                // ── 7. RENDER AC LOCO BAY ──
+                const aclocoLines = [
+                    { id: 'AC/P10', label: 'Pit 10' },
+                    { id: 'AC/P9', label: 'Pit 9' },
+                    { id: 'AC/L8', label: 'Line 8' },
+                    { id: 'AC/L7', label: 'Line 7' },
+                    { id: 'AC/L6', label: 'Line 6' },
+                    { id: 'AC/L5', label: 'Line 5' },
+                    { id: 'AC/L4', label: 'Line 4' },
+                    { id: 'AC/L3', label: 'Line 3' },
+                    { id: 'AC/L2', label: 'Line 2' },
+                    { id: 'AC/L1', label: 'Line 1' }
+                ];
+                let aclocoHtml = '';
+                aclocoLines.forEach(line => {
+                    const c = coaches.find(item => {
+                        if (item.family !== 'AC LOCO') return false;
+                        let pit = (item.pitnum || item.location || '').toUpperCase().trim();
+                        if (pit.startsWith('ACB/')) pit = pit.replace('ACB/', 'AC/');
+                        let up = line.id.toUpperCase();
+                        if (up.startsWith('ACB/')) up = up.replace('ACB/', 'AC/');
+                        return pit === up || pit.startsWith(up);
+                    });
+                    
+                    if (c) {
+                        const shortTfrDate = formatShortDate(c.tfr_date);
+                        aclocoHtml += `<tr>
+                            <td style="font-weight:700;">${line.label}</td>
+                            <td>${escapeHtml(c.coach_desc || 'WAP7')}</td>
+                            <td style="font-weight:700;"><span style="${getCoachColorStyle(c)}">${escapeHtml(c.coachno)}</span></td>
+                            <td>POH</td>
+                            <td>${escapeHtml(c.dvnid || c.division || '')}</td>
+                            <td>${escapeHtml(shortTfrDate)}</td>
+                            <td>${c.tfr_days !== null && c.tfr_days !== undefined ? c.tfr_days : ''}</td>
+                        </tr>`;
+                    } else {
+                        aclocoHtml += `<tr>
+                            <td style="font-weight:700;">${line.label}</td>
+                            <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                        </tr>`;
+                    }
+                });
+                document.getElementById('acloco-body').innerHTML = aclocoHtml;
+
+                // ── 8. RENDER YARD TABLES ──
+                const yardCoaches = coaches.filter(c => {
+                    const pit = String(c.pitnum || c.location || '').toUpperCase().trim();
+                    return pit.startsWith('OT/YD') || pit.includes('YARD') || pit.includes('YD');
+                });
+                
+                yardCoaches.sort((a, b) => {
+                    const daysA = a.IN_DAYS || 0;
+                    const daysB = b.IN_DAYS || 0;
+                    return daysB - daysA;
+                });
+
+                document.getElementById('yard-count').textContent = yardCoaches.length;
+
+                let leftYardHtml = '';
+                let rightYardHtml = '';
+                const mid = Math.ceil(yardCoaches.length / 2);
+
+                yardCoaches.forEach((c, idx) => {
+                    const slNo = idx + 1;
+                    const shortDate = formatShortDate(c.recd_date);
+                    const rowHtml = `<tr>
+                        <td>${slNo}</td>
+                        <td>${escapeHtml(c.dvnid || '')}</td>
+                        <td>${escapeHtml(c.coach_desc || c.family || '')}</td>
+                        <td><span style="${getCoachColorStyle(c)}">${escapeHtml(formatCoachNo(c))}</span></td>
+                        <td>${escapeHtml(shortDate)}</td>
+                        <td>${c.IN_DAYS !== null ? c.IN_DAYS : ''}</td>
+                    </tr>`;
+
+                    if (idx < mid) {
+                        leftYardHtml += rowHtml;
+                    } else {
+                        rightYardHtml += rowHtml;
+                    }
+                });
+
+                const targetRows = Math.max(12, mid);
+                const fillEmptyRows = (currentCount, target, slOffset) => {
+                    let fillHtml = '';
+                    for (let i = currentCount; i < target; i++) {
+                        fillHtml += `<tr>
+                            <td>${slOffset + i + 1}</td>
+                            <td>-</td><td>-</td><td>-</td><td>-</td><td>-</td>
+                        </tr>`;
+                    }
+                    return fillHtml;
+                };
+
+                const leftCount = Math.min(mid, yardCoaches.length);
+                const rightCount = yardCoaches.length - leftCount;
+
+                leftYardHtml += fillEmptyRows(leftCount, targetRows, 0);
+                rightYardHtml += fillEmptyRows(rightCount, targetRows, leftCount);
+
+                document.getElementById('yard-left-body').innerHTML = leftYardHtml;
+                document.getElementById('yard-right-body').innerHTML = rightYardHtml;
+
+                // ── 9. OUTTURN & PHYSICAL DESPATCH FOOTER ──
+                const yesterdayStr1 = formatHeaderDate(yesterday, '/');
+                const yesterdayStr2 = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
+                
+                const outturned = coaches.filter(c => {
+                    const desp = String(c.desp_date || c.actualdespdate || '').trim();
+                    return desp.startsWith(yesterdayStr1) || desp.startsWith(yesterdayStr2);
+                });
+
+                if (outturned.length > 0) {
+                    const outNames = outturned.map(c => `${c.coach_desc || c.family} <span style="${getCoachColorStyle(c)}">${formatCoachNo(c)}</span>`).join(', ');
+                    document.getElementById('outturn-list').innerHTML = outNames;
+                } else {
+                    document.getElementById('outturn-list').innerHTML = 'None';
+                }
+
+                // =====================================================
+                // ── 10. RENDER DETAILS PAGES (PAGES 3-6) ──
+                // =====================================================
+
+                // A. Details of AC Loco
+                const aclocoDetails = coaches.filter(c => c.family === 'AC LOCO');
+                if (aclocoDetails.length > 0) {
+                    let aclDetailsHtml = '';
+                    aclocoDetails.forEach((c, idx) => {
+                        const recd = formatDetailDate(c.recd_date);
+                        const tfr = formatDetailDate(c.tfr_date);
+                        const days = c.IN_DAYS !== null ? c.IN_DAYS : '';
+                        const priority = c.slno || (idx + 1);
+                        const shed = c.dvnid || c.division || '';
+                        
+                        const dewheel = formatDetailDate(c.dewheel);
+                        const wheelReceipt = formatDetailDate(c.test_trial);
+                        const wheeling = formatDetailDate(c.wheeling);
+                        const testTrial = formatDetailDate(c.ico_tm);
+                        const ico = formatDetailDate(c.traffic);
+                        const remarks = c.pdc || 'POH AC / CAB AC / Mod';
+                        
+                        aclDetailsHtml += `<tr>
+                            <td>${idx + 1}</td>
+                            <td>MAY<br>${priority}</td>
+                            <td style="font-weight:700;"><span style="${getCoachColorStyle(c)}">${escapeHtml(c.coachno)}</span></td>
+                            <td>POH</td>
+                            <td>${escapeHtml(recd)}</td>
+                            <td>${escapeHtml(tfr)}</td>
+                            <td style="font-weight:600;">${days}</td>
+                            <td>${escapeHtml(shed.replace('ACB/', 'AC/'))}</td>
+                            <td>${escapeHtml(dewheel)}</td>
+                            <td>${escapeHtml(wheelReceipt)}</td>
+                            <td>${escapeHtml(wheeling)}</td>
+                            <td>${escapeHtml(testTrial)}</td>
+                            <td>${escapeHtml(ico)}</td>
+                            <td style="text-align:left;">${escapeHtml(remarks)}</td>
+                        </tr>`;
+                    });
+                    document.getElementById('details-acloco-body').innerHTML = aclDetailsHtml;
+                }
+
+                // B. Details of LHB Coaches
+                const lhbCoaches = coaches.filter(c => c.family === 'LHB');
+                document.getElementById('lhb-breakup').innerHTML = renderTypeBreakup(lhbCoaches, 'LHB Coach Holdings');
+                if (lhbCoaches.length > 0) {
+                    let lhbHtml = '';
+                    lhbCoaches.forEach((c, idx) => {
+                        lhbHtml += renderDetailRow(c, idx, false, true); // hasRly=true
+                    });
+                    document.getElementById('details-lhb-body').innerHTML = lhbHtml;
+                }
+
+                // C. Details of ICF Coaches
+                const icfCoaches = coaches.filter(c => c.family === 'ICF');
+                document.getElementById('icf-breakup').innerHTML = renderTypeBreakup(icfCoaches, 'ICF Coach Holdings');
+                if (icfCoaches.length > 0) {
+                    let icfHtml = '';
+                    icfCoaches.forEach((c, idx) => {
+                        icfHtml += renderDetailRow(c, idx, true, false); // hasCoupl=true
+                    });
+                    document.getElementById('details-icf-body').innerHTML = icfHtml;
+                }
+
+                // D. Details of Conversion Coaches (NMG, etc.)
+                const conversionCoaches = coaches.filter(c => c.family === 'NMG' || c.family === 'SPECIAL' || c.family === 'OTHER');
+                document.getElementById('conversion-breakup').innerHTML = renderTypeBreakup(conversionCoaches, 'Conversion Coaches Holdings');
+                if (conversionCoaches.length > 0) {
+                    let convHtml = '';
+                    conversionCoaches.forEach((c, idx) => {
+                        convHtml += renderDetailRow(c, idx, true, false);
+                    });
+                    document.getElementById('details-conversion-body').innerHTML = convHtml;
+                }
+
+                // E. Details of DEMU / MEMU / VB Coaches
+                const otherCoaches = coaches.filter(c => c.family === 'DEMU' || c.family === 'MEMU' || c.family === 'VB');
+                document.getElementById('other-breakup').innerHTML = renderTypeBreakup(otherCoaches, 'DEMU / MEMU / VB holdings');
+                if (otherCoaches.length > 0) {
+                    let otherHtml = '';
+                    otherCoaches.forEach((c, idx) => {
+                        otherHtml += renderDetailRow(c, idx, true, false);
+                    });
+                    document.getElementById('details-other-body').innerHTML = otherHtml;
+                }
+
+                // Hide loading screen and print
+                document.getElementById('loading').style.display = 'none';
+                
+                setTimeout(() => {
+                    window.print();
+                }, 500);
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('loading').innerHTML = `
+                    <div style="color:red;font-size:18px;margin-bottom:10px;">⚠️ Layout Generation Failed</div>
+                    <div style="color:#555;">${escapeHtml(err.message)}</div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>

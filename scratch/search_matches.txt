@@ -1,0 +1,35 @@
+=== Matches for: req. rate ===
+3955: badgeEl.innerHTML = `🎯 Req. Rate: ${reqRate} coaches/mo | 📅 Daily Rate (Current Mo): ${dailyRate} coaches/day`;
+=== Matches for: daily rate ===
+3955: badgeEl.innerHTML = `🎯 Req. Rate: ${reqRate} coaches/mo | 📅 Daily Rate (Current Mo): ${dailyRate} coaches/day`;
+=== Matches for: llhw ===
+1272: if (tabId === 'llhw-baseline') {
+1421: <button class="tab-nav-btn" data-tab="llhw-baseline" id="tab-llhw-btn" onclick="switchCorrosionTab('llhw-baseline')">🆚 vs LLHW Baseline</button>
+1429: <div id="tab-llhw-baseline" class="corrosion-tab-content" style="display:none;"></div>
+1573: // 5. LLHW baseline tab display toggle (always active)
+1574: const tabLlhBtn = document.getElementById('tab-llhw-btn');
+1707: const el = document.getElementById('tab-llhw-baseline');
+1710: const llhwBaseline = {
+1723: const baseline = llhwBaseline[grp];
+1736: const llhwMH = baseline.M + baseline.H;
+1737: const diffMH = lwPerMH - llhwMH;
+1743: which is <strong>${diffMH.toFixed(1)}% higher</strong> than Liluah Workshop's baseline (${llhwMH.toFixed(1)}%).
+1751: const llhwPct = baseline[b];
+1752: const diff = lwPct - llhwPct;
+1772: <td>${llhwPct.toFixed(1)}%</td>
+1781: <div class="card-title">🆚 LW/PER vs Liluah Workshop (LLHW) Baseline Comparison</div>
+1793: <th>LLHW (Reference)</th>
+=== Matches for: liluwah ===
+=== Matches for: 1st poh ===
+1585: const pohGroups = ["1st POH", "2nd POH", "3rd POH", "4th & onwards"];
+1711: "1st POH": { L: 73.0, LM: 25.0, M: 2.0, H: 0.0 },
+2004: const pohOptions = ["Auto", "1st POH", "2nd POH", "3rd POH", "4th & onwards"];
+=== Matches for: lhb annual maintenance ===
+2761: <div class="card-title">📅 LHB Annual Maintenance Schedule History</div>
+=== Matches for: cycle time ===
+3287: <!-- Charts Grid (Target vs Achievement & Cycle Time) -->
+3608: // 2. Render Monthly Outturn Achievement (replacing Cycle Time chart)
+=== Matches for: ytd cumulative ===
+3020: // Determine maximum completed month name for YTD cumulative list
+3075: <span>📊 Annual Summary (YTD Cumulative)</span>
+4053: if (mIdx < 0 || mIdx > monthIdx) return false; // YTD Cumulative

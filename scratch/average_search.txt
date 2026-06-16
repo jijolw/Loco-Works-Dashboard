@@ -1,0 +1,25 @@
+.\services\corrosion_service.py:135: # ICF and other conventional families (POH cycle approx 1.5 years)
+.\static\js\aerial.js:211: `Days Inside: ${escapeHtml(String(daysStr || '—'))}`;
+.\static\js\aerial.js:711: 'Days Inside': c.IN_DAYS || '',
+.\static\js\app.js:397: <div class="quick-link-desc">Deep analysis of coach POH cycles, schedules, shop loads, and historical outturns</div>
+.\static\js\app.js:641: <th>Coach No.</th><th>Type</th><th>Days Inside</th><th>Location</th><th>Division</th>
+.\static\js\app.js:849: 'Days Inside': c.IN_DAYS || '',
+.\static\js\app.js:928: ['Days Inside',      coach.IN_DAYS ?? '—'],
+.\static\js\app.js:1838: <th style="padding:8px;">Days Inside</th>
+.\static\js\app.js:2275: <p class="page-subtitle">Analyze performance of previous workshop cycles, audit schedule selections, and evaluate monthly target achievements.</p>
+.\static\js\app.js:3287: <!-- Charts Grid (Target vs Achievement & Cycle Time) -->
+.\static\js\app.js:3297: <h3 id="analytics-title-cycle" style="font-size:15px;font-weight:600;margin-bottom:16px;color:var(--text-primary);">📊 Monthly Outturn Achievement</h3>
+.\static\js\app.js:3299: <canvas id="chart-cycle-time"></canvas>
+.\static\js\app.js:3462: const tCycle = document.getElementById('analytics-title-cycle');
+.\static\js\app.js:3471: if (tCycle) {
+.\static\js\app.js:3472: tCycle.innerHTML = `📊 Monthly Outturn Achievement — FY ${escapeHtml(fyVal)}`;
+.\static\js\app.js:3608: // 2. Render Monthly Outturn Achievement (replacing Cycle Time chart)
+.\static\js\app.js:3609: const ctxCycle = document.getElementById('chart-cycle-time');
+.\static\js\app.js:3610: if (ctxCycle && _analyticsTargetData) {
+.\static\js\app.js:3611: if (window.myCharts['chart-cycle-time']) {
+.\static\js\app.js:3612: window.myCharts['chart-cycle-time'].destroy();
+.\static\js\app.js:3628: window.myCharts['chart-cycle-time'] = new Chart(ctxCycle, {
+.\static\js\app.js:3937: // Update Required / Average Rate Badge
+.\static\js\app.js:3962: badgeEl.innerHTML = `📋 Average Rate: ${avgRate} coaches/month`;
+.\static\js\app.js:4291: // Days inside calculation
+.\static\js\app.js:4369: <span class="loco-meta-label">Days Inside</span>

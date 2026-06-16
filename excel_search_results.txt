@@ -1,0 +1,2243 @@
+
+Scanning directory: C:\Users\User\Downloads
+
+Checking: C:\Users\User\Downloads\308. GSCN SLR TO BE LIQUIDATED FOR SPECIALS 2026.xlsx
+  Sheets: ['Under POH', 'ICF POH Arising', 'Unscheduled Sick', 'Under IOH']
+    Sheet 'Under POH' headers:
+      ('GSCN and SLR under POH inside Workshop', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'GSCN and SLR under POH inside Workshop' in sheet 'Under POH'
+      -> Found keyword 'Name of workshop' in sheet 'Under POH'
+      -> Found keyword 'Days In Workshop' in sheet 'Under POH'
+      -> Found keyword 'PDC for turning out from Works' in sheet 'Under POH'
+    Sheet 'ICF POH Arising' headers:
+      (113121.0, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Workshop' in sheet 'ICF POH Arising'
+    Sheet 'Unscheduled Sick' headers:
+      ('List of 45 ICF coaches (GS, GSCN, SLR) currently under sick over IR as on 29.04.2026', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Reported Defect' in sheet 'Unscheduled Sick'
+    Sheet 'Under IOH' headers:
+      ('List of 122 ICF coaches (GSCN, SLR) currently under IOH as per CMM over IR as on 29.04.2026', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+
+Checking: C:\Users\User\Downloads\CAI & SOBs Implementation in Workshops with cut in date (1).xlsx
+  Sheets: ['SOBs ', ' CAIs', 'VB CAIs']
+    Sheet 'SOBs ' headers:
+      (None, None, None, None, None, None, 'SOBs issued from PCME Drawing office', None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks ' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'SOBs '
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'SOBs '
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'SOBs '
+      -> Found keyword 'Provision of mesh cover on the reservoir of the brake panel in LHB coaches- M/s Escorts' in sheet 'SOBs '
+      -> Found keyword 'No. PO placed for 65 sets on 17.12.25. Awaiting for supply' in sheet 'SOBs '
+    Sheet ' CAIs' headers:
+      (None, None, None, None, None, None, 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ')
+      -> Found keyword 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ' in sheet ' CAIs'
+      -> Found keyword 'Reason for Modification' in sheet ' CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks ' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet ' CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet ' CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet ' CAIs'
+      -> Found keyword 'Provision of additional dirt collector in BP pipe line before FIBA device in all LHB coaches' in sheet ' CAIs'
+      -> Found keyword 'Railway Board has expressed its concern regarding Punctuality loss cases on account of FIBA device failure reported by Zonal Railways.' in sheet ' CAIs'
+      -> Found keyword 'ALL ELIGIBLE COACHES RECEIVED FOR MODIFICATION' in sheet ' CAIs'
+    Sheet 'VB CAIs' headers:
+      ('VANDE BHARAT CAIs issued from PCME Drawing office', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Category' in sheet 'VB CAIs'
+      -> Found keyword 'Reason for Modification' in sheet 'VB CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'VB CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'VB CAIs'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'VB CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'VB CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'VB CAIs'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'VB CAIs'
+      -> Found keyword 'INTERIOR FURNISHING' in sheet 'VB CAIs'
+      -> Found keyword 'Door handle set & Latch indicators arrangement replacement work in all lavatory doors.' in sheet 'VB CAIs'
+      -> Found keyword 'Interior Furnishing' in sheet 'VB CAIs'
+
+Checking: C:\Users\User\Downloads\CAI & SOBs Implementation in Workshops with cut in date.xlsx
+  Sheets: ['SOBs ', ' CAIs', 'VB CAIs']
+    Sheet 'SOBs ' headers:
+      (None, None, None, None, None, None, 'SOBs issued from PCME Drawing office', None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks ' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'SOBs '
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'SOBs '
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'SOBs '
+      -> Found keyword 'Provision of mesh cover on the reservoir of the brake panel in LHB coaches- M/s Escorts' in sheet 'SOBs '
+      -> Found keyword 'No. PO placed for 65 sets on 17.12.25. Awaiting for supply' in sheet 'SOBs '
+    Sheet ' CAIs' headers:
+      (None, None, None, None, None, None, 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ')
+      -> Found keyword 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ' in sheet ' CAIs'
+      -> Found keyword 'Reason for Modification' in sheet ' CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks ' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet ' CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet ' CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet ' CAIs'
+      -> Found keyword 'Provision of additional dirt collector in BP pipe line before FIBA device in all LHB coaches' in sheet ' CAIs'
+      -> Found keyword 'Railway Board has expressed its concern regarding Punctuality loss cases on account of FIBA device failure reported by Zonal Railways.' in sheet ' CAIs'
+      -> Found keyword 'ALL ELIGIBLE COACHES RECEIVED FOR MODIFICATION' in sheet ' CAIs'
+    Sheet 'VB CAIs' headers:
+      ('VANDE BHARAT CAIs issued from PCME Drawing office', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Category' in sheet 'VB CAIs'
+      -> Found keyword 'Reason for Modification' in sheet 'VB CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'VB CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'VB CAIs'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'VB CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'VB CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'VB CAIs'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'VB CAIs'
+      -> Found keyword 'INTERIOR FURNISHING' in sheet 'VB CAIs'
+      -> Found keyword 'Door handle set & Latch indicators arrangement replacement work in all lavatory doors.' in sheet 'VB CAIs'
+      -> Found keyword 'Interior Furnishing' in sheet 'VB CAIs'
+
+Checking: C:\Users\User\Downloads\Coach_Holding_01Jun2026.xlsx
+  Sheets: ['Coach Holding 01-06-26']
+    Sheet 'Coach Holding 01-06-26' headers:
+      ('Type', 'Coach No', 'Division', 'Location', 'PDC', None, None, None, None, None, None)
+
+Checking: C:\Users\User\Downloads\coach_list.xlsx
+  Sheets: ['M.I Line', 'Mill Right', 'Coil Line', 'ERE Line', 'T.D Line']
+    Sheet 'M.I Line' headers:
+      ('Sl. No.', 'Coach Number', 'Type')
+    Sheet 'Mill Right' headers:
+      ('Sl. No.', 'Coach Number', 'Type')
+    Sheet 'Coil Line' headers:
+      ('Sl. No.', 'Coach Number', 'Type')
+    Sheet 'ERE Line' headers:
+      ('Sl. No.', 'Coach Number', 'Type')
+    Sheet 'T.D Line' headers:
+      ('Sl. No.', 'Coach Number', 'Type')
+
+Checking: C:\Users\User\Downloads\coach_list_single_page (1).xlsx
+  Sheets: ['Coach List']
+    Sheet 'Coach List' headers:
+      ('Section', 'Sl. No.', 'Coach Number', 'Type')
+
+Checking: C:\Users\User\Downloads\coach_list_single_page.xlsx
+  Sheets: ['Coach List']
+    Sheet 'Coach List' headers:
+      ('Section', 'Sl. No.', 'Coach Number', 'Type')
+
+Checking: C:\Users\User\Downloads\complete_supervisors_JE.xlsx
+  Sheets: ['Supervisors & JEs']
+    Sheet 'Supervisors & JEs' headers:
+      ('SI No', 'Name', 'Designation', 'T.No', 'IP Pass No', 'Mobile No', 'HRMS ID')
+      -> Found keyword 'SSE Door & UF' in sheet 'Supervisors & JEs'
+      -> Found keyword 'SSE Corrosion/G' in sheet 'Supervisors & JEs'
+
+Checking: C:\Users\User\Downloads\converted.xlsx
+  Sheets: ['Sheet1']
+    Sheet 'Sheet1' headers:
+      (0, 1, 2, 3, 4, 5)
+
+Checking: C:\Users\User\Downloads\Corrected_Balance_Coach_Position.xlsx
+  Sheets: ['Balance Coach Position']
+    Sheet 'Balance Coach Position' headers:
+      ('BALANCE COACH POSITION (CORRECTED)', None, None)
+      -> Found keyword 'BALANCE COACH POSITION (CORRECTED)' in sheet 'Balance Coach Position'
+
+Checking: C:\Users\User\Downloads\CW_LW_Performance_Report.xlsx
+  Sheets: ['CW_LW_Performance']
+    Sheet 'CW_LW_Performance' headers:
+      ('Category', 'CW Avg 2025-26', 'CW Apr-26', 'CW May 26', 'CW % Change', 'LW Avg 2025-26', 'LW Apr-26', 'LW May 2026', 'LW % Change')
+      -> Found keyword 'Category' in sheet 'CW_LW_Performance'
+
+Checking: C:\Users\User\Downloads\daily position.xlsx
+  Sheets: ['Daily Position']
+    Sheet 'Daily Position' headers:
+      ('Daily Position as on - 28/03/2026', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'No of Working Days' in sheet 'Daily Position'
+      -> Found keyword 'For the Month' in sheet 'Daily Position'
+      -> Found keyword 'For the Year' in sheet 'Daily Position'
+
+Checking: C:\Users\User\Downloads\DailyPosition (1).xlsx
+  Sheets: ['Daily Position']
+    Sheet 'Daily Position' headers:
+      ('Daily Position as on  -  08/05/2026', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'No of Working Days' in sheet 'Daily Position'
+      -> Found keyword 'For the Month' in sheet 'Daily Position'
+      -> Found keyword '⬅  Update the blue cells (Completed days) daily.
+All proportionate targets recalculate automatically.' in sheet 'Daily Position'
+      -> Found keyword 'For the Year' in sheet 'Daily Position'
+
+Checking: C:\Users\User\Downloads\DailyPosition.xlsx
+  Sheets: ['Daily Position']
+    Sheet 'Daily Position' headers:
+      ('Daily Position as on  -  08/05/2026', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'No of Working Days' in sheet 'Daily Position'
+      -> Found keyword 'For the Month' in sheet 'Daily Position'
+      -> Found keyword '⬅  Update the blue cells (Completed days) daily.
+All proportionate targets recalculate automatically.' in sheet 'Daily Position'
+      -> Found keyword 'For the Year' in sheet 'Daily Position'
+
+Checking: C:\Users\User\Downloads\DailyPosition_28032026 (1).xlsx
+  Sheets: ['Daily Position']
+    Sheet 'Daily Position' headers:
+      ('Daily Position as on - 28/03/2026', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'No of Working Days' in sheet 'Daily Position'
+      -> Found keyword 'For the Month' in sheet 'Daily Position'
+      -> Found keyword 'For the Year' in sheet 'Daily Position'
+
+Checking: C:\Users\User\Downloads\DailyPosition_28032026.xlsx
+  Sheets: ['Daily Position']
+    Sheet 'Daily Position' headers:
+      ('Daily Position as on - 28/03/2026', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'No of Working Days' in sheet 'Daily Position'
+      -> Found keyword 'For the Month' in sheet 'Daily Position'
+      -> Found keyword 'For the Year' in sheet 'Daily Position'
+
+Checking: C:\Users\User\Downloads\DailyPosition_FINAL.xlsx
+  Sheets: ['Daily Position']
+    Sheet 'Daily Position' headers:
+      ('Daily Position as on - 28/03/2026', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'No of Working Days' in sheet 'Daily Position'
+      -> Found keyword 'For the Month' in sheet 'Daily Position'
+      -> Found keyword 'For the Year' in sheet 'Daily Position'
+
+Checking: C:\Users\User\Downloads\DailyPosition_Formula.xlsx
+  Sheets: ['Daily Position']
+    Sheet 'Daily Position' headers:
+      ('Daily Position as on - 28/03/2026', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'No of Working Days' in sheet 'Daily Position'
+      -> Found keyword 'For the Month' in sheet 'Daily Position'
+      -> Found keyword 'For the Year' in sheet 'Daily Position'
+
+Checking: C:\Users\User\Downloads\Daily_Position_fixed.xlsx
+  Sheets: ['Daily Position']
+    Sheet 'Daily Position' headers:
+      ('Daily Position as on - 28/03/2026', None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'No of Working
+Days' in sheet 'Daily Position'
+      -> Found keyword 'FOR THE MONTH' in sheet 'Daily Position'
+      -> Found keyword 'FOR THE YEAR' in sheet 'Daily Position'
+      -> Found keyword 'Current Month Target / Actual' in sheet 'Daily Position'
+
+Checking: C:\Users\User\Downloads\Daily_Position_v2.xlsx
+  Sheets: ['Daily Position']
+    Sheet 'Daily Position' headers:
+      ('Daily Position as on - 28/03/2026', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'No of Working
+Days' in sheet 'Daily Position'
+      -> Found keyword 'FOR THE MONTH' in sheet 'Daily Position'
+      -> Found keyword 'FOR THE YEAR' in sheet 'Daily Position'
+      -> Found keyword 'Current Month Target / Actual' in sheet 'Daily Position'
+
+Checking: C:\Users\User\Downloads\Daily_Position_v3 (1).xlsx
+  Sheets: ['Daily Position']
+    Sheet 'Daily Position' headers:
+      ('Daily Position as on - 28/03/2026', None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'No of Working
+Days' in sheet 'Daily Position'
+      -> Found keyword 'FOR THE MONTH' in sheet 'Daily Position'
+      -> Found keyword 'FOR THE YEAR' in sheet 'Daily Position'
+      -> Found keyword 'Current Month Target / Actual' in sheet 'Daily Position'
+
+Checking: C:\Users\User\Downloads\Daily_Position_v3.xlsx
+  Sheets: ['Daily Position']
+    Sheet 'Daily Position' headers:
+      ('Daily Position as on - 28/03/2026', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'No of Working
+Days' in sheet 'Daily Position'
+      -> Found keyword 'FOR THE MONTH' in sheet 'Daily Position'
+      -> Found keyword 'FOR THE YEAR' in sheet 'Daily Position'
+      -> Found keyword 'Current Month Target / Actual' in sheet 'Daily Position'
+
+Checking: C:\Users\User\Downloads\Daily_Position_v3_final.xlsx
+  Sheets: ['Daily Position']
+    Sheet 'Daily Position' headers:
+      ('Daily Position as on - 15/04/2026', None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'No of Working
+Days' in sheet 'Daily Position'
+      -> Found keyword 'FOR THE MONTH' in sheet 'Daily Position'
+      -> Found keyword 'FOR THE YEAR' in sheet 'Daily Position'
+      -> Found keyword 'Current Month Target / Actual' in sheet 'Daily Position'
+
+Checking: C:\Users\User\Downloads\DAMPER ANALYSIS (1).xlsx
+  Sheets: ['Sheet1', 'MAKE ANALYSIS', 'TYPE ANALYSIS', 'OTHERS', 'LHB', 'VB', 'VB DAMPER']
+    Sheet 'Sheet1' headers:
+      ('Recipe', 'Shocker type', 'Make', 'Machine ID', 'Mfg. Date', 'Test date time', 'Serial No', 'Shocker ID', 'Age', 'Rated load', 'Max Compression force', 'Compression %', 'Max rebound force', 'Rebound %', 'Test Result', 'Grade', 'TYPE OF DAMPER', None, None, None)
+      -> Found keyword 'Max Compression force' in sheet 'Sheet1'
+      -> Found keyword 'Max rebound force' in sheet 'Sheet1'
+      -> Found keyword 'ICF SHOCKER ABSORBER' in sheet 'Sheet1'
+      -> Found keyword 'ESCORTS' in sheet 'Sheet1'
+      -> Found keyword 'ESCORTS' in sheet 'Sheet1'
+      -> Found keyword 'ESCORTS' in sheet 'Sheet1'
+      -> Found keyword 'ICF SHOCKER ABSORBER' in sheet 'Sheet1'
+    Sheet 'OTHERS' headers:
+      ('Recipe', 'Shocker type', 'Make', 'Machine ID', 'Mfg. Date', 'Test date time', 'Serial No', 'Shocker ID', 'Age', 'Rated load', 'Max Compression force', 'Compression %', 'Max rebound force', 'Rebound %', 'Test Result', 'Grade', 'TYPE OF DAMPER')
+      -> Found keyword 'Max Compression force' in sheet 'OTHERS'
+      -> Found keyword 'Max rebound force' in sheet 'OTHERS'
+      -> Found keyword 'ICF SHOCKER ABSORBER' in sheet 'OTHERS'
+      -> Found keyword 'ESCORTS' in sheet 'OTHERS'
+      -> Found keyword 'ESCORTS' in sheet 'OTHERS'
+      -> Found keyword 'ESCORTS' in sheet 'OTHERS'
+      -> Found keyword 'ICF SHOCKER ABSORBER' in sheet 'OTHERS'
+    Sheet 'LHB' headers:
+      ('Recipe', 'Shocker type', 'Make', 'Machine ID', 'Mfg. Date', 'Test date time', 'Serial No', 'Shocker ID', 'Age', 'Rated load', 'Max Compression force', 'Compression %', 'Max rebound force', 'Rebound %', 'Test Result', 'Grade', 'TYPE OF DAMPER')
+      -> Found keyword 'Max Compression force' in sheet 'LHB'
+      -> Found keyword 'Max rebound force' in sheet 'LHB'
+      -> Found keyword 'ESCORTS' in sheet 'LHB'
+      -> Found keyword 'ESCORTS' in sheet 'LHB'
+      -> Found keyword 'ESCORTS' in sheet 'LHB'
+    Sheet 'VB' headers:
+      ('Recipe', 'Shocker type', 'Make', 'Machine ID', 'Mfg. Date', 'Test date time', 'Serial No', 'Shocker ID', 'Age', 'Rated load', 'Max Compression force', 'Compression %', 'Max rebound force', 'Rebound %', 'Test Result', 'Grade', 'TYPE OF DAMPER')
+      -> Found keyword 'Max Compression force' in sheet 'VB'
+      -> Found keyword 'Max rebound force' in sheet 'VB'
+    Sheet 'VB DAMPER' headers:
+      (None, None, None, None, 'FAILURE%')
+
+Checking: C:\Users\User\Downloads\DAMPER ANALYSIS (2).xlsx
+  Sheets: ['Sheet1', 'MAKE ANALYSIS', 'TYPE ANALYSIS', 'OTHERS', 'LHB', 'LHB DATA', 'VB', 'VB DAMPER']
+    Sheet 'Sheet1' headers:
+      ('Recipe', 'Shocker type', 'Make', 'Machine ID', 'Mfg. Date', 'Test date time', 'Serial No', 'Shocker ID', 'Age', 'Rated load', 'Max Compression force', 'Compression %', 'Max rebound force', 'Rebound %', 'Test Result', 'Grade', 'TYPE OF DAMPER', None, None, None)
+      -> Found keyword 'Max Compression force' in sheet 'Sheet1'
+      -> Found keyword 'Max rebound force' in sheet 'Sheet1'
+      -> Found keyword 'ESCORTS' in sheet 'Sheet1'
+      -> Found keyword 'ESCORTS' in sheet 'Sheet1'
+      -> Found keyword 'ESCORTS' in sheet 'Sheet1'
+    Sheet 'TYPE ANALYSIS' headers:
+      (None, 'PASS', 'Values', None, None, None, None)
+    Sheet 'OTHERS' headers:
+      ('Recipe', 'Shocker type', 'Make', 'Machine ID', 'Mfg. Date', 'Test date time', 'Serial No', 'Shocker ID', 'Age', 'Rated load', 'Max Compression force', 'Compression %', 'Max rebound force', 'Rebound %', 'Test Result', 'Grade', 'TYPE OF DAMPER')
+      -> Found keyword 'Max Compression force' in sheet 'OTHERS'
+      -> Found keyword 'Max rebound force' in sheet 'OTHERS'
+      -> Found keyword 'ICF SHOCKER ABSORBER' in sheet 'OTHERS'
+      -> Found keyword 'ESCORTS' in sheet 'OTHERS'
+      -> Found keyword 'ESCORTS' in sheet 'OTHERS'
+      -> Found keyword 'ESCORTS' in sheet 'OTHERS'
+      -> Found keyword 'ICF SHOCKER ABSORBER' in sheet 'OTHERS'
+    Sheet 'LHB' headers:
+      ('Recipe', 'Shocker type', 'Make', 'Machine ID', 'Mfg. Date', 'Test date time', 'Serial No', 'Shocker ID', 'Age', 'Rated load', 'Max Compression force', 'Compression %', 'Max rebound force', 'Rebound %', 'Test Result', 'Grade', 'TYPE OF DAMPER')
+      -> Found keyword 'Max Compression force' in sheet 'LHB'
+      -> Found keyword 'Max rebound force' in sheet 'LHB'
+    Sheet 'LHB DATA' headers:
+      (None, None, None, None, 'Failure %', None, None, None, None, None, None, 'Failure%', None, None, None, None, None, None, 'Failure%', None)
+    Sheet 'VB' headers:
+      ('Recipe', 'Shocker type', 'Make', 'Machine ID', 'Mfg. Date', 'Test date time', 'Serial No', 'Shocker ID', 'Age', 'Rated load', 'Max Compression force', 'Compression %', 'Max rebound force', 'Rebound %', 'Test Result', 'Grade', 'TYPE OF DAMPER')
+      -> Found keyword 'Max Compression force' in sheet 'VB'
+      -> Found keyword 'Max rebound force' in sheet 'VB'
+    Sheet 'VB DAMPER' headers:
+      (None, None, None, None, 'FAILURE%')
+
+Checking: C:\Users\User\Downloads\DAMPER ANALYSIS.xlsx
+  Sheets: ['Sheet1', 'OTHERS', 'LHB', 'VB']
+    Sheet 'Sheet1' headers:
+      ('Recipe', 'Shocker type', 'Make', 'Machine ID', 'Mfg. Date', 'Test date time', 'Serial No', 'Shocker ID', 'Age', 'Rated load', 'Max Compression force', 'Compression %', 'Max rebound force', 'Rebound %', 'Test Result', 'Grade', 'TYPE OF DAMPER')
+      -> Found keyword 'Max Compression force' in sheet 'Sheet1'
+      -> Found keyword 'Max rebound force' in sheet 'Sheet1'
+      -> Found keyword 'ICF SHOCKER ABSORBER' in sheet 'Sheet1'
+      -> Found keyword 'ESCORTS' in sheet 'Sheet1'
+      -> Found keyword 'ESCORTS' in sheet 'Sheet1'
+      -> Found keyword 'ESCORTS' in sheet 'Sheet1'
+      -> Found keyword 'ICF SHOCKER ABSORBER' in sheet 'Sheet1'
+    Sheet 'OTHERS' headers:
+      ('Recipe', 'Shocker type', 'Make', 'Machine ID', 'Mfg. Date', 'Test date time', 'Serial No', 'Shocker ID', 'Age', 'Rated load', 'Max Compression force', 'Compression %', 'Max rebound force', 'Rebound %', 'Test Result', 'Grade', 'TYPE OF DAMPER')
+      -> Found keyword 'Max Compression force' in sheet 'OTHERS'
+      -> Found keyword 'Max rebound force' in sheet 'OTHERS'
+      -> Found keyword 'ICF SHOCKER ABSORBER' in sheet 'OTHERS'
+      -> Found keyword 'ESCORTS' in sheet 'OTHERS'
+      -> Found keyword 'ESCORTS' in sheet 'OTHERS'
+      -> Found keyword 'ESCORTS' in sheet 'OTHERS'
+      -> Found keyword 'ICF SHOCKER ABSORBER' in sheet 'OTHERS'
+    Sheet 'LHB' headers:
+      ('Recipe', 'Shocker type', 'Make', 'Machine ID', 'Mfg. Date', 'Test date time', 'Serial No', 'Shocker ID', 'Age', 'Rated load', 'Max Compression force', 'Compression %', 'Max rebound force', 'Rebound %', 'Test Result', 'Grade', 'TYPE OF DAMPER')
+      -> Found keyword 'Max Compression force' in sheet 'LHB'
+      -> Found keyword 'Max rebound force' in sheet 'LHB'
+      -> Found keyword 'ESCORTS' in sheet 'LHB'
+      -> Found keyword 'ESCORTS' in sheet 'LHB'
+      -> Found keyword 'ESCORTS' in sheet 'LHB'
+    Sheet 'VB' headers:
+      ('Recipe', 'Shocker type', 'Make', 'Machine ID', 'Mfg. Date', 'Test date time', 'Serial No', 'Shocker ID', 'Age', 'Rated load', 'Max Compression force', 'Compression %', 'Max rebound force', 'Rebound %', 'Test Result', 'Grade', 'TYPE OF DAMPER')
+      -> Found keyword 'Max Compression force' in sheet 'VB'
+      -> Found keyword 'Max rebound force' in sheet 'VB'
+
+Checking: C:\Users\User\Downloads\DamperIQ_Report_Sheet1_20260324_1129.xlsx
+  Sheets: ['Summary', 'MFG Monthly Fail%', 'Type Monthly Fail%', 'MFG Monthly Counts', 'Type Monthly Counts', 'Charts']
+    Sheet 'Summary' headers:
+      ('DamperIQ Failure Report — 📋 All Data (Sheet1)', None, None, None, None, None, None, None)
+      -> Found keyword 'DamperIQ Failure Report — 📋 All Data (Sheet1)' in sheet 'Summary'
+    Sheet 'MFG Monthly Fail%' headers:
+      ('Monthly Fail% by Manufacturer (Yearly)', None, None, None, None, None, None)
+      -> Found keyword 'Monthly Fail% by Manufacturer (Yearly)' in sheet 'MFG Monthly Fail%'
+      -> Found keyword 'ESCORTS' in sheet 'MFG Monthly Fail%'
+    Sheet 'Type Monthly Fail%' headers:
+      ('Monthly Fail% by Damper Type (Yearly)', None, None, None, None, None, None)
+      -> Found keyword 'Monthly Fail% by Damper Type (Yearly)' in sheet 'Type Monthly Fail%'
+    Sheet 'MFG Monthly Counts' headers:
+      ('Monthly Tested + Failed by Manufacturer (Yearly)', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Tested + Failed by Manufacturer (Yearly)' in sheet 'MFG Monthly Counts'
+      -> Found keyword 'ESCORTS' in sheet 'MFG Monthly Counts'
+    Sheet 'Type Monthly Counts' headers:
+      ('Monthly Tested + Failed by Damper Type (Yearly)', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Tested + Failed by Damper Type (Yearly)' in sheet 'Type Monthly Counts'
+    Sheet 'Charts' headers:
+      (None, 'Charts — Fail% Overview', None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+
+Checking: C:\Users\User\Downloads\DamperIQ_Report_Sheet1_20260324_1132.xlsx
+  Sheets: ['Summary', 'MFG Monthly Fail%', 'Type Monthly Fail%', 'MFG Monthly Counts', 'Type Monthly Counts', 'Charts']
+    Sheet 'Summary' headers:
+      ('DamperIQ Failure Report — 📋 All Data (Sheet1)', None, None, None, None, None, None, None)
+      -> Found keyword 'DamperIQ Failure Report — 📋 All Data (Sheet1)' in sheet 'Summary'
+    Sheet 'MFG Monthly Fail%' headers:
+      ('Monthly Fail% by Manufacturer (Monthly)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Fail% by Manufacturer (Monthly)' in sheet 'MFG Monthly Fail%'
+      -> Found keyword 'ESCORTS' in sheet 'MFG Monthly Fail%'
+    Sheet 'Type Monthly Fail%' headers:
+      ('Monthly Fail% by Damper Type (Monthly)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Fail% by Damper Type (Monthly)' in sheet 'Type Monthly Fail%'
+    Sheet 'MFG Monthly Counts' headers:
+      ('Monthly Tested + Failed by Manufacturer (Monthly)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Tested + Failed by Manufacturer (Monthly)' in sheet 'MFG Monthly Counts'
+      -> Found keyword 'ESCORTS' in sheet 'MFG Monthly Counts'
+    Sheet 'Type Monthly Counts' headers:
+      ('Monthly Tested + Failed by Damper Type (Monthly)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Tested + Failed by Damper Type (Monthly)' in sheet 'Type Monthly Counts'
+    Sheet 'Charts' headers:
+      (None, 'Charts — Fail% Overview', None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+
+Checking: C:\Users\User\Downloads\DamperIQ_Report_🚂_LHB_Dampers_20260317_1122.xlsx
+  Sheets: ['Summary', 'MFG Monthly Fail%', 'Type Monthly Fail%', 'MFG Monthly Counts', 'Type Monthly Counts', 'Charts']
+    Sheet 'Summary' headers:
+      ('DamperIQ Failure Report — LHB', None, None, None, None, None, None, None)
+      -> Found keyword 'DamperIQ Failure Report — LHB' in sheet 'Summary'
+    Sheet 'MFG Monthly Fail%' headers:
+      ('Monthly Fail% by Manufacturer (Monthly)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Fail% by Manufacturer (Monthly)' in sheet 'MFG Monthly Fail%'
+      -> Found keyword 'ESCORTS' in sheet 'MFG Monthly Fail%'
+    Sheet 'Type Monthly Fail%' headers:
+      ('Monthly Fail% by Damper Type (Monthly)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Fail% by Damper Type (Monthly)' in sheet 'Type Monthly Fail%'
+    Sheet 'MFG Monthly Counts' headers:
+      ('Monthly Tested + Failed by Manufacturer (Monthly)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Tested + Failed by Manufacturer (Monthly)' in sheet 'MFG Monthly Counts'
+      -> Found keyword 'ESCORTS' in sheet 'MFG Monthly Counts'
+    Sheet 'Type Monthly Counts' headers:
+      ('Monthly Tested + Failed by Damper Type (Monthly)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Tested + Failed by Damper Type (Monthly)' in sheet 'Type Monthly Counts'
+      -> Found keyword 'LHB LATERAL DAMPER FOR AIR SPRING' in sheet 'Type Monthly Counts'
+    Sheet 'Charts' headers:
+      (None, 'Charts — Fail% Overview', None, None, None, None, None, None, None, None, None, None)
+
+Checking: C:\Users\User\Downloads\DamperIQ_Report_🚂_LHB_Dampers_20260317_1128.xlsx
+  Sheets: ['Summary', 'MFG Monthly Fail%', 'Type Monthly Fail%', 'MFG Monthly Counts', 'Type Monthly Counts', 'Charts']
+    Sheet 'Summary' headers:
+      ('DamperIQ Failure Report — 📋 All Data (Sheet1)', None, None, None, None, None, None, None)
+      -> Found keyword 'DamperIQ Failure Report — 📋 All Data (Sheet1)' in sheet 'Summary'
+    Sheet 'MFG Monthly Fail%' headers:
+      ('Monthly Fail% by Manufacturer (Monthly)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Fail% by Manufacturer (Monthly)' in sheet 'MFG Monthly Fail%'
+      -> Found keyword 'ESCORTS' in sheet 'MFG Monthly Fail%'
+    Sheet 'Type Monthly Fail%' headers:
+      ('Monthly Fail% by Damper Type (Monthly)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Fail% by Damper Type (Monthly)' in sheet 'Type Monthly Fail%'
+    Sheet 'MFG Monthly Counts' headers:
+      ('Monthly Tested + Failed by Manufacturer (Monthly)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Tested + Failed by Manufacturer (Monthly)' in sheet 'MFG Monthly Counts'
+      -> Found keyword 'ESCORTS' in sheet 'MFG Monthly Counts'
+    Sheet 'Type Monthly Counts' headers:
+      ('Monthly Tested + Failed by Damper Type (Monthly)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Tested + Failed by Damper Type (Monthly)' in sheet 'Type Monthly Counts'
+      -> Found keyword 'LHB LATERAL DAMPER FOR AIR SPRING' in sheet 'Type Monthly Counts'
+    Sheet 'Charts' headers:
+      (None, 'Charts — Fail% Overview', None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+
+Checking: C:\Users\User\Downloads\DamperIQ_Report_🚂_LHB_Dampers_20260317_1134.xlsx
+  Sheets: ['Summary', 'MFG Monthly Fail%', 'Type Monthly Fail%', 'MFG Monthly Counts', 'Type Monthly Counts', 'Charts']
+    Sheet 'Summary' headers:
+      ('DamperIQ Failure Report — 📋 All Data (Sheet1)', None, None, None, None, None, None, None)
+      -> Found keyword 'DamperIQ Failure Report — 📋 All Data (Sheet1)' in sheet 'Summary'
+    Sheet 'MFG Monthly Fail%' headers:
+      ('Monthly Fail% by Manufacturer (Yearly)', None, None, None, None, None, None)
+      -> Found keyword 'Monthly Fail% by Manufacturer (Yearly)' in sheet 'MFG Monthly Fail%'
+      -> Found keyword 'ESCORTS' in sheet 'MFG Monthly Fail%'
+    Sheet 'Type Monthly Fail%' headers:
+      ('Monthly Fail% by Damper Type (Yearly)', None, None, None, None, None, None)
+      -> Found keyword 'Monthly Fail% by Damper Type (Yearly)' in sheet 'Type Monthly Fail%'
+    Sheet 'MFG Monthly Counts' headers:
+      ('Monthly Tested + Failed by Manufacturer (Yearly)', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Tested + Failed by Manufacturer (Yearly)' in sheet 'MFG Monthly Counts'
+      -> Found keyword 'ESCORTS' in sheet 'MFG Monthly Counts'
+    Sheet 'Type Monthly Counts' headers:
+      ('Monthly Tested + Failed by Damper Type (Yearly)', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Tested + Failed by Damper Type (Yearly)' in sheet 'Type Monthly Counts'
+      -> Found keyword 'LHB LATERAL DAMPER FOR AIR SPRING' in sheet 'Type Monthly Counts'
+    Sheet 'Charts' headers:
+      (None, 'Charts — Fail% Overview', None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+
+Checking: C:\Users\User\Downloads\DamperIQ_Report_🚂_LHB_Dampers_20260317_1649.xlsx
+  Sheets: ['Summary', 'MFG Monthly Fail%', 'Type Monthly Fail%', 'MFG Monthly Counts', 'Type Monthly Counts', 'Charts']
+    Sheet 'Summary' headers:
+      ('DamperIQ Failure Report — 📋 All Data (Sheet1)', None, None, None, None, None, None, None)
+      -> Found keyword 'DamperIQ Failure Report — 📋 All Data (Sheet1)' in sheet 'Summary'
+    Sheet 'MFG Monthly Fail%' headers:
+      ('Monthly Fail% by Manufacturer (Yearly)', None, None, None, None, None, None)
+      -> Found keyword 'Monthly Fail% by Manufacturer (Yearly)' in sheet 'MFG Monthly Fail%'
+      -> Found keyword 'ESCORTS' in sheet 'MFG Monthly Fail%'
+    Sheet 'Type Monthly Fail%' headers:
+      ('Monthly Fail% by Damper Type (Yearly)', None, None, None, None, None, None)
+      -> Found keyword 'Monthly Fail% by Damper Type (Yearly)' in sheet 'Type Monthly Fail%'
+    Sheet 'MFG Monthly Counts' headers:
+      ('Monthly Tested + Failed by Manufacturer (Yearly)', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Tested + Failed by Manufacturer (Yearly)' in sheet 'MFG Monthly Counts'
+      -> Found keyword 'ESCORTS' in sheet 'MFG Monthly Counts'
+    Sheet 'Type Monthly Counts' headers:
+      ('Monthly Tested + Failed by Damper Type (Yearly)', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Tested + Failed by Damper Type (Yearly)' in sheet 'Type Monthly Counts'
+      -> Found keyword 'LHB LATERAL DAMPER FOR AIR SPRING' in sheet 'Type Monthly Counts'
+    Sheet 'Charts' headers:
+      (None, 'Charts — Fail% Overview', None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+
+Checking: C:\Users\User\Downloads\DamperIQ_Report_🚂_LHB_Dampers_20260317_1651.xlsx
+  Sheets: ['Summary', 'MFG Monthly Fail%', 'Type Monthly Fail%', 'MFG Monthly Counts', 'Type Monthly Counts', 'Charts']
+    Sheet 'Summary' headers:
+      ('DamperIQ Failure Report — 📋 All Data (Sheet1)', None, None, None, None, None, None, None)
+      -> Found keyword 'DamperIQ Failure Report — 📋 All Data (Sheet1)' in sheet 'Summary'
+    Sheet 'MFG Monthly Fail%' headers:
+      ('Monthly Fail% by Manufacturer (Quarterly)', None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Fail% by Manufacturer (Quarterly)' in sheet 'MFG Monthly Fail%'
+      -> Found keyword 'ESCORTS' in sheet 'MFG Monthly Fail%'
+    Sheet 'Type Monthly Fail%' headers:
+      ('Monthly Fail% by Damper Type (Quarterly)', None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Fail% by Damper Type (Quarterly)' in sheet 'Type Monthly Fail%'
+    Sheet 'MFG Monthly Counts' headers:
+      ('Monthly Tested + Failed by Manufacturer (Quarterly)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Tested + Failed by Manufacturer (Quarterly)' in sheet 'MFG Monthly Counts'
+      -> Found keyword 'ESCORTS' in sheet 'MFG Monthly Counts'
+    Sheet 'Type Monthly Counts' headers:
+      ('Monthly Tested + Failed by Damper Type (Quarterly)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Monthly Tested + Failed by Damper Type (Quarterly)' in sheet 'Type Monthly Counts'
+      -> Found keyword 'LHB LATERAL DAMPER FOR AIR SPRING' in sheet 'Type Monthly Counts'
+    Sheet 'Charts' headers:
+      (None, 'Charts — Fail% Overview', None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+
+Checking: C:\Users\User\Downloads\despatch (1).xlsx
+  Sheets: ['Sheet1']
+    Sheet 'Sheet1' headers:
+      ('Exported data',)
+      -> Found keyword 'Exported data' in sheet 'Sheet1'
+      -> Found keyword 'Work Days' in sheet 'Sheet1'
+      -> Found keyword 'CORR. Hours' in sheet 'Sheet1'
+      -> Found keyword 'CORR. H/L' in sheet 'Sheet1'
+      -> Found keyword 'SS2 - POH/CORR' in sheet 'Sheet1'
+
+Checking: C:\Users\User\Downloads\despatch.xlsx
+  Sheets: ['Sheet1']
+    Sheet 'Sheet1' headers:
+      ('Exported data',)
+      -> Found keyword 'Exported data' in sheet 'Sheet1'
+      -> Found keyword 'Work Days' in sheet 'Sheet1'
+      -> Found keyword 'CORR. Hours' in sheet 'Sheet1'
+      -> Found keyword 'CORR. H/L' in sheet 'Sheet1'
+      -> Found keyword 'POH/CORR' in sheet 'Sheet1'
+      -> Found keyword 'POH/CORR' in sheet 'Sheet1'
+      -> Found keyword 'POH/CORR' in sheet 'Sheet1'
+
+Checking: C:\Users\User\Downloads\final_unique_coach_list.xlsx
+  Sheets: ['Coach List', 'Summary']
+    Sheet 'Coach List' headers:
+      ('Sl No', 'Coach Number', 'Duplicate Status')
+    Sheet 'Summary' headers:
+      ('Total Entries', 68)
+
+Checking: C:\Users\User\Downloads\From web.xlsx
+  Sheets: ['Cover', 'Monthly Summary', 'By Recipe', 'By Spring Category', 'By MFG', 'MFG × Month', 'Recipe × Month', 'Spring Category × Month', 'Year-over-Year']
+    Sheet 'Cover' headers:
+      ('Spring Testing Report\nLHB & VB Springs Analytics', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Spring Testing Report
+LHB & VB Springs Analytics' in sheet 'Cover'
+    Sheet 'Monthly Summary' headers:
+      ('Spring Testing — Monthly Summary', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Spring Testing — Monthly Summary' in sheet 'Monthly Summary'
+      -> Found keyword 'Month' in sheet 'Monthly Summary'
+      -> Found keyword 'vs Prior Month' in sheet 'Monthly Summary'
+    Sheet 'By Recipe' headers:
+      ('Spring Testing — By Recipe (Exact)', None, None, None, None, None)
+    Sheet 'By Spring Category' headers:
+      ('Spring Testing — By Broad Spring Category', None, None, None, None, None)
+      -> Found keyword 'Spring Testing — By Broad Spring Category' in sheet 'By Spring Category'
+      -> Found keyword 'Spring Category' in sheet 'By Spring Category'
+    Sheet 'By MFG' headers:
+      ('Spring Testing — By Manufacturer', None, None, None, None, None)
+    Sheet 'MFG × Month' headers:
+      ('Spring Testing — MFG × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Spring Testing — MFG × Month' in sheet 'MFG × Month'
+      -> Found keyword 'Generated: 2026-03-17  |  23 items × 23 months' in sheet 'MFG × Month'
+    Sheet 'Recipe × Month' headers:
+      ('Spring Testing — Recipe × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Spring Testing — Recipe × Month' in sheet 'Recipe × Month'
+      -> Found keyword 'Generated: 2026-03-17  |  16 items × 23 months' in sheet 'Recipe × Month'
+    Sheet 'Spring Category × Month' headers:
+      ('Spring Testing — Spring Category × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Spring Testing — Spring Category × Month' in sheet 'Spring Category × Month'
+      -> Found keyword 'Generated: 2026-03-17  |  4 items × 23 months' in sheet 'Spring Category × Month'
+      -> Found keyword 'Spring Category' in sheet 'Spring Category × Month'
+    Sheet 'Year-over-Year' headers:
+      ('Spring Testing — Year-over-Year', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Month' in sheet 'Year-over-Year'
+      -> Found keyword 'Month' in sheet 'Year-over-Year'
+
+Checking: C:\Users\User\Downloads\full_supervisors.xlsx
+  Sheets: ['Supervisors']
+    Sheet 'Supervisors' headers:
+      ('SI No', 'Name', 'Designation', 'T.No', 'IP Pass No', 'Mobile No', 'HRMS ID')
+      -> Found keyword 'SSE Door & UF' in sheet 'Supervisors'
+      -> Found keyword 'SSE Corrosion/G' in sheet 'Supervisors'
+
+Checking: C:\Users\User\Downloads\Hq version.xlsx
+  Sheets: ['SOBs ', ' CAIs', 'VB CAIs']
+    Sheet 'SOBs ' headers:
+      (None, None, None, None, None, None, 'SOBs issued from PCME Drawing office', None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks ' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified up to previous month (APR/2026)' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified this month (MAY/2026)' in sheet 'SOBs '
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified up to previous month (APR/2026)' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified this month (MAY/2026)' in sheet 'SOBs '
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified up to previous month (APR/2026)' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified this month (MAY/2026)' in sheet 'SOBs '
+      -> Found keyword 'Provision of mesh cover on the reservoir of the brake panel in LHB coaches- M/s Escorts' in sheet 'SOBs '
+      -> Found keyword 'No. PO placed for 65 sets on 17.12.25. Awaiting for supply' in sheet 'SOBs '
+    Sheet ' CAIs' headers:
+      (None, None, None, None, None, None, 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ', None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ' in sheet ' CAIs'
+      -> Found keyword 'Reason for Modification' in sheet ' CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks ' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (APR/2026)' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified this month (MAY/2026)' in sheet ' CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (APR/2026)' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified this month (MAY/2026)' in sheet ' CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (APR/2026)' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified this month (MAY/2026)' in sheet ' CAIs'
+      -> Found keyword 'Provision of additional dirt collector in BP pipe line before FIBA device in all LHB coaches' in sheet ' CAIs'
+      -> Found keyword 'Railway Board has expressed its concern regarding Punctuality loss cases on account of FIBA device failure reported by Zonal Railways.' in sheet ' CAIs'
+      -> Found keyword 'ALL ELIGIBLE COACHES RECEIVED FOR MODIFICATION' in sheet ' CAIs'
+    Sheet 'VB CAIs' headers:
+      ('VANDE BHARAT CAIs issued from PCME Drawing office', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Category' in sheet 'VB CAIs'
+      -> Found keyword 'Reason for Modification' in sheet 'VB CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'VB CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (APR/2026)' in sheet 'VB CAIs'
+      -> Found keyword 'No. of coaches modified this month (MAY/2026)' in sheet 'VB CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'VB CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (APR/2026)' in sheet 'VB CAIs'
+      -> Found keyword 'No. of coaches modified this month (MAY/2026)' in sheet 'VB CAIs'
+      -> Found keyword 'INTERIOR FURNISHING' in sheet 'VB CAIs'
+      -> Found keyword 'Door handle set & Latch indicators arrangement replacement work in all lavatory doors.' in sheet 'VB CAIs'
+      -> Found keyword 'Interior Furnishing' in sheet 'VB CAIs'
+
+Checking: C:\Users\User\Downloads\HQ_LW_Comparison_Report (1).xlsx
+  Sheets: ['CAI Comparison', 'SOB Comparison', 'Summary']
+    Sheet 'CAI Comparison' headers:
+      ('SL NO', 'CAI NUMBER', 'LW Status', 'Previous Month', 'This Month', 'Cumulative', 'REMARKS')
+      -> Found keyword 'Previous Month' in sheet 'CAI Comparison'
+      -> Found keyword 'This Month' in sheet 'CAI Comparison'
+    Sheet 'SOB Comparison' headers:
+      ('SL NO', 'SOB NUMBER', 'LW Status', 'Previous Month', 'This Month', 'Cumulative', 'REMARKS')
+      -> Found keyword 'Previous Month' in sheet 'SOB Comparison'
+      -> Found keyword 'This Month' in sheet 'SOB Comparison'
+    Sheet 'Summary' headers:
+      ('Category', 'Total in HQ', 'OK', 'Number Outdated in LW (update needed)', 'Missing in LW', 'Extra in LW (not in HQ)')
+      -> Found keyword 'Category' in sheet 'Summary'
+
+Checking: C:\Users\User\Downloads\HQ_LW_Comparison_Report.xlsx
+  Sheets: ['CAI Comparison', 'SOB Comparison', 'Summary']
+    Sheet 'CAI Comparison' headers:
+      ('SL NO', 'CAI NUMBER', 'LW Status', 'Previous Month', 'This Month', 'Cumulative', 'REMARKS')
+      -> Found keyword 'Previous Month' in sheet 'CAI Comparison'
+      -> Found keyword 'This Month' in sheet 'CAI Comparison'
+    Sheet 'SOB Comparison' headers:
+      ('SL NO', 'SOB NUMBER', 'LW Status', 'Previous Month', 'This Month', 'Cumulative', 'REMARKS')
+      -> Found keyword 'Previous Month' in sheet 'SOB Comparison'
+      -> Found keyword 'This Month' in sheet 'SOB Comparison'
+    Sheet 'Summary' headers:
+      ('Category', 'Total in HQ', 'OK (matched)', 'Missing in LW', 'Extra in LW (not in HQ)')
+      -> Found keyword 'Category' in sheet 'Summary'
+
+Checking: C:\Users\User\Downloads\HQ_ORDERED_OUTPUT (1).xlsx
+  Sheets: ['CAI', 'SOB']
+    Sheet 'CAI' headers:
+      ('SL NO', 'CAI/SOB NUMBER', 'Previous Month', 'This Month', 'Cumulative', 'REMARKS')
+      -> Found keyword 'Previous Month' in sheet 'CAI'
+      -> Found keyword 'This Month' in sheet 'CAI'
+      -> Found keyword 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES' in sheet 'CAI'
+    Sheet 'SOB' headers:
+      ('SL NO', 'CAI/SOB NUMBER', 'Previous Month', 'This Month', 'Cumulative', 'REMARKS')
+      -> Found keyword 'Previous Month' in sheet 'SOB'
+      -> Found keyword 'This Month' in sheet 'SOB'
+
+Checking: C:\Users\User\Downloads\HQ_ORDERED_OUTPUT.xlsx
+  Sheets: ['CAI', 'SOB']
+    Sheet 'CAI' headers:
+      ('HQ_SL', 'TYPE', 'CAI_SOB', 'DESCRIPTION', 'LW_SECTION', 'STATUS', 'INCOMING', 'PREVIOUS', 'CURRENT', 'REMARKS')
+      -> Found keyword 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES' in sheet 'CAI'
+      -> Found keyword 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ' in sheet 'CAI'
+      -> Found keyword 'Check sheet For CAIs' in sheet 'CAI'
+      -> Found keyword 'Sl. No. RCF/ICF/MCF CAI Modification Reason for Modification Coaches concerned Cut in date CW/PER LW/PER GOC' in sheet 'CAI'
+      -> Found keyword 'Check sheet For CAIs' in sheet 'CAI'
+      -> Found keyword 'Reason for Modification' in sheet 'CAI'
+      -> Found keyword 'Implemented or Not (YES / NO)' in sheet 'CAI'
+      -> Found keyword '1 ICF CAI No.
+ B-2022/07 Provision of additional dirt collector in BP pipe line before FIBA device in all LHB coaches Railway Board has expressed its concern regarding Punctuality loss cases on account of FIBA device failure reported by Zonal Railways. All types of LHB coaches fitted with FIBA device. (Fitted with SS tubes & Double ferrule type fittings) 01.11.2025 yes ALL ELIGIBLE COACHES RECEIVED FOR MODIFICATION 860 38 898 YES As per arising 224 4 228 YES As per arising 414 9 423' in sheet 'CAI'
+      -> Found keyword 'Check sheet For CAIs' in sheet 'CAI'
+    Sheet 'SOB' headers:
+      ('HQ_SL', 'TYPE', 'CAI_SOB', 'DESCRIPTION', 'LW_SECTION', 'STATUS', 'INCOMING', 'PREVIOUS', 'CURRENT', 'REMARKS')
+      -> Found keyword '1 HQ/DRG/16/2025 18.03.2025 Provision of mesh cover on the reservoir of the brake panel in LHB coaches- M/s Escorts RDSO letter No. MC/LHB/Brake dated 06.03.2025   01.11.2025 NO. MATERIAL UNDER NS PROCUREMENT  As per aising 2 0 2 YES As per arising 8 3 11 No. PO placed for 65 sets on 17.12.25. Awaiting for supply - - -' in sheet 'SOB'
+      -> Found keyword '2 HQ/DRG/27/2025 15.05.2025 Provision of mesh cover on the reservoir of M/s JWL DAKO-CZ supplied brake panel in LHB coaches. RDSO letter No. MC/LHB/Brake dated 01.05.2025 01.11.2025 Coach yet to  arrive for Shop Schedule attention  As per aising 0 0 JWL DAKO - CZ not yet received. JWL DAKO - CZ not yet received. As per arising - 0 0 NO. MATERIAL UNDER NS PROCUREMENT  - - Coach yet to arrive for Shop Schedule attention' in sheet 'SOB'
+      -> Found keyword '3 HQ/DRG/31/2025 21.05.2025 Provision of mesh cover on the reservoir of the brake panel in LHB coaches.- M/s faiveley Transport RDSO letter No. MC/LHB/Brake dated 29.04.2025 01.11.2025 INHOUSE FABRICATION TRAIL COMPLETED FOR 2 COACHES. MATERIAL PROCUREMENT UNDER PROCESS As per aising 3 0 3 YES As per arising 31 5 36 YES, Inhouse material fitted  - 37 8 45' in sheet 'SOB'
+      -> Found keyword '1 HQ/DRG/05/2024 10.05.2024 160KN Air spring in LHB Coaches (LWCBACAA)  RDSO Letter No. SV.EMU.RAS dated 17.04.2024 01.11.2025 YES
+All LWCBAC coaches received with 120 KN ASR are converted into  160 KN ASR.
+ 1.FY 2024-25 : 6
+ 2.FY 2025-26 :7 As per Arising 13 Nil 13 (YES) To be implemented when LWCBAC receive  for shop schedule 
+As per arising - 0 0 YES As per arising 11 2 13' in sheet 'SOB'
+
+Checking: C:\Users\User\Downloads\HQ_Position_LHB_ICF_SideBySide (1).xlsx
+  Sheets: ['HQ Position']
+    Sheet 'HQ Position' headers:
+      ('LW/PER - HQ DAILY POSITION REPORT - 25/05/2026', None, None, None, None, None, None, None)
+      -> Found keyword 'LW/PER - HQ DAILY POSITION REPORT - 25/05/2026' in sheet 'HQ Position'
+
+Checking: C:\Users\User\Downloads\HQ_Position_LHB_ICF_SideBySide.xlsx
+  Sheets: ['HQ Position']
+    Sheet 'HQ Position' headers:
+      ('LW/PER - HQ DAILY POSITION REPORT - 25/05/2026', None, None, None, None, None, None, None)
+      -> Found keyword 'LW/PER - HQ DAILY POSITION REPORT - 25/05/2026' in sheet 'HQ Position'
+
+Checking: C:\Users\User\Downloads\HQ_Position_Simplified_SideBySide.xlsx
+  Sheets: ['HQ Position Simplified']
+    Sheet 'HQ Position Simplified' headers:
+      ('LW/PER HQ DAILY POSITION - 25/05/2026', None, None, None)
+      -> Found keyword 'CATEGORY' in sheet 'HQ Position Simplified'
+
+Checking: C:\Users\User\Downloads\HQ_Position_With_Holding_Summary.xlsx
+  Sheets: ['HQ Position Simplified']
+    Sheet 'HQ Position Simplified' headers:
+      ('LW/PER HQ DAILY POSITION - 25/05/2026', None, None, None)
+      -> Found keyword 'CATEGORY' in sheet 'HQ Position Simplified'
+
+Checking: C:\Users\User\Downloads\LHB_POH_Data.xlsx
+  Sheets: ['LHB_POH_Data']
+    Sheet 'LHB_POH_Data' headers:
+      ('FY', 'POH Type', 'Total', 'L', 'LM', 'M', 'H')
+
+Checking: C:\Users\User\Downloads\LW Daily position.xlsx
+  Sheets: ['HQ Position Simplified']
+    Sheet 'HQ Position Simplified' headers:
+      ('LW/PER HQ DAILY POSITION - 25/05/2026', None, None, None)
+      -> Found keyword 'CATEGORY' in sheet 'HQ Position Simplified'
+
+Checking: C:\Users\User\Downloads\LW Version.xlsx
+  Sheets: ['AB SECTION', 'WS section', 'Corrosion section', 'CF & Trimming section', 'GW shop', 'WT shop', 'TL section', 'Carpentry', 'VB CAIs', 'Paint section', 'DBR section', 'Under frameDoor &M&PR', ' CAIs', 'SOBs ']
+    Sheet 'AB SECTION' headers:
+      ('CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ', None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ' in sheet 'AB SECTION'
+      -> Found keyword 'Reason for Modification' in sheet 'AB SECTION'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'AB SECTION'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'AB SECTION'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'AB SECTION'
+      -> Found keyword 'Provision of additional dirt collector in BP pipe line before FIBA device in all LHB coaches' in sheet 'AB SECTION'
+      -> Found keyword 'Railway Board has expressed its concern regarding Punctuality loss cases on account of FIBA device failure reported by Zonal Railways.' in sheet 'AB SECTION'
+    Sheet 'WS section' headers:
+      ('CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ', None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ' in sheet 'WS section'
+      -> Found keyword 'Reason for Modification' in sheet 'WS section'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'WS section'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'WS section'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'WS section'
+      -> Found keyword 'INTERIOR FURNIISHING & PASSENGER AMENITIES' in sheet 'WS section'
+      -> Found keyword 'Provision of NRV- ¼ “ between isolating cock and air filter regulator indicator (AFRL) unit of EPPFS (Electro- Pneumatic pressurised Flushing System) in LHB coach for preventing water ingress from EPPFS to air brake pipe line.' in sheet 'WS section'
+    Sheet 'Corrosion section' headers:
+      (2, 'RCF/ICF/MCF CAI', 'Modification', 'Reason for Modification', 'Coaches concerned', 'LW/PER', None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Reason for Modification' in sheet 'Corrosion section'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'Corrosion section'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'Corrosion section'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'Corrosion section'
+      -> Found keyword 'EXTERIOR' in sheet 'Corrosion section'
+      -> Found keyword 'For Toilet ventilation in LHB lavatories' in sheet 'Corrosion section'
+      -> Found keyword 'SSE/CORROSION ,INSP' in sheet 'Corrosion section'
+    Sheet 'CF & Trimming section' headers:
+      ('CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ' in sheet 'CF & Trimming section'
+      -> Found keyword 'Reason for Modification' in sheet 'CF & Trimming section'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'CF & Trimming section'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'CF & Trimming section'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'CF & Trimming section'
+    Sheet 'GW shop' headers:
+      ('CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ', None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ' in sheet 'GW shop'
+      -> Found keyword 'Reason for Modification' in sheet 'GW shop'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'GW shop'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'GW shop'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'GW shop'
+      -> Found keyword 'Easy identification for differentiating two types of FIAT bogie frames based on primary bump stop height.' in sheet 'GW shop'
+      -> Found keyword 'Easy identification for differentiation of two types of FIAT bogie frames based on primary bump stop height.ie. 242 mm & 227 mm. RCF & RDSO have jointly decided the above methodology.' in sheet 'GW shop'
+    Sheet 'WT shop' headers:
+      ('SOBs issued from PCME Drawing office', None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'WT shop'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'WT shop'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'WT shop'
+    Sheet 'TL section' headers:
+      ('CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ', None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ' in sheet 'TL section'
+      -> Found keyword 'Reason for Modification' in sheet 'TL section'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'TL section'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'TL section'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'TL section'
+    Sheet 'Carpentry' headers:
+      ('CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ' in sheet 'Carpentry'
+      -> Found keyword 'Reason for Modification' in sheet 'Carpentry'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'Carpentry'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'Carpentry'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'Carpentry'
+      -> Found keyword 'INTERIOR FURNIISHING & PASSENGER AMENITIES' in sheet 'Carpentry'
+      -> Found keyword 'Covering of gap above doorway partition frame for LHB LGS coaches' in sheet 'Carpentry'
+    Sheet 'VB CAIs' headers:
+      ('VANDE BHARAT CAIs issued from PCME Drawing office', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Category' in sheet 'VB CAIs'
+      -> Found keyword 'Reason for Modification' in sheet 'VB CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'VB CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (Oct/2025)' in sheet 'VB CAIs'
+      -> Found keyword 'No. of coaches modified this month (Nov/2025)' in sheet 'VB CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'VB CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (Oct/2025)' in sheet 'VB CAIs'
+      -> Found keyword 'No. of coaches modified this month (Nov/2025)' in sheet 'VB CAIs'
+      -> Found keyword 'INTERIOR FURNISHING' in sheet 'VB CAIs'
+      -> Found keyword 'Door handle set & Latch indicators arrangement replacement work in all lavatory doors.' in sheet 'VB CAIs'
+      -> Found keyword 'Interior Furnishing' in sheet 'VB CAIs'
+    Sheet 'Paint section' headers:
+      ('CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ' in sheet 'Paint section'
+      -> Found keyword 'Reason for Modification' in sheet 'Paint section'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'Paint section'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'Paint section'
+      -> Found keyword 'No. of coaches modified this month (Apr/2026)' in sheet 'Paint section'
+      -> Found keyword 'EXTERIOR' in sheet 'Paint section'
+      -> Found keyword 'Stenciling of revised Tare weight for LVPH coach' in sheet 'Paint section'
+      -> Found keyword 'Due to post Oscillation trial modifications the tare weight of the coach increased to 39.5 Ton. After oscillation trial, on the instruction of Railway Board, foldable tracks, electrical system for protection and reversibility, flush light etc., were provided additionally.' in sheet 'Paint section'
+      -> Found keyword 'YES (Stencilling of revised tare weight is done on all LVPH coahes during POH. However, suitable weigh bridge facility is not available for checking actual tare weight.)' in sheet 'Paint section'
+    Sheet 'DBR section' headers:
+      ('    ', None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'DBR section'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'DBR section'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'DBR section'
+    Sheet 'Under frameDoor &M&PR' headers:
+      ('CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ' in sheet 'Under frameDoor &M&PR'
+      -> Found keyword 'Reason for Modification' in sheet 'Under frameDoor &M&PR'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'Under frameDoor &M&PR'
+      -> Found keyword 'No. of coaches modified up to previous month (MAR/2026)' in sheet 'Under frameDoor &M&PR'
+      -> Found keyword 'No. of coaches modified this month (APR/2026)' in sheet 'Under frameDoor &M&PR'
+      -> Found keyword 'INTERIOR FURNIISHING & PASSENGER AMENITIES' in sheet 'Under frameDoor &M&PR'
+      -> Found keyword 'Modification of door stoppers on Body side doors in RCF LHB coaches' in sheet 'Under frameDoor &M&PR'
+      -> Found keyword 'To ensure latest SS material door stoppers for body side doors' in sheet 'Under frameDoor &M&PR'
+      -> Found keyword 'All LHB coaches (having old type door stoppers)' in sheet 'Under frameDoor &M&PR'
+      -> Found keyword 'SSE/DOOR' in sheet 'Under frameDoor &M&PR'
+    Sheet ' CAIs' headers:
+      ('CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ', None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'CAI IMPLEMENTATION IN WORKSHOP TURNOUT COACHES/BOGIES ' in sheet ' CAIs'
+      -> Found keyword 'Reason for Modification' in sheet ' CAIs'
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified up to previous month (Nov/2025)' in sheet ' CAIs'
+      -> Found keyword 'No. of coaches modified this month (Dec/2025)' in sheet ' CAIs'
+      -> Found keyword 'Provision of additional dirt collector in BP pipe line before FIBA device in all LHB coaches' in sheet ' CAIs'
+      -> Found keyword 'Railway Board has expressed its concern regarding Punctuality loss cases on account of FIBA device failure reported by Zonal Railways.' in sheet ' CAIs'
+    Sheet 'SOBs ' headers:
+      ('SOBs issued from PCME Drawing office', None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Implemented or Not (YES / NO) If not implemented give Remarks' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified up to previous month (Nov/2025)' in sheet 'SOBs '
+      -> Found keyword 'No. of coaches modified this month (Dec/2025)' in sheet 'SOBs '
+      -> Found keyword 'Provision of mesh cover on the reservoir of the brake panel in LHB coaches- M/s Escorts' in sheet 'SOBs '
+
+Checking: C:\Users\User\Downloads\LWPER_Holding_01062026_Final.xlsx
+  Sheets: ['Holding 01-06-26']
+    Sheet 'Holding 01-06-26' headers:
+      ('LW/PER HOLDING POSITION AS ON 01-06-2026', None, None, None, None)
+      -> Found keyword 'CATEGORY' in sheet 'Holding 01-06-26'
+
+Checking: C:\Users\User\Downloads\LW_LHB_SSII_SSIII_Category (1).xlsx
+  Sheets: ['LW_LHB_SS_Category']
+    Sheet 'LW_LHB_SS_Category' headers:
+      ('Date', 'Coach Type', 'Coach Number', 'Manufacturing Year', 'Age in 2026', 'Category')
+      -> Found keyword 'Category' in sheet 'LW_LHB_SS_Category'
+
+Checking: C:\Users\User\Downloads\LW_LHB_SSII_SSIII_Category.xlsx
+  Sheets: ['LW_LHB_SS_Category']
+    Sheet 'LW_LHB_SS_Category' headers:
+      ('Date', 'Coach Type', 'Coach Number', 'Manufacturing Year', 'Age in 2026', 'Category')
+      -> Found keyword 'Category' in sheet 'LW_LHB_SS_Category'
+
+Checking: C:\Users\User\Downloads\LW_LHB_SSII_SSIII_Category_Updated.xlsx
+  Sheets: ['LW_LHB_SS_Category']
+    Sheet 'LW_LHB_SS_Category' headers:
+      ('Date', 'Coach Type', 'Coach Number', 'Manufacturing Year', 'Age in 2026', 'Category')
+      -> Found keyword 'Category' in sheet 'LW_LHB_SS_Category'
+
+Checking: C:\Users\User\Downloads\LW_PER_Performance_Trend.xlsx
+  Sheets: ['Performance Trend']
+    Sheet 'Performance Trend' headers:
+      ('Workshop & Category', 'Last Year Monthly Avg (2025-26)', 'Current YTD Avg (Apr-May 2026)', 'Performance Shift', 'Trend')
+      -> Found keyword 'Workshop & Category' in sheet 'Performance Trend'
+      -> Found keyword 'Last Year Monthly Avg (2025-26)' in sheet 'Performance Trend'
+      -> Found keyword 'Performance Shift' in sheet 'Performance Trend'
+      -> Found keyword 'Increase (+7.6/month)' in sheet 'Performance Trend'
+      -> Found keyword 'Increase (+21.2/month)' in sheet 'Performance Trend'
+      -> Found keyword 'Decrease (-49.3/month)' in sheet 'Performance Trend'
+      -> Found keyword 'Increase (+28.7/month)' in sheet 'Performance Trend'
+
+Checking: C:\Users\User\Downloads\LW_PER_Report_June2026.xlsx
+  Sheets: ['LOCO Holding & Plan', 'VB Bogie Status', 'Outturn']
+    Sheet 'LOCO Holding & Plan' headers:
+      ('LW/PER – LOCO HOLDING REPORT   |   JUNE 2026', None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'LW/PER – LOCO HOLDING REPORT   |   JUNE 2026' in sheet 'LOCO Holding & Plan'
+    Sheet 'VB Bogie Status' headers:
+      ('LW/PER – VB BOGIE HOLDING STATUS', None, None, None, None)
+    Sheet 'Outturn' headers:
+      ('LW/PER – MONTHLY OUTTURN REPORT   |   FY 2026-27', None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'LW/PER – MONTHLY OUTTURN REPORT   |   FY 2026-27' in sheet 'Outturn'
+      -> Found keyword 'Category' in sheet 'Outturn'
+      -> Found keyword 'Apr
+Outturn' in sheet 'Outturn'
+      -> Found keyword 'May
+Outturn' in sheet 'Outturn'
+      -> Found keyword 'Cum.
+Outturn' in sheet 'Outturn'
+
+Checking: C:\Users\User\Downloads\March_April_LW_LHB_SS_Categorised.xlsx
+  Sheets: ['March_April_LW_LHB']
+    Sheet 'March_April_LW_LHB' headers:
+      ('Date', 'Coach Type', 'Coach Number', 'Manufacturing Year', 'Age in 2026', 'Category', None, None, None, None)
+      -> Found keyword 'Category' in sheet 'March_April_LW_LHB'
+
+Checking: C:\Users\User\Downloads\MFG_Analysis_20260314_082725.xlsx
+  Sheets: ['MFG Summary', 'Recipe Analysis']
+    Sheet 'MFG Summary' headers:
+      ('MFG', 'Receipts', 'Failures', 'Failure %')
+    Sheet 'Recipe Analysis' headers:
+      ('Recipe', 'Pass', 'Fail', 'Total', 'Failure %')
+
+Checking: C:\Users\User\Downloads\NS_DM_CONS_REPORT_21-02-2026 (1).xlsx
+  Error reading C:\Users\User\Downloads\NS_DM_CONS_REPORT_21-02-2026 (1).xlsx: expected <class 'openpyxl.styles.fills.Fill'>
+
+Checking: C:\Users\User\Downloads\NS_DM_CONS_REPORT_21-02-2026.xlsx
+  Error reading C:\Users\User\Downloads\NS_DM_CONS_REPORT_21-02-2026.xlsx: expected <class 'openpyxl.styles.fills.Fill'>
+
+Checking: C:\Users\User\Downloads\overview_filtered_20260225_0729.xlsx
+  Sheets: ['Filtered Data']
+    Sheet 'Filtered Data' headers:
+      ('Recipe', 'Test Sr.No.', 'Manufacturing No.', 'Drawing no.', 'Date', 'Free height', 'Test load', 'Height under load', 'Bowing deflection', 'Axial stiffness', 'Note', 'Test Result', 'SCHDULE', 'COACH NO', 'TYPE OF COACH', 'MFG', 'REMARKS', 'Age (Days)', 'Pass_Numeric', 'Fail_Numeric')
+      -> Found keyword 'Age Category' in sheet 'Filtered Data'
+      -> Found keyword 'Month' in sheet 'Filtered Data'
+      -> Found keyword 'Month_Name' in sheet 'Filtered Data'
+
+Checking: C:\Users\User\Downloads\overview_filtered_20260225_1301.xlsx
+  Sheets: ['Filtered Data']
+    Sheet 'Filtered Data' headers:
+      ('Recipe', 'Test Sr.No.', 'Manufacturing No.', 'Drawing no.', 'Date', 'Free height', 'Test load', 'Height under load', 'Bowing deflection', 'Axial stiffness', 'Note', 'Test Result', 'SCHDULE', 'COACH NO', 'TYPE OF COACH', 'MFG', 'REMARKS', 'Age (Days)', 'Pass_Numeric', 'Fail_Numeric')
+      -> Found keyword 'Age Category' in sheet 'Filtered Data'
+      -> Found keyword 'Month' in sheet 'Filtered Data'
+      -> Found keyword 'Month_Name' in sheet 'Filtered Data'
+
+Checking: C:\Users\User\Downloads\POH Coordination Meeting JUNE- 2026.xlsx
+  Sheets: ['SC', 'CBC', 'LHB', 'IOH & SS1 & wheels', 'AGENDA - FREIGHT', 'MINUTES', 'IOH ARISING', 'SHOP Holding Summary', 'SHOP HOLDING', 'POH TRANSIT', 'POH in TPJ', 'OFF POH', 'TYPREF', 'MAY COMPLIANCE', 'APR POH COMPLIANCE', 'MAR POH COMPLIANCE', 'MSpare']
+    Sheet 'SC' headers:
+      ('Minutes of POH Coordination Meeting held on 02.06.2026 at PCME Meeting Hall\nMembers Present:\nPCME\nCRSE/Chg.\nDy.CME/HQ\nDy.CME/Chg.\nDy.CME/LW/PER\nWM/GOC\nDy.COM/Chg-II\nCDO/CBE\nCDO/BBQ\nCDO/MS\nCDO/TPJ\nCDO/ERMCD\nCDO/MDU\nAEnHM/PGT\n', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Minutes of POH Coordination Meeting held on 02.06.2026 at PCME Meeting Hall
+Members Present:
+PCME
+CRSE/Chg.
+Dy.CME/HQ
+Dy.CME/Chg.
+Dy.CME/LW/PER
+WM/GOC
+Dy.COM/Chg-II
+CDO/CBE
+CDO/BBQ
+CDO/MS
+CDO/TPJ
+CDO/ERMCD
+CDO/MDU
+AEnHM/PGT
+' in sheet 'SC'
+    Sheet 'CBC' headers:
+      ('ICF CBC plan - Revised', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+    Sheet 'LHB' headers:
+      ('LHB plan - Revised', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+    Sheet 'IOH & SS1 & wheels' headers:
+      (None, 'IOH and SS1 Bogie Allotment', None, None, None, None, None, None, None, None, None, None, None, None, None, 'Action By', None, None, None, None)
+      -> Found keyword 'Proportionate Target' in sheet 'IOH & SS1 & wheels'
+    Sheet 'AGENDA - FREIGHT' headers:
+      (None, None, None, None, None, None, None, None, 'Annexure', None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'POH CO-ORDINATION MEETING AGENDA - FREIGHT' in sheet 'AGENDA - FREIGHT'
+    Sheet 'MINUTES' headers:
+      ('S.N.', 'PCME Remarks', 'Action by', None, None, None, None)
+    Sheet 'IOH ARISING' headers:
+      ('SS1 ARISING',)
+    Sheet 'SHOP HOLDING' headers:
+      ('SL No.', 'RLY', 'COACH TYPE', 'COACH NO.', 'SCREW/CBC', 'AC/ NAC', 'RECEIPT DATE', 'SHEDULE', 'DIVN', 'ICF/LHB', 'LIGHT/HEAVY', 'SHOP')
+    Sheet 'POH TRANSIT' headers:
+      ('DIVISION', 'DEPOT', 'ICF IRS', None, None, None, None, None, None, None, None, None, None, None, None, None, 'DEPOT', 'ICF CBC', None, None)
+    Sheet 'POH in TPJ' headers:
+      ('TPJ', None, None, None, None, 'GOC EX.SIDING', None, None, None, None, None, 'GOC BHEL LINE', None, None, None, None, 'POH AT VM', None, None, None)
+    Sheet 'OFF POH' headers:
+      ('s.n', 'Date of arrival', 'Rly.', 'COACH TYPE', 'COACH NO', 'SHOP', 'COUPLING', 'CURRENT LOCATION', 'DIV', 'CORRECTED TYPE', 'ICF / LHB', 'CORR. DIVN.', 'LOC.', 'Shop finder', 'Outturn date', 'ICMS1', 'ICMS2', 'ICMS3', 'ICMS4', 'ICMS5')
+      -> Found keyword 'CORRECTED TYPE' in sheet 'OFF POH'
+      -> Found keyword 'CORR. DIVN.' in sheet 'OFF POH'
+      -> Found keyword 'Outturn date' in sheet 'OFF POH'
+    Sheet 'TYPREF' headers:
+      ('COACH TYPE', 'CORRECTED TYPE', 'ICF / LHB', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'CORRECTED TYPE' in sheet 'TYPREF'
+    Sheet 'MAY COMPLIANCE' headers:
+      ('CW/PER', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'GOC WORKSHOP' in sheet 'MAY COMPLIANCE'
+      -> Found keyword 'ALL WORKSHOPS' in sheet 'MAY COMPLIANCE'
+      -> Found keyword 'Outturn given' in sheet 'MAY COMPLIANCE'
+      -> Found keyword 'Short fall' in sheet 'MAY COMPLIANCE'
+      -> Found keyword 'Outturn given' in sheet 'MAY COMPLIANCE'
+      -> Found keyword 'Short fall' in sheet 'MAY COMPLIANCE'
+      -> Found keyword 'Outturn given' in sheet 'MAY COMPLIANCE'
+      -> Found keyword 'Short fall' in sheet 'MAY COMPLIANCE'
+      -> Found keyword 'Outturn given' in sheet 'MAY COMPLIANCE'
+      -> Found keyword 'Short fall' in sheet 'MAY COMPLIANCE'
+    Sheet 'APR POH COMPLIANCE' headers:
+      ('CW/PER', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'GOC WORKSHOP' in sheet 'APR POH COMPLIANCE'
+      -> Found keyword 'ALL WORKSHOPS' in sheet 'APR POH COMPLIANCE'
+      -> Found keyword 'Outturn given' in sheet 'APR POH COMPLIANCE'
+      -> Found keyword 'Short fall' in sheet 'APR POH COMPLIANCE'
+      -> Found keyword 'Outturn given' in sheet 'APR POH COMPLIANCE'
+      -> Found keyword 'Short fall' in sheet 'APR POH COMPLIANCE'
+      -> Found keyword 'Outturn given' in sheet 'APR POH COMPLIANCE'
+      -> Found keyword 'Short fall' in sheet 'APR POH COMPLIANCE'
+      -> Found keyword 'Outturn given' in sheet 'APR POH COMPLIANCE'
+      -> Found keyword 'Short fall' in sheet 'APR POH COMPLIANCE'
+    Sheet 'MAR POH COMPLIANCE' headers:
+      ('CW/PER', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'GOC WORKSHOP' in sheet 'MAR POH COMPLIANCE'
+      -> Found keyword 'Outturn given' in sheet 'MAR POH COMPLIANCE'
+      -> Found keyword 'Short fall' in sheet 'MAR POH COMPLIANCE'
+      -> Found keyword 'Outturn given' in sheet 'MAR POH COMPLIANCE'
+      -> Found keyword 'Short fall' in sheet 'MAR POH COMPLIANCE'
+      -> Found keyword 'Outturn given' in sheet 'MAR POH COMPLIANCE'
+      -> Found keyword 'Short fall' in sheet 'MAR POH COMPLIANCE'
+    Sheet 'MSpare' headers:
+      ('A. M/SPARE AS PER RB NORMS', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'A. M/SPARE AS PER RB NORMS' in sheet 'MSpare'
+
+Checking: C:\Users\User\Downloads\POH_Monthly_Report_CY2025.xlsx
+  Sheets: ['POH Monthly Report CY2025', 'Monthly Cumulative Summary']
+    Sheet 'POH Monthly Report CY2025' headers:
+      ('POH OUTTURN — CALENDAR YEAR 2025  (January 2025 to December 2025)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'POH OUTTURN — CALENDAR YEAR 2025  (January 2025 to December 2025)' in sheet 'POH Monthly Report CY2025'
+      -> Found keyword 'Monthly Proportionate Target = Annual Target ÷ 12  |  Annual Targets as per RB / HQ revised targets (March 2025)  |  Jan–Mar actuals from PCDO monthly reports  |  Apr–Dec cumulative from PCDO December 2025 report' in sheet 'POH Monthly Report CY2025'
+    Sheet 'Monthly Cumulative Summary' headers:
+      ('POH Monthly Cumulative Performance — CY 2025', None, None, None, None, None, None)
+      -> Found keyword 'POH Monthly Cumulative Performance — CY 2025' in sheet 'Monthly Cumulative Summary'
+      -> Found keyword 'Cumulative Performance — January 2025' in sheet 'Monthly Cumulative Summary'
+      -> Found keyword 'Proportionate Target
+till Jan-2025' in sheet 'Monthly Cumulative Summary'
+
+Checking: C:\Users\User\Downloads\POH_Outturn_CY2025_Final (1).xlsx
+  Sheets: ['POH Outturn CY2025']
+    Sheet 'POH Outturn CY2025' headers:
+      ('POH OUTTURN — CALENDAR YEAR 2025  (January 2025 to December 2025)', None, None, None, None)
+      -> Found keyword 'POH OUTTURN — CALENDAR YEAR 2025  (January 2025 to December 2025)' in sheet 'POH Outturn CY2025'
+      -> Found keyword 'Proportionate Target = FY 2024-25 Annual Target × 3/12 (Jan–Mar)  +  FY 2025-26 Annual Target × 9/12 (Apr–Dec)  |  Source: PCDO March 2025 & December 2025 reports' in sheet 'POH Outturn CY2025'
+      -> Found keyword 'Proportionate
+Target
+(Jan–Dec 2025)' in sheet 'POH Outturn CY2025'
+
+Checking: C:\Users\User\Downloads\POH_Outturn_CY2025_Final.xlsx
+  Sheets: ['POH Outturn CY2025']
+    Sheet 'POH Outturn CY2025' headers:
+      ('POH OUTTURN — CALENDAR YEAR 2025  (January 2025 to December 2025)', None, None, None, None, None)
+      -> Found keyword 'POH OUTTURN — CALENDAR YEAR 2025  (January 2025 to December 2025)' in sheet 'POH Outturn CY2025'
+      -> Found keyword 'Proportionate Target = FY 2024-25 Annual Target × 3/12 (Jan–Mar)  +  FY 2025-26 Annual Target × 9/12 (Apr–Dec)  |  Source: PCDO March 2025 & December 2025 reports' in sheet 'POH Outturn CY2025'
+      -> Found keyword 'Proportionate
+Target
+(Jan–Dec 2025)' in sheet 'POH Outturn CY2025'
+
+Checking: C:\Users\User\Downloads\POH_Outturn_CY2025_v3.xlsx
+  Sheets: ['POH Outturn CY2025']
+    Sheet 'POH Outturn CY2025' headers:
+      ('POH OUTTURN — CALENDAR YEAR 2025  (January to December 2025)', None, None, None, None, None, None, None)
+      -> Found keyword 'POH OUTTURN — CALENDAR YEAR 2025  (January to December 2025)' in sheet 'POH Outturn CY2025'
+      -> Found keyword 'Annual Target (RB) ÷ 3 = Jan–Mar Proportionate Target  |  Annual Target × 9/12 = Apr–Dec Proportionate Target  |  Targets as per RB / HQ revised (March 2025 PCDO report)' in sheet 'POH Outturn CY2025'
+      -> Found keyword 'Proportionate
+Target' in sheet 'POH Outturn CY2025'
+
+Checking: C:\Users\User\Downloads\POH_Outturn_CY2025_v4 (1).xlsx
+  Sheets: ['POH Outturn CY2025']
+    Sheet 'POH Outturn CY2025' headers:
+      ('POH OUTTURN — CALENDAR YEAR 2025  (January 2025 to December 2025)', None, None, None, None, None, None, None)
+      -> Found keyword 'POH OUTTURN — CALENDAR YEAR 2025  (January 2025 to December 2025)' in sheet 'POH Outturn CY2025'
+      -> Found keyword 'Proportionate
+Target' in sheet 'POH Outturn CY2025'
+
+Checking: C:\Users\User\Downloads\POH_Outturn_CY2025_v4.xlsx
+  Sheets: ['POH Outturn CY2025']
+    Sheet 'POH Outturn CY2025' headers:
+      ('POH OUTTURN — CALENDAR YEAR 2025  (January 2025 to December 2025)', None, None, None, None, None, None, None)
+      -> Found keyword 'POH OUTTURN — CALENDAR YEAR 2025  (January 2025 to December 2025)' in sheet 'POH Outturn CY2025'
+      -> Found keyword 'Proportionate
+Target' in sheet 'POH Outturn CY2025'
+
+Checking: C:\Users\User\Downloads\POH_Target_vs_Actual_CY2025.xlsx
+  Sheets: ['POH Target vs Actual CY2025']
+    Sheet 'POH Target vs Actual CY2025' headers:
+      ('POH OUTTURN — CALENDAR YEAR 2025 (January 2025 to December 2025)', None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'POH OUTTURN — CALENDAR YEAR 2025 (January 2025 to December 2025)' in sheet 'POH Target vs Actual CY2025'
+      -> Found keyword 'Data: Jan 2025 + Feb 2025 + Mar 2025 (monthly actuals) + Apr–Dec 2025 (cumulative from Dec 2025 report) | IOH & SS1 bogies shown separately at 0.05 conversion factor' in sheet 'POH Target vs Actual CY2025'
+      -> Found keyword 'Proportionate
+Target
+(12 months)' in sheet 'POH Target vs Actual CY2025'
+      -> Found keyword 'Jan 2025
+Month
+Actual' in sheet 'POH Target vs Actual CY2025'
+      -> Found keyword 'Feb 2025
+Month
+Actual' in sheet 'POH Target vs Actual CY2025'
+      -> Found keyword 'Mar 2025
+Month
+Actual' in sheet 'POH Target vs Actual CY2025'
+      -> Found keyword 'Annual target: FY25-26=56. Jan-Mar from FY24-25 reports (target 60)' in sheet 'POH Target vs Actual CY2025'
+
+Checking: C:\Users\User\Downloads\POH_Target_vs_Actual_CY2025_v2.xlsx
+  Sheets: ['POH Target vs Actual CY2025']
+    Sheet 'POH Target vs Actual CY2025' headers:
+      ('POH OUTTURN — CALENDAR YEAR 2025  (January 2025 to December 2025)', None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'POH OUTTURN — CALENDAR YEAR 2025  (January 2025 to December 2025)' in sheet 'POH Target vs Actual CY2025'
+      -> Found keyword 'Jan + Feb + Mar 2025 monthly actuals  +  Apr–Dec 2025 cumulative actual (PCDO Dec 2025 report)  |  Annual & monthly targets = RB target ÷ 12  (HQ enhancements NOT considered)' in sheet 'POH Target vs Actual CY2025'
+      -> Found keyword 'Proportionate
+Target
+(Apr–Dec)
+9 Months
+(Annual×9/12)' in sheet 'POH Target vs Actual CY2025'
+      -> Found keyword 'Apr–Dec 2025
+Cumulative
+Actual
+(from Dec 2025
+report)' in sheet 'POH Target vs Actual CY2025'
+      -> Found keyword 'Jan 2025
+Month
+Actual' in sheet 'POH Target vs Actual CY2025'
+      -> Found keyword 'Feb 2025
+Month
+Actual' in sheet 'POH Target vs Actual CY2025'
+      -> Found keyword 'Mar 2025
+Month
+Actual' in sheet 'POH Target vs Actual CY2025'
+
+Checking: C:\Users\User\Downloads\POSITION 13042026 (1).xlsx
+  Sheets: ['ICF NAC', 'YARD', 'OR', 'NMGHS', 'ARTARMV', 'Copy of ICF NAC', 'LHB', 'MEMUEMU TC', 'DEMU', 'SUMMARY', 'LHB Coaches']
+    Sheet 'ICF NAC' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'ICF NAC'
+      -> Found keyword 'Corr in date' in sheet 'ICF NAC'
+      -> Found keyword 'Corrosion' in sheet 'ICF NAC'
+    Sheet 'YARD' headers:
+      ('sl no', 'Coach no', 'TYPE', 'Code', 'Recd date', 'TFR', 'Despatch Date', 'Cal Days')
+    Sheet 'OR' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'OR'
+      -> Found keyword 'Corr in date' in sheet 'OR'
+      -> Found keyword 'Corrosion' in sheet 'OR'
+    Sheet 'NMGHS' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'NMGHS'
+      -> Found keyword 'Corr in date' in sheet 'NMGHS'
+      -> Found keyword 'Corrosion' in sheet 'NMGHS'
+    Sheet 'ARTARMV' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'ARTARMV'
+      -> Found keyword 'Corr in date' in sheet 'ARTARMV'
+      -> Found keyword 'Corrosion' in sheet 'ARTARMV'
+    Sheet 'Copy of ICF NAC' headers:
+      ('FESTIVAL SPECIAL PROGRAMME ICF', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'FESTIVAL SPECIAL PROGRAMME LHB', None)
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+    Sheet 'LHB' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Recd dt', 'Repair type', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch status', 'PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'LHB'
+      -> Found keyword 'Corr in date' in sheet 'LHB'
+      -> Found keyword 'Corrosion' in sheet 'LHB'
+    Sheet 'MEMUEMU TC' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Month Planned', 'Recd dt', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corr in date' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corrosion' in sheet 'MEMUEMU TC'
+    Sheet 'DEMU' headers:
+      ('Sl. No', 'Type', 'Div/Rly', 'RS No', 'Month', 'TFR On', 'Pre inspection/Load test', 'Truck out', 'Stripping & dewheeling', 'Interior cleaning ', 'U/F Cleaning & Painting', 'Transformer/Power pack & allide work', 'Wheet sets(WT)', 'Bogie wheeling', 'Traction Alernator', 'Cranking', 'Load test', 'Compressor', 'EP Brake/Air drier', 'Air Brake system Testing/Movement checking')
+      -> Found keyword 'Month' in sheet 'DEMU'
+      -> Found keyword 'Interior cleaning ' in sheet 'DEMU'
+      -> Found keyword 'Transformer/Power pack & allide work' in sheet 'DEMU'
+      -> Found keyword 'Traction Alernator' in sheet 'DEMU'
+      -> Found keyword 'Compressor' in sheet 'DEMU'
+      -> Found keyword 'Traction motors/Axle drive' in sheet 'DEMU'
+      -> Found keyword 'CR Corrosion' in sheet 'DEMU'
+    Sheet 'SUMMARY' headers:
+      ('ICF Coaches', None, None, 'LHB Coaches', None, None, 'MEMU/DEMU TC Coaches', None, None, None, None, None, None)
+    Sheet 'LHB Coaches' headers:
+      (' ',)
+      -> Found keyword 'Corrosion repair' in sheet 'LHB Coaches'
+      -> Found keyword 'Outturn dt' in sheet 'LHB Coaches'
+
+Checking: C:\Users\User\Downloads\POSITION 13042026 (2).xlsx
+  Sheets: ['ICF NAC', 'YARD', 'OR', 'NMGHS', 'ARTARMV', 'Copy of ICF NAC', 'LHB', 'MEMUEMU TC', 'DEMU', 'SUMMARY', 'LHB Coaches']
+    Sheet 'ICF NAC' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'ICF NAC'
+      -> Found keyword 'Corr in date' in sheet 'ICF NAC'
+      -> Found keyword 'Corrosion' in sheet 'ICF NAC'
+    Sheet 'YARD' headers:
+      ('sl no', 'Coach no', 'TYPE', 'Code', 'Recd date', 'TFR', 'Despatch Date', 'Cal Days', 'Attention Days')
+    Sheet 'OR' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'OR'
+      -> Found keyword 'Corr in date' in sheet 'OR'
+      -> Found keyword 'Corrosion' in sheet 'OR'
+    Sheet 'NMGHS' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'NMGHS'
+      -> Found keyword 'Corr in date' in sheet 'NMGHS'
+      -> Found keyword 'Corrosion' in sheet 'NMGHS'
+    Sheet 'ARTARMV' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'ARTARMV'
+      -> Found keyword 'Corr in date' in sheet 'ARTARMV'
+      -> Found keyword 'Corrosion' in sheet 'ARTARMV'
+    Sheet 'Copy of ICF NAC' headers:
+      ('FESTIVAL SPECIAL PROGRAMME ICF', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'FESTIVAL SPECIAL PROGRAMME LHB', None)
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+    Sheet 'LHB' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Recd dt', 'Repair type', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch status', 'PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'LHB'
+      -> Found keyword 'Corr in date' in sheet 'LHB'
+      -> Found keyword 'Corrosion' in sheet 'LHB'
+    Sheet 'MEMUEMU TC' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Month Planned', 'Recd dt', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corr in date' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corrosion' in sheet 'MEMUEMU TC'
+    Sheet 'DEMU' headers:
+      ('Sl. No', 'Type', 'Div/Rly', 'RS No', 'Month', 'TFR On', 'Pre inspection/Load test', 'Truck out', 'Stripping & dewheeling', 'Interior cleaning ', 'U/F Cleaning & Painting', 'Transformer/Power pack & allide work', 'Wheet sets(WT)', 'Bogie wheeling', 'Traction Alernator', 'Cranking', 'Load test', 'Compressor', 'EP Brake/Air drier', 'Air Brake system Testing/Movement checking')
+      -> Found keyword 'Month' in sheet 'DEMU'
+      -> Found keyword 'Interior cleaning ' in sheet 'DEMU'
+      -> Found keyword 'Transformer/Power pack & allide work' in sheet 'DEMU'
+      -> Found keyword 'Traction Alernator' in sheet 'DEMU'
+      -> Found keyword 'Compressor' in sheet 'DEMU'
+      -> Found keyword 'Traction motors/Axle drive' in sheet 'DEMU'
+      -> Found keyword 'CR Corrosion' in sheet 'DEMU'
+    Sheet 'SUMMARY' headers:
+      ('ICF Coaches', None, None, 'LHB Coaches', None, None, 'MEMU/DEMU TC Coaches', None, None, None, None, None, None)
+    Sheet 'LHB Coaches' headers:
+      (' ',)
+      -> Found keyword 'Corrosion repair' in sheet 'LHB Coaches'
+      -> Found keyword 'Outturn dt' in sheet 'LHB Coaches'
+
+Checking: C:\Users\User\Downloads\POSITION 13042026.xlsx
+  Sheets: ['ICF NAC', 'OR', 'NMGHS', 'ARTARMV', 'Copy of ICF NAC', 'LHB', 'MEMUEMU TC', 'DEMU', 'SUMMARY', 'LHB Coaches']
+    Sheet 'ICF NAC' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'ICF NAC'
+      -> Found keyword 'Corr in date' in sheet 'ICF NAC'
+      -> Found keyword 'Corrosion' in sheet 'ICF NAC'
+    Sheet 'OR' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'OR'
+      -> Found keyword 'Corr in date' in sheet 'OR'
+      -> Found keyword 'Corrosion' in sheet 'OR'
+    Sheet 'NMGHS' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'NMGHS'
+      -> Found keyword 'Corr in date' in sheet 'NMGHS'
+      -> Found keyword 'Corrosion' in sheet 'NMGHS'
+    Sheet 'ARTARMV' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'ARTARMV'
+      -> Found keyword 'Corr in date' in sheet 'ARTARMV'
+      -> Found keyword 'Corrosion' in sheet 'ARTARMV'
+    Sheet 'Copy of ICF NAC' headers:
+      ('FESTIVAL SPECIAL PROGRAMME ICF', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'FESTIVAL SPECIAL PROGRAMME LHB', None)
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+    Sheet 'LHB' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Recd dt', 'Repair type', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch status', 'PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'LHB'
+      -> Found keyword 'Corr in date' in sheet 'LHB'
+      -> Found keyword 'Corrosion' in sheet 'LHB'
+    Sheet 'MEMUEMU TC' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Month Planned', 'Recd dt', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corr in date' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corrosion' in sheet 'MEMUEMU TC'
+    Sheet 'DEMU' headers:
+      ('Sl. No', 'Type', 'Div/Rly', 'RS No', 'Month', 'TFR On', 'Pre inspection/Load test', 'Truck out', 'Stripping & dewheeling', 'Interior cleaning ', 'U/F Cleaning & Painting', 'Transformer/Power pack & allide work', 'Wheet sets(WT)', 'Bogie wheeling', 'Traction Alernator', 'Cranking', 'Load test', 'Compressor', 'EP Brake/Air drier', 'Air Brake system Testing/Movement checking')
+      -> Found keyword 'Month' in sheet 'DEMU'
+      -> Found keyword 'Interior cleaning ' in sheet 'DEMU'
+      -> Found keyword 'Transformer/Power pack & allide work' in sheet 'DEMU'
+      -> Found keyword 'Traction Alernator' in sheet 'DEMU'
+      -> Found keyword 'Compressor' in sheet 'DEMU'
+      -> Found keyword 'Traction motors/Axle drive' in sheet 'DEMU'
+      -> Found keyword 'CR Corrosion' in sheet 'DEMU'
+    Sheet 'SUMMARY' headers:
+      ('ICF Coaches', None, None, 'LHB Coaches', None, None, 'MEMU/DEMU TC Coaches', None, None, None, None, None, None)
+    Sheet 'LHB Coaches' headers:
+      (' ',)
+      -> Found keyword 'Corrosion repair' in sheet 'LHB Coaches'
+      -> Found keyword 'Outturn dt' in sheet 'LHB Coaches'
+
+Checking: C:\Users\User\Downloads\POSITION 18042026.xlsx
+  Sheets: ['YARD', 'ICF NAC Summary', 'ICF NAC', 'OR', 'NMGHS', 'ARTARMV', 'Copy of ICF NAC', 'LHB', 'MEMUEMU TC', 'DEMU', 'SUMMARY', 'LHB Coaches', 'RB_Targets', 'HQ_Targets', 'Internal_Targets', 'Special_Vehicles_Targets']
+    Sheet 'YARD' headers:
+      ('sl no', 'Coach no', 'TYPE', 'Code', 'Recd date', 'TFR', 'Despatch Date', 'Cal Days', 'Attention Days', 'ICF CHECK')
+      -> Found keyword '<openpyxl.worksheet.formula.ArrayFormula object at 0x0000024D142F3AD0>' in sheet 'YARD'
+      -> Found keyword '<openpyxl.worksheet.formula.ArrayFormula object at 0x0000024D142F2E70>' in sheet 'YARD'
+      -> Found keyword '<openpyxl.worksheet.formula.ArrayFormula object at 0x0000024D14262000>' in sheet 'YARD'
+    Sheet 'ICF NAC Summary' headers:
+      (' SUMMARY FOR ICF  COACHES', None, None, 'Select Month', 'APRIL', None, None, None, None, None, None, None, None, None, None, 'DESPATCH SUMMARY')
+      -> Found keyword ' SUMMARY FOR ICF  COACHES' in sheet 'ICF NAC Summary'
+      -> Found keyword 'Select Month' in sheet 'ICF NAC Summary'
+      -> Found keyword 'ICF COACH POSITION FOR THE MONTH' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("QUERY(
+ {
+  FILTER(
+   {
+    YARD!D3:D1002,
+    ARRAYFORMULA(IF(YARD!D3:D1002<>"""",1,0)),
+    ARRAYFORMULA(IF(YARD!D3:D1002<>"""",0,0)),
+    ARRAYFORMULA(IF(YARD!D3:D1002<>"""",0,0))
+   },
+   YARD!C3:C1002=""ICF"",
+   YARD!F3:F1002=""""
+  );
+
+  FILTER(
+ "&"  {
+    'ICF NAC'!C3:C1002,
+    ARRAYFORMULA(IF('ICF NAC'!G3:G1002=""YARD"",1,0)),
+    ARRAYFORMULA(IF('ICF NAC'!G3:G1002=""UNDER PROGRESS"",1,0)),
+    ARRAYFORMULA(IF('ICF NAC'!G3:G1002=""COMPLETED"",1,0))
+   },
+   'ICF NAC'!K3:K1002=""NA""
+  )
+ },
+ ""SE"&"LECT Col1, SUM(Col2), SUM(Col3), SUM(Col4)
+  WHERE Col1 IS NOT NULL
+  GROUP BY Col1
+  LABEL 
+   Col1 'Type',
+   SUM(Col2) 'Yard',
+   SUM(Col3) 'Under Corrossion',
+   SUM(Col4) 'Corrosion Completed'"",
+ 0
+)"),"Type")' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("""COMPUTED_VALUE"""),"Yard")' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("""COMPUTED_VALUE"""),"Under Corrossion")' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("""COMPUTED_VALUE"""),"Corrosion Completed")' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("UNIQUE(FILTER(L5:L1002,L5:L1002<>""""))"),"CN")' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("QUERY(
+ {
+  FILTER('ICF NAC'!C3:C1002, 'ICF NAC'!K3:K1002=""NA"");
+  FILTER(YARD!D3:D1002, YARD!C3:C1002=""ICF"", YARD!F3:F1002="""")
+ },
+ ""SELECT Col1, COUNT(Col1)
+  WHERE Col1 IS NOT NULL
+  GROUP BY Col1
+  ORDER BY COUNT(Col1) DESC
+  LABEL Col1 '', COU"&"NT(Col1) ''"",
+ 0
+)"),"CN")' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("""COMPUTED_VALUE"""),12.0)' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("""COMPUTED_VALUE"""),"CN")' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("""COMPUTED_VALUE"""),6.0)' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("""COMPUTED_VALUE"""),5.0)' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("""COMPUTED_VALUE"""),1.0)' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("{
+ FILTER({'ICF NAC'!B3:B1002,'ICF NAC'!C3:C1002,'ICF NAC'!G3:G1002},
+        'ICF NAC'!K3:K1002=""NA"");
+
+ FILTER({YARD!B3:B1002,YARD!D3:D1002,
+         ARRAYFORMULA(IF(YARD!B3:B1002<>"""",""YARD"",""""))},
+        YARD!C3:C1002=""ICF"",
+        YARD!F3:"&"F1002="""")
+}"),136203.0)' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("""COMPUTED_VALUE"""),"CN")' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("""COMPUTED_VALUE"""),"Completed")' in sheet 'ICF NAC Summary'
+      -> Found keyword '<openpyxl.worksheet.formula.ArrayFormula object at 0x0000024D142F11C0>' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("""COMPUTED_VALUE"""),"CZ")' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("IFERROR(
+ FILTER(
+  {'ICF NAC'!B3:B1002,'ICF NAC'!C3:C1002},
+  'ICF NAC'!E3:E1002=$E$1,
+  'ICF NAC'!K3:K1002=$Q$2
+ ),
+ ""No Data""
+)"),126269.0)' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("""COMPUTED_VALUE"""),"CN")' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("QUERY(
+ ARRAYFORMULA(TRIM(Q5:Q17)),
+ ""SELECT Col1, COUNT(Col1)
+  WHERE Col1 IS NOT NULL
+  GROUP BY Col1
+  ORDER BY COUNT(Col1) DESC
+  LABEL Col1 '', COUNT(Col1) ''"",
+ 0
+)"),"CN")' in sheet 'ICF NAC Summary'
+      -> Found keyword '=IFERROR(__xludf.DUMMYFUNCTION("""COMPUTED_VALUE"""),5.0)' in sheet 'ICF NAC Summary'
+    Sheet 'ICF NAC' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', 'YARD CHECK')
+      -> Found keyword 'Month Planned' in sheet 'ICF NAC'
+      -> Found keyword 'Corr in date' in sheet 'ICF NAC'
+      -> Found keyword 'Corrosion' in sheet 'ICF NAC'
+      -> Found keyword '=IF(COUNTIFS(YARD!B:B,B3,YARD!F:F,"<>")>0,"OK","ERROR")' in sheet 'ICF NAC'
+      -> Found keyword '=IF(COUNTIFS(YARD!B:B,B4,YARD!F:F,"<>")>0,"OK","ERROR")' in sheet 'ICF NAC'
+      -> Found keyword '=IF(COUNTIFS(YARD!B:B,B5,YARD!F:F,"<>")>0,"OK","ERROR")' in sheet 'ICF NAC'
+    Sheet 'OR' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'OR'
+      -> Found keyword 'Corr in date' in sheet 'OR'
+      -> Found keyword 'Corrosion' in sheet 'OR'
+    Sheet 'NMGHS' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'NMGHS'
+      -> Found keyword 'Corr in date' in sheet 'NMGHS'
+      -> Found keyword 'Corrosion' in sheet 'NMGHS'
+    Sheet 'ARTARMV' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'ARTARMV'
+      -> Found keyword 'Corr in date' in sheet 'ARTARMV'
+      -> Found keyword 'Corrosion' in sheet 'ARTARMV'
+    Sheet 'Copy of ICF NAC' headers:
+      ('FESTIVAL SPECIAL PROGRAMME ICF', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'FESTIVAL SPECIAL PROGRAMME LHB', None)
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+    Sheet 'LHB' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Recd dt', 'Repair type', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch status', 'PDC', 'Desp Date', 'Remarks', 'YARD CHECK')
+      -> Found keyword 'Month Planned' in sheet 'LHB'
+      -> Found keyword 'Corr in date' in sheet 'LHB'
+      -> Found keyword 'Corrosion' in sheet 'LHB'
+      -> Found keyword '=IF(COUNTIFS(YARD!B:B,B2,YARD!F:F,"<>")>0,"OK","ERROR")' in sheet 'LHB'
+      -> Found keyword '=IF(COUNTIFS(YARD!B:B,B3,YARD!F:F,"<>")>0,"OK","ERROR")' in sheet 'LHB'
+      -> Found keyword '=IF(COUNTIFS(YARD!B:B,B4,YARD!F:F,"<>")>0,"OK","ERROR")' in sheet 'LHB'
+      -> Found keyword '=IF(COUNTIFS(YARD!B:B,B5,YARD!F:F,"<>")>0,"OK","ERROR")' in sheet 'LHB'
+    Sheet 'MEMUEMU TC' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Month Planned', 'Recd dt', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corr in date' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corrosion' in sheet 'MEMUEMU TC'
+    Sheet 'DEMU' headers:
+      ('Sl. No', 'Type', 'Div/Rly', 'RS No', 'Month', 'TFR On', 'Pre inspection/Load test', 'Truck out', 'Stripping & dewheeling', 'Interior cleaning ', 'U/F Cleaning & Painting', 'Transformer/Power pack & allide work', 'Wheet sets(WT)', 'Bogie wheeling', 'Traction Alernator', 'Cranking', 'Load test', 'Compressor', 'EP Brake/Air drier', 'Air Brake system Testing/Movement checking')
+      -> Found keyword 'Month' in sheet 'DEMU'
+      -> Found keyword 'Interior cleaning ' in sheet 'DEMU'
+      -> Found keyword 'Transformer/Power pack & allide work' in sheet 'DEMU'
+      -> Found keyword 'Traction Alernator' in sheet 'DEMU'
+      -> Found keyword 'Compressor' in sheet 'DEMU'
+      -> Found keyword 'Traction motors/Axle drive' in sheet 'DEMU'
+      -> Found keyword 'CR Corrosion' in sheet 'DEMU'
+    Sheet 'SUMMARY' headers:
+      ('ICF Coaches', None, None, 'LHB Coaches', None, None, 'MEMU/DEMU TC Coaches', None, None, None, None, None, None)
+    Sheet 'LHB Coaches' headers:
+      (' ',)
+      -> Found keyword 'Corrosion repair' in sheet 'LHB Coaches'
+      -> Found keyword 'Outturn dt' in sheet 'LHB Coaches'
+    Sheet 'RB_Targets' headers:
+      ('FY', 'Workshop', 'Stock Type', 'Schedule', 'NAC/AC', 'RB Annual Target', 'RB Monthly Target', 'Notes')
+      -> Found keyword 'Workshop' in sheet 'RB_Targets'
+      -> Found keyword 'RB Monthly Target' in sheet 'RB_Targets'
+    Sheet 'HQ_Targets' headers:
+      ('FY', 'Month', 'Working Days', 'Workshop', 'Stock Type', 'Schedule', 'NAC/AC', 'HQ Target', 'Notes')
+      -> Found keyword 'Month' in sheet 'HQ_Targets'
+      -> Found keyword 'Working Days' in sheet 'HQ_Targets'
+      -> Found keyword 'Workshop' in sheet 'HQ_Targets'
+    Sheet 'Internal_Targets' headers:
+      ('FY', 'Month', 'Workshop', 'Stock Type', 'Schedule', 'Coach Type', 'NAC/AC', 'Internal Target', 'Notes')
+      -> Found keyword 'Month' in sheet 'Internal_Targets'
+      -> Found keyword 'Workshop' in sheet 'Internal_Targets'
+    Sheet 'Special_Vehicles_Targets' headers:
+      ('FY', 'Workshop', 'Item', 'Schedule', 'RB Annual Target', 'Unit', 'APR 2026', 'MAY 2026', 'JUN 2026', 'JUL 2026', 'AUG 2026', 'SEP 2026', 'OCT 2026', 'NOV 2026', 'DEC 2026', 'JAN 2027', 'FEB 2027', 'MAR 2027', 'YTD Actual', 'Balance')
+      -> Found keyword 'Workshop' in sheet 'Special_Vehicles_Targets'
+      -> Found keyword 'Fill monthly actual as complete' in sheet 'Special_Vehicles_Targets'
+      -> Found keyword 'Fill monthly actual as complete' in sheet 'Special_Vehicles_Targets'
+      -> Found keyword 'Fill monthly actual as complete' in sheet 'Special_Vehicles_Targets'
+
+Checking: C:\Users\User\Downloads\POSITION_13042026_FINAL.xlsx
+  Sheets: ['SUMMARY', 'ICF NAC', 'OR', 'NMGHS', 'ARTARMV', 'Copy of ICF NAC', 'LHB', 'MEMUEMU TC', 'DEMU', 'LHB Coaches', 'COACH_LISTS']
+    Sheet 'SUMMARY' headers:
+      ('COACH REPAIR POSITION SUMMARY  —  13 APRIL 2026', None, None, None, None, None, None, None, None, None, None, None, None)
+    Sheet 'ICF NAC' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'ICF NAC'
+      -> Found keyword 'Corr in date' in sheet 'ICF NAC'
+      -> Found keyword 'Corrosion' in sheet 'ICF NAC'
+    Sheet 'OR' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'OR'
+      -> Found keyword 'Corr in date' in sheet 'OR'
+      -> Found keyword 'Corrosion' in sheet 'OR'
+    Sheet 'NMGHS' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'NMGHS'
+      -> Found keyword 'Corr in date' in sheet 'NMGHS'
+      -> Found keyword 'Corrosion' in sheet 'NMGHS'
+    Sheet 'ARTARMV' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'ARTARMV'
+      -> Found keyword 'Corr in date' in sheet 'ARTARMV'
+      -> Found keyword 'Corrosion' in sheet 'ARTARMV'
+    Sheet 'Copy of ICF NAC' headers:
+      ('FESTIVAL SPECIAL PROGRAMME ICF', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'FESTIVAL SPECIAL PROGRAMME LHB', None)
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+    Sheet 'LHB' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Recd dt', 'Repair type', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch status', 'PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'LHB'
+      -> Found keyword 'Corr in date' in sheet 'LHB'
+      -> Found keyword 'Corrosion' in sheet 'LHB'
+    Sheet 'MEMUEMU TC' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Month Planned', 'Recd dt', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corr in date' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corrosion' in sheet 'MEMUEMU TC'
+    Sheet 'DEMU' headers:
+      ('Sl. No', 'Type', 'Div/Rly', 'RS No', 'Month', 'TFR On', 'Pre inspection/Load test', 'Truck out', 'Stripping & dewheeling', 'Interior cleaning ', 'U/F Cleaning & Painting', 'Transformer/Power pack & allide work', 'Wheet sets(WT)', 'Bogie wheeling', 'Traction Alernator', 'Cranking', 'Load test', 'Compressor', 'EP Brake/Air drier', 'Air Brake system Testing/Movement checking')
+      -> Found keyword 'Month' in sheet 'DEMU'
+      -> Found keyword 'Interior cleaning ' in sheet 'DEMU'
+      -> Found keyword 'Transformer/Power pack & allide work' in sheet 'DEMU'
+      -> Found keyword 'Traction Alernator' in sheet 'DEMU'
+      -> Found keyword 'Compressor' in sheet 'DEMU'
+      -> Found keyword 'Traction motors/Axle drive' in sheet 'DEMU'
+      -> Found keyword 'CR Corrosion' in sheet 'DEMU'
+    Sheet 'LHB Coaches' headers:
+      (' ', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Corrosion repair' in sheet 'LHB Coaches'
+      -> Found keyword 'Outturn dt' in sheet 'LHB Coaches'
+    Sheet 'COACH_LISTS' headers:
+      ('ICF_Despatched', 'ICF_FND', 'ICF_AN', 'LHB_Despatched', 'LHB_FND', 'LHB_AN', 'MEMU_Despatched', 'MEMU_FND', 'MEMU_AN')
+
+Checking: C:\Users\User\Downloads\POSITION_13042026_FIXED.xlsx
+  Sheets: ['ICF NAC', 'OR', 'NMGHS', 'ARTARMV', 'Copy of ICF NAC', 'LHB', 'MEMUEMU TC', 'DEMU', 'SUMMARY', 'LHB Coaches']
+    Sheet 'ICF NAC' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'ICF NAC'
+      -> Found keyword 'Corr in date' in sheet 'ICF NAC'
+      -> Found keyword 'Corrosion' in sheet 'ICF NAC'
+    Sheet 'OR' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'OR'
+      -> Found keyword 'Corr in date' in sheet 'OR'
+      -> Found keyword 'Corrosion' in sheet 'OR'
+    Sheet 'NMGHS' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'NMGHS'
+      -> Found keyword 'Corr in date' in sheet 'NMGHS'
+      -> Found keyword 'Corrosion' in sheet 'NMGHS'
+    Sheet 'ARTARMV' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'ARTARMV'
+      -> Found keyword 'Corr in date' in sheet 'ARTARMV'
+      -> Found keyword 'Corrosion' in sheet 'ARTARMV'
+    Sheet 'Copy of ICF NAC' headers:
+      ('FESTIVAL SPECIAL PROGRAMME ICF', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'FESTIVAL SPECIAL PROGRAMME LHB', None)
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+    Sheet 'LHB' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Recd dt', 'Repair type', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch status', 'PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'LHB'
+      -> Found keyword 'Corr in date' in sheet 'LHB'
+      -> Found keyword 'Corrosion' in sheet 'LHB'
+    Sheet 'MEMUEMU TC' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Month Planned', 'Recd dt', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corr in date' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corrosion' in sheet 'MEMUEMU TC'
+    Sheet 'DEMU' headers:
+      ('Sl. No', 'Type', 'Div/Rly', 'RS No', 'Month', 'TFR On', 'Pre inspection/Load test', 'Truck out', 'Stripping & dewheeling', 'Interior cleaning ', 'U/F Cleaning & Painting', 'Transformer/Power pack & allide work', 'Wheet sets(WT)', 'Bogie wheeling', 'Traction Alernator', 'Cranking', 'Load test', 'Compressor', 'EP Brake/Air drier', 'Air Brake system Testing/Movement checking')
+      -> Found keyword 'Month' in sheet 'DEMU'
+      -> Found keyword 'Interior cleaning ' in sheet 'DEMU'
+      -> Found keyword 'Transformer/Power pack & allide work' in sheet 'DEMU'
+      -> Found keyword 'Traction Alernator' in sheet 'DEMU'
+      -> Found keyword 'Compressor' in sheet 'DEMU'
+      -> Found keyword 'Traction motors/Axle drive' in sheet 'DEMU'
+      -> Found keyword 'CR Corrosion' in sheet 'DEMU'
+    Sheet 'SUMMARY' headers:
+      ('COACH REPAIR POSITION SUMMARY – APRIL 2026', None, None, None, None, None, None, None, None, None, None, None, None)
+    Sheet 'LHB Coaches' headers:
+      (' ', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Corrosion repair' in sheet 'LHB Coaches'
+      -> Found keyword 'Outturn dt' in sheet 'LHB Coaches'
+
+Checking: C:\Users\User\Downloads\POSITION_13042026_SUMMARY_FIXED.xlsx
+  Sheets: ['SUMMARY', 'ICF NAC', 'OR', 'NMGHS', 'ARTARMV', 'Copy of ICF NAC', 'LHB', 'MEMUEMU TC', 'DEMU', 'LHB Coaches']
+    Sheet 'SUMMARY' headers:
+      ('COACH REPAIR POSITION SUMMARY — 13 APRIL 2026', None, None, None, None, None, None, None, None, None, None, None)
+    Sheet 'ICF NAC' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'ICF NAC'
+      -> Found keyword 'Corr in date' in sheet 'ICF NAC'
+      -> Found keyword 'Corrosion' in sheet 'ICF NAC'
+    Sheet 'OR' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'OR'
+      -> Found keyword 'Corr in date' in sheet 'OR'
+      -> Found keyword 'Corrosion' in sheet 'OR'
+    Sheet 'NMGHS' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'NMGHS'
+      -> Found keyword 'Corr in date' in sheet 'NMGHS'
+      -> Found keyword 'Corrosion' in sheet 'NMGHS'
+    Sheet 'ARTARMV' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'ARTARMV'
+      -> Found keyword 'Corr in date' in sheet 'ARTARMV'
+      -> Found keyword 'Corrosion' in sheet 'ARTARMV'
+    Sheet 'Copy of ICF NAC' headers:
+      ('FESTIVAL SPECIAL PROGRAMME ICF', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'FESTIVAL SPECIAL PROGRAMME LHB', None)
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+    Sheet 'LHB' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Recd dt', 'Repair type', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch status', 'PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'LHB'
+      -> Found keyword 'Corr in date' in sheet 'LHB'
+      -> Found keyword 'Corrosion' in sheet 'LHB'
+    Sheet 'MEMUEMU TC' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Month Planned', 'Recd dt', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corr in date' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corrosion' in sheet 'MEMUEMU TC'
+    Sheet 'DEMU' headers:
+      ('Sl. No', 'Type', 'Div/Rly', 'RS No', 'Month', 'TFR On', 'Pre inspection/Load test', 'Truck out', 'Stripping & dewheeling', 'Interior cleaning ', 'U/F Cleaning & Painting', 'Transformer/Power pack & allide work', 'Wheet sets(WT)', 'Bogie wheeling', 'Traction Alernator', 'Cranking', 'Load test', 'Compressor', 'EP Brake/Air drier', 'Air Brake system Testing/Movement checking')
+      -> Found keyword 'Month' in sheet 'DEMU'
+      -> Found keyword 'Interior cleaning ' in sheet 'DEMU'
+      -> Found keyword 'Transformer/Power pack & allide work' in sheet 'DEMU'
+      -> Found keyword 'Traction Alernator' in sheet 'DEMU'
+      -> Found keyword 'Compressor' in sheet 'DEMU'
+      -> Found keyword 'Traction motors/Axle drive' in sheet 'DEMU'
+      -> Found keyword 'CR Corrosion' in sheet 'DEMU'
+    Sheet 'LHB Coaches' headers:
+      (' ', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Corrosion repair' in sheet 'LHB Coaches'
+      -> Found keyword 'Outturn dt' in sheet 'LHB Coaches'
+
+Checking: C:\Users\User\Downloads\POSITION_SUMMARY_V2.xlsx
+  Sheets: ['SUMMARY', 'ICF NAC', 'OR', 'NMGHS', 'ARTARMV', 'Copy of ICF NAC', 'LHB', 'MEMUEMU TC', 'DEMU', 'LHB Coaches', 'COACH_LISTS']
+    Sheet 'SUMMARY' headers:
+      ('COACH REPAIR POSITION SUMMARY  ·  LW/PER  ·  As on 13 April 2026', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword '📅 Month:' in sheet 'SUMMARY'
+      -> Found keyword '📅 Month:' in sheet 'SUMMARY'
+      -> Found keyword '📅 Month:' in sheet 'SUMMARY'
+    Sheet 'ICF NAC' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'ICF NAC'
+      -> Found keyword 'Corr in date' in sheet 'ICF NAC'
+      -> Found keyword 'Corrosion' in sheet 'ICF NAC'
+    Sheet 'OR' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'OR'
+      -> Found keyword 'Corr in date' in sheet 'OR'
+      -> Found keyword 'Corrosion' in sheet 'OR'
+    Sheet 'NMGHS' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'NMGHS'
+      -> Found keyword 'Corr in date' in sheet 'NMGHS'
+      -> Found keyword 'Corrosion' in sheet 'NMGHS'
+    Sheet 'ARTARMV' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'ARTARMV'
+      -> Found keyword 'Corr in date' in sheet 'ARTARMV'
+      -> Found keyword 'Corrosion' in sheet 'ARTARMV'
+    Sheet 'Copy of ICF NAC' headers:
+      ('FESTIVAL SPECIAL PROGRAMME ICF', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'FESTIVAL SPECIAL PROGRAMME LHB', None)
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+    Sheet 'LHB' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Recd dt', 'Repair type', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch status', 'PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'LHB'
+      -> Found keyword 'Corr in date' in sheet 'LHB'
+      -> Found keyword 'Corrosion' in sheet 'LHB'
+    Sheet 'MEMUEMU TC' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Month Planned', 'Recd dt', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corr in date' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corrosion' in sheet 'MEMUEMU TC'
+    Sheet 'DEMU' headers:
+      ('Sl. No', 'Type', 'Div/Rly', 'RS No', 'Month', 'TFR On', 'Pre inspection/Load test', 'Truck out', 'Stripping & dewheeling', 'Interior cleaning ', 'U/F Cleaning & Painting', 'Transformer/Power pack & allide work', 'Wheet sets(WT)', 'Bogie wheeling', 'Traction Alernator', 'Cranking', 'Load test', 'Compressor', 'EP Brake/Air drier', 'Air Brake system Testing/Movement checking')
+      -> Found keyword 'Month' in sheet 'DEMU'
+      -> Found keyword 'Interior cleaning ' in sheet 'DEMU'
+      -> Found keyword 'Transformer/Power pack & allide work' in sheet 'DEMU'
+      -> Found keyword 'Traction Alernator' in sheet 'DEMU'
+      -> Found keyword 'Compressor' in sheet 'DEMU'
+      -> Found keyword 'Traction motors/Axle drive' in sheet 'DEMU'
+      -> Found keyword 'CR Corrosion' in sheet 'DEMU'
+    Sheet 'LHB Coaches' headers:
+      (' ', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Corrosion repair' in sheet 'LHB Coaches'
+      -> Found keyword 'Outturn dt' in sheet 'LHB Coaches'
+    Sheet 'COACH_LISTS' headers:
+      ('ICF_MARCH_Despatched', 'ICF_MARCH_FND', 'ICF_MARCH_AN', 'ICF_APRIL_Despatched', 'ICF_APRIL_FND', 'ICF_APRIL_AN', 'LHB_MARCH_Despatched', 'LHB_MARCH_FND', 'LHB_MARCH_AN', 'LHB_APRIL_Despatched', 'LHB_APRIL_FND', 'LHB_APRIL_AN', 'MEMU_MARCH_Despatched', 'MEMU_MARCH_FND', 'MEMU_MARCH_AN', 'MEMU_APRIL_Despatched', 'MEMU_APRIL_FND', 'MEMU_APRIL_AN')
+
+Checking: C:\Users\User\Downloads\POSITION_SUMMARY_V3.xlsx
+  Sheets: ['SUMMARY', 'ICF NAC', 'YARD', 'OR', 'NMGHS', 'ARTARMV', 'Copy of ICF NAC', 'LHB', 'MEMUEMU TC', 'DEMU', 'LHB Coaches', 'COACH_LISTS']
+    Sheet 'SUMMARY' headers:
+      ('COACH REPAIR POSITION SUMMARY  ·  LW/PER  ·  13 April 2026', None, None, None, None, None, None, None, None, None)
+      -> Found keyword '🔧 Under Corrosion  →' in sheet 'SUMMARY'
+      -> Found keyword '✅ Corr Done, Awaiting Desp  →' in sheet 'SUMMARY'
+      -> Found keyword 'Source: YARD sheet — TFR date = corrosion started, Despatch Date = despatched' in sheet 'SUMMARY'
+    Sheet 'ICF NAC' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'ICF NAC'
+      -> Found keyword 'Corr in date' in sheet 'ICF NAC'
+      -> Found keyword 'Corrosion' in sheet 'ICF NAC'
+    Sheet 'YARD' headers:
+      ('sl no', 'Coach no', 'TYPE', 'Code', 'Recd date', 'TFR', 'Despatch Date', 'Cal Days', None, None, None, None, None, None, None, None, None, None, None, None)
+    Sheet 'OR' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'OR'
+      -> Found keyword 'Corr in date' in sheet 'OR'
+      -> Found keyword 'Corrosion' in sheet 'OR'
+    Sheet 'NMGHS' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'NMGHS'
+      -> Found keyword 'Corr in date' in sheet 'NMGHS'
+      -> Found keyword 'Corrosion' in sheet 'NMGHS'
+    Sheet 'ARTARMV' headers:
+      ('sl no', 'Coach no', 'Code', 'Recd date', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks', None, None, None, None, None, None)
+      -> Found keyword 'Month Planned' in sheet 'ARTARMV'
+      -> Found keyword 'Corr in date' in sheet 'ARTARMV'
+      -> Found keyword 'Corrosion' in sheet 'ARTARMV'
+    Sheet 'Copy of ICF NAC' headers:
+      ('FESTIVAL SPECIAL PROGRAMME ICF', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, 'FESTIVAL SPECIAL PROGRAMME LHB', None)
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Corrosion repair' in sheet 'Copy of ICF NAC'
+      -> Found keyword 'Outturn dt' in sheet 'Copy of ICF NAC'
+    Sheet 'LHB' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Recd dt', 'Repair type', 'Month Planned', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch status', 'PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'LHB'
+      -> Found keyword 'Corr in date' in sheet 'LHB'
+      -> Found keyword 'Corrosion' in sheet 'LHB'
+    Sheet 'MEMUEMU TC' headers:
+      ('Sl. No', 'Coach no', 'Code', 'Month Planned', 'Recd dt', 'Corr in date', 'Corrosion', 'Bio tank loaded', 'lowering', 'Furnishing ', 'Despatch', 'Des PDC', 'Desp Date', 'Remarks')
+      -> Found keyword 'Month Planned' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corr in date' in sheet 'MEMUEMU TC'
+      -> Found keyword 'Corrosion' in sheet 'MEMUEMU TC'
+    Sheet 'DEMU' headers:
+      ('Sl. No', 'Type', 'Div/Rly', 'RS No', 'Month', 'TFR On', 'Pre inspection/Load test', 'Truck out', 'Stripping & dewheeling', 'Interior cleaning ', 'U/F Cleaning & Painting', 'Transformer/Power pack & allide work', 'Wheet sets(WT)', 'Bogie wheeling', 'Traction Alernator', 'Cranking', 'Load test', 'Compressor', 'EP Brake/Air drier', 'Air Brake system Testing/Movement checking')
+      -> Found keyword 'Month' in sheet 'DEMU'
+      -> Found keyword 'Interior cleaning ' in sheet 'DEMU'
+      -> Found keyword 'Transformer/Power pack & allide work' in sheet 'DEMU'
+      -> Found keyword 'Traction Alernator' in sheet 'DEMU'
+      -> Found keyword 'Compressor' in sheet 'DEMU'
+      -> Found keyword 'Traction motors/Axle drive' in sheet 'DEMU'
+      -> Found keyword 'CR Corrosion' in sheet 'DEMU'
+    Sheet 'LHB Coaches' headers:
+      (' ', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Corrosion repair' in sheet 'LHB Coaches'
+      -> Found keyword 'Outturn dt' in sheet 'LHB Coaches'
+    Sheet 'COACH_LISTS' headers:
+      ('ICF_In_Yard', 'ICF_Under_Corr', 'ICF_Corr_Done', 'ICF_Despatched', 'LHB_In_Yard', 'LHB_Under_Corr', 'LHB_Corr_Done', 'LHB_Despatched')
+      -> Found keyword 'ICF_Under_Corr' in sheet 'COACH_LISTS'
+      -> Found keyword 'ICF_Corr_Done' in sheet 'COACH_LISTS'
+      -> Found keyword 'LHB_Under_Corr' in sheet 'COACH_LISTS'
+      -> Found keyword 'LHB_Corr_Done' in sheet 'COACH_LISTS'
+
+Checking: C:\Users\User\Downloads\Recipe_Analysis_20260314_082741.xlsx
+  Sheets: ['Recipe Summary', 'MFG Analysis']
+    Sheet 'Recipe Summary' headers:
+      ('MFG', 'Number_of_receipts', 'Number_of_Failures', 'Failure %')
+    Sheet 'MFG Analysis' headers:
+      ('MFG', 'Pass', 'Fail', 'Total', 'Failure %')
+
+Checking: C:\Users\User\Downloads\RSP_Works_Progress.xlsx
+  Sheets: ['RSP Works']
+    Sheet 'RSP Works' headers:
+      ('Sl. No.', 'RSP Work', 'Target', 'Completed', 'Balance')
+      -> Found keyword 'RSP Work' in sheet 'RSP Works'
+
+Checking: C:\Users\User\Downloads\SPRING FAILURE DATA.xlsx
+  Sheets: ['Sheet1', 'COACH TYPEVS FAILURE', 'SPRING TYPEVSFAILURE']
+    Sheet 'Sheet1' headers:
+      ('Coach No', 'Coach Code', 'Schedule', 'Division', 'Receipt Date', 'Secondary Suspension Type', 'Type of Spring', 'Colour of Spring', 'Type of Failure', 'Location ', 'Reason for Failure', 'Remarks', 'MFG')
+      -> Found keyword 'Reason for Failure' in sheet 'Sheet1'
+
+Checking: C:\Users\User\Downloads\Spring_Operations_Hours.xlsx
+  Sheets: ['Spring Operations Hours']
+    Sheet 'Spring Operations Hours' headers:
+      ('Operation', 'Hours')
+
+Checking: C:\Users\User\Downloads\testing_report_2026-03-23 (1).xlsx
+  Sheets: ['Cover', 'Monthly Summary', 'By Recipe', 'By Spring Category', 'By MFG', 'MFG × Month', 'Recipe × Month', 'Spring Category × Month', 'Year-over-Year']
+    Sheet 'Cover' headers:
+      ('Spring Testing Report\nLHB & VB Springs Analytics', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Spring Testing Report
+LHB & VB Springs Analytics' in sheet 'Cover'
+    Sheet 'Monthly Summary' headers:
+      ('Spring Testing — Monthly Summary', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Spring Testing — Monthly Summary' in sheet 'Monthly Summary'
+      -> Found keyword 'Month' in sheet 'Monthly Summary'
+      -> Found keyword 'vs Prior Month' in sheet 'Monthly Summary'
+    Sheet 'By Recipe' headers:
+      ('Spring Testing — By Recipe (Exact)', None, None, None, None, None)
+    Sheet 'By Spring Category' headers:
+      ('Spring Testing — By Broad Spring Category', None, None, None, None, None)
+      -> Found keyword 'Spring Testing — By Broad Spring Category' in sheet 'By Spring Category'
+      -> Found keyword 'Spring Category' in sheet 'By Spring Category'
+    Sheet 'By MFG' headers:
+      ('Spring Testing — By Manufacturer', None, None, None, None, None)
+    Sheet 'MFG × Month' headers:
+      ('Spring Testing — MFG × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Spring Testing — MFG × Month' in sheet 'MFG × Month'
+      -> Found keyword 'Generated: 2026-03-23  |  23 items × 23 months' in sheet 'MFG × Month'
+    Sheet 'Recipe × Month' headers:
+      ('Spring Testing — Recipe × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Spring Testing — Recipe × Month' in sheet 'Recipe × Month'
+      -> Found keyword 'Generated: 2026-03-23  |  16 items × 23 months' in sheet 'Recipe × Month'
+    Sheet 'Spring Category × Month' headers:
+      ('Spring Testing — Spring Category × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Spring Testing — Spring Category × Month' in sheet 'Spring Category × Month'
+      -> Found keyword 'Generated: 2026-03-23  |  4 items × 23 months' in sheet 'Spring Category × Month'
+      -> Found keyword 'Spring Category' in sheet 'Spring Category × Month'
+    Sheet 'Year-over-Year' headers:
+      ('Spring Testing — FY Year-over-Year (Apr→Mar)', None, None, None, None, None, None)
+      -> Found keyword 'Month' in sheet 'Year-over-Year'
+      -> Found keyword 'Month' in sheet 'Year-over-Year'
+
+Checking: C:\Users\User\Downloads\testing_report_2026-03-23.xlsx
+  Sheets: ['Cover', 'Monthly Summary', 'By Recipe', 'By Spring Category', 'By MFG', 'MFG × Month', 'Recipe × Month', 'Spring Category × Month', 'Year-over-Year']
+    Sheet 'Cover' headers:
+      ('Spring Testing Report\nLHB & VB Springs Analytics', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Spring Testing Report
+LHB & VB Springs Analytics' in sheet 'Cover'
+    Sheet 'Monthly Summary' headers:
+      ('Spring Testing — Monthly Summary', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Spring Testing — Monthly Summary' in sheet 'Monthly Summary'
+      -> Found keyword 'Month' in sheet 'Monthly Summary'
+      -> Found keyword 'vs Prior Month' in sheet 'Monthly Summary'
+    Sheet 'By Recipe' headers:
+      ('Spring Testing — By Recipe (Exact)', None, None, None, None, None)
+    Sheet 'By Spring Category' headers:
+      ('Spring Testing — By Broad Spring Category', None, None, None, None, None)
+      -> Found keyword 'Spring Testing — By Broad Spring Category' in sheet 'By Spring Category'
+      -> Found keyword 'Spring Category' in sheet 'By Spring Category'
+    Sheet 'By MFG' headers:
+      ('Spring Testing — By Manufacturer', None, None, None, None, None)
+    Sheet 'MFG × Month' headers:
+      ('Spring Testing — MFG × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Spring Testing — MFG × Month' in sheet 'MFG × Month'
+      -> Found keyword 'Generated: 2026-03-23  |  23 items × 23 months' in sheet 'MFG × Month'
+    Sheet 'Recipe × Month' headers:
+      ('Spring Testing — Recipe × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Spring Testing — Recipe × Month' in sheet 'Recipe × Month'
+      -> Found keyword 'Generated: 2026-03-23  |  16 items × 23 months' in sheet 'Recipe × Month'
+    Sheet 'Spring Category × Month' headers:
+      ('Spring Testing — Spring Category × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Spring Testing — Spring Category × Month' in sheet 'Spring Category × Month'
+      -> Found keyword 'Generated: 2026-03-23  |  4 items × 23 months' in sheet 'Spring Category × Month'
+      -> Found keyword 'Spring Category' in sheet 'Spring Category × Month'
+    Sheet 'Year-over-Year' headers:
+      ('Spring Testing — Year-over-Year', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Month' in sheet 'Year-over-Year'
+      -> Found keyword 'Month' in sheet 'Year-over-Year'
+
+Checking: C:\Users\User\Downloads\visual_report_2026-03-18.xlsx
+  Sheets: ['Cover', 'Monthly Summary', 'By Defect Type', 'By MFG', 'By Spring Type', 'MFG × Month', 'Spring Type × Month', 'Year-over-Year']
+    Sheet 'Cover' headers:
+      ('Visual Inspection Report\nLHB & VB Springs Analytics', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection Report
+LHB & VB Springs Analytics' in sheet 'Cover'
+    Sheet 'Monthly Summary' headers:
+      ('Visual Inspection — Monthly Summary', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection — Monthly Summary' in sheet 'Monthly Summary'
+      -> Found keyword 'Month' in sheet 'Monthly Summary'
+      -> Found keyword 'vs Prior Month' in sheet 'Monthly Summary'
+    Sheet 'By Defect Type' headers:
+      ('Visual Inspection — By Defect Type (Pareto)', None, None, None, None, None, None)
+    Sheet 'By MFG' headers:
+      ('Visual Inspection — By MFG  (Defect% = Defects ÷ Vis+Test)', None, None, None, None, None, None)
+    Sheet 'By Spring Type' headers:
+      ('Visual Inspection — By Spring Type  (combined denom)', None, None, None, None, None, None)
+    Sheet 'MFG × Month' headers:
+      ('Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)' in sheet 'MFG × Month'
+      -> Found keyword 'Generated: 2026-03-18  |  23 items × 14 months' in sheet 'MFG × Month'
+    Sheet 'Spring Type × Month' headers:
+      ('Visual — Spring Type × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — Spring Type × Month' in sheet 'Spring Type × Month'
+      -> Found keyword 'Generated: 2026-03-18  |  4 items × 14 months' in sheet 'Spring Type × Month'
+    Sheet 'Year-over-Year' headers:
+      ('Visual Inspection — Year-over-Year', None, None, None, None, None, None)
+      -> Found keyword 'Month' in sheet 'Year-over-Year'
+      -> Found keyword 'Month' in sheet 'Year-over-Year'
+
+Checking: C:\Users\User\Downloads\visual_report_2026-03-23 (1).xlsx
+  Sheets: ['Cover', 'Monthly Summary', 'By Defect Type', 'By MFG', 'By Spring Type', 'MFG × Month', 'Spring Type × Month', 'Year-over-Year', 'Defect Type Trends']
+    Sheet 'Cover' headers:
+      ('Visual Inspection Report\nLHB & VB Springs Analytics', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection Report
+LHB & VB Springs Analytics' in sheet 'Cover'
+    Sheet 'Monthly Summary' headers:
+      ('Visual Inspection — Monthly Summary', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection — Monthly Summary' in sheet 'Monthly Summary'
+      -> Found keyword 'Month' in sheet 'Monthly Summary'
+      -> Found keyword 'vs Prior Month' in sheet 'Monthly Summary'
+    Sheet 'By Defect Type' headers:
+      ('Visual Inspection — By Defect Type (Pareto)', None, None, None, None, None, None)
+    Sheet 'By MFG' headers:
+      ('Visual Inspection — By MFG  (Defect% = Defects ÷ Vis+Test)', None, None, None, None, None, None)
+    Sheet 'By Spring Type' headers:
+      ('Visual Inspection — By Spring Type  (combined denom)', None, None, None, None, None, None)
+    Sheet 'MFG × Month' headers:
+      ('Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)' in sheet 'MFG × Month'
+      -> Found keyword 'Generated: 2026-03-23  |  24 items × 23 months' in sheet 'MFG × Month'
+    Sheet 'Spring Type × Month' headers:
+      ('Visual — Spring Type × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — Spring Type × Month' in sheet 'Spring Type × Month'
+      -> Found keyword 'Generated: 2026-03-23  |  4 items × 23 months' in sheet 'Spring Type × Month'
+    Sheet 'Year-over-Year' headers:
+      ('Visual Inspection — Year-over-Year', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Month' in sheet 'Year-over-Year'
+      -> Found keyword 'Month' in sheet 'Year-over-Year'
+    Sheet 'Defect Type Trends' headers:
+      ('Defect Type Trends — Monthly % of Receipts & % within Defects', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Defect Type Trends — Monthly % of Receipts & % within Defects' in sheet 'Defect Type Trends'
+
+Checking: C:\Users\User\Downloads\visual_report_2026-03-23 (2).xlsx
+  Sheets: ['Cover', 'Monthly Summary', 'By Defect Type', 'By MFG', 'By Spring Type', 'MFG × Month', 'Spring Type × Month', 'Year-over-Year', 'Defect Type Trends']
+    Sheet 'Cover' headers:
+      ('Visual Inspection Report\nLHB & VB Springs Analytics', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection Report
+LHB & VB Springs Analytics' in sheet 'Cover'
+    Sheet 'Monthly Summary' headers:
+      ('Visual Inspection — Monthly Summary', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection — Monthly Summary' in sheet 'Monthly Summary'
+      -> Found keyword 'Month' in sheet 'Monthly Summary'
+      -> Found keyword 'vs Prior Month' in sheet 'Monthly Summary'
+    Sheet 'By Defect Type' headers:
+      ('Visual Inspection — By Defect Type (Pareto)', None, None, None, None, None, None)
+    Sheet 'By MFG' headers:
+      ('Visual Inspection — By MFG  (Defect% = Defects ÷ Vis+Test)', None, None, None, None, None, None)
+    Sheet 'By Spring Type' headers:
+      ('Visual Inspection — By Spring Type  (combined denom)', None, None, None, None, None, None)
+    Sheet 'MFG × Month' headers:
+      ('Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)' in sheet 'MFG × Month'
+      -> Found keyword 'Generated: 2026-03-23  |  24 items × 23 months' in sheet 'MFG × Month'
+    Sheet 'Spring Type × Month' headers:
+      ('Visual — Spring Type × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — Spring Type × Month' in sheet 'Spring Type × Month'
+      -> Found keyword 'Generated: 2026-03-23  |  4 items × 23 months' in sheet 'Spring Type × Month'
+    Sheet 'Year-over-Year' headers:
+      ('Visual Inspection — FY Year-over-Year (Apr→Mar)', None, None, None, None, None, None)
+      -> Found keyword 'Month' in sheet 'Year-over-Year'
+      -> Found keyword 'Month' in sheet 'Year-over-Year'
+    Sheet 'Defect Type Trends' headers:
+      ('Defect Type Trends — Monthly % of Receipts & % within Defects', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Defect Type Trends — Monthly % of Receipts & % within Defects' in sheet 'Defect Type Trends'
+
+Checking: C:\Users\User\Downloads\visual_report_2026-03-23 (3).xlsx
+  Sheets: ['Cover', 'Monthly — Total Receipts', 'By Defect Type — Total Receipts', 'By MFG — Total Receipts', 'By Spring Type — Total Receipts', 'MFG × Month — Total Receipts', 'Spring Type × Month — TotRcpt', 'YoY — Total Receipts (Apr-Mar)', 'Defect% Monthly (within Vis)', 'Defect% Yearly FY (within Vis)']
+    Sheet 'Cover' headers:
+      ('Visual Inspection Report\nLHB & VB Springs Analytics', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection Report
+LHB & VB Springs Analytics' in sheet 'Cover'
+    Sheet 'Monthly — Total Receipts' headers:
+      ('Visual Inspection — Monthly Summary (Defect% = Visual ÷ Total Receipts)', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection — Monthly Summary (Defect% = Visual ÷ Total Receipts)' in sheet 'Monthly — Total Receipts'
+      -> Found keyword 'Month' in sheet 'Monthly — Total Receipts'
+      -> Found keyword 'vs Prior Month' in sheet 'Monthly — Total Receipts'
+    Sheet 'By Defect Type — Total Receipts' headers:
+      ('Visual Inspection — By Defect Type (Pareto)', None, None, None, None, None, None)
+    Sheet 'By MFG — Total Receipts' headers:
+      ('Visual Inspection — By MFG  (Defect% = Defects ÷ Vis+Test)', None, None, None, None, None, None)
+    Sheet 'By Spring Type — Total Receipts' headers:
+      ('Visual Inspection — By Spring Type  (combined denom)', None, None, None, None, None, None)
+    Sheet 'MFG × Month — Total Receipts' headers:
+      ('Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)' in sheet 'MFG × Month — Total Receipts'
+      -> Found keyword 'Generated: 2026-03-23  |  24 items × 23 months' in sheet 'MFG × Month — Total Receipts'
+    Sheet 'Spring Type × Month — TotRcpt' headers:
+      ('Visual — Spring Type × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — Spring Type × Month' in sheet 'Spring Type × Month — TotRcpt'
+      -> Found keyword 'Generated: 2026-03-23  |  4 items × 23 months' in sheet 'Spring Type × Month — TotRcpt'
+    Sheet 'YoY — Total Receipts (Apr-Mar)' headers:
+      ('Visual Inspection — FY Year-over-Year (Apr→Mar)', None, None, None, None, None, None)
+      -> Found keyword 'Month' in sheet 'YoY — Total Receipts (Apr-Mar)'
+      -> Found keyword 'Month' in sheet 'YoY — Total Receipts (Apr-Mar)'
+    Sheet 'Defect% Monthly (within Vis)' headers:
+      ('Defect Type % — Monthly  (% within Visual Defects only)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Defect Type % — Monthly  (% within Visual Defects only)' in sheet 'Defect% Monthly (within Vis)'
+      -> Found keyword 'Period: 2024-04-01 → 2026-02-25  |  Generated: 2026-03-23  |  Denominator = Total Visual Defects that month  |  100% means that defect was the ONLY type recorded that month  |  Check 'Total Vis Def' column to see if count is meaningful' in sheet 'Defect% Monthly (within Vis)'
+      -> Found keyword 'CORROSION' in sheet 'Defect% Monthly (within Vis)'
+      -> Found keyword 'Month' in sheet 'Defect% Monthly (within Vis)'
+    Sheet 'Defect% Yearly FY (within Vis)' headers:
+      ('Defect Type % — Financial Year (Apr→Mar)  (% within Visual Defects only)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Period: 2024-04-01 → 2026-02-25  |  Generated: 2026-03-23  |  Denominator = Total Visual Defects that FY  |  Pie charts per FY show defect mix — compare across years to spot trends' in sheet 'Defect% Yearly FY (within Vis)'
+      -> Found keyword 'CORROSION' in sheet 'Defect% Yearly FY (within Vis)'
+
+Checking: C:\Users\User\Downloads\visual_report_2026-03-23 (4).xlsx
+  Sheets: ['Cover', 'Monthly — Total Receipts', 'By Defect Type — Total Receipts', 'By MFG — Total Receipts', 'By Spring Type — Total Receipts', 'MFG × Month — Total Receipts', 'Spring Type × Month — TotRcpt', 'YoY — Total Receipts (Apr-Mar)', 'Defect% Monthly (within Vis)', 'Defect% Yearly FY (within Vis)']
+    Sheet 'Cover' headers:
+      ('Visual Inspection Report\nLHB & VB Springs Analytics', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection Report
+LHB & VB Springs Analytics' in sheet 'Cover'
+    Sheet 'Monthly — Total Receipts' headers:
+      ('Visual Inspection — Monthly Summary (Defect% = Visual ÷ Total Receipts)', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection — Monthly Summary (Defect% = Visual ÷ Total Receipts)' in sheet 'Monthly — Total Receipts'
+      -> Found keyword 'Month' in sheet 'Monthly — Total Receipts'
+      -> Found keyword 'vs Prior Month' in sheet 'Monthly — Total Receipts'
+    Sheet 'By Defect Type — Total Receipts' headers:
+      ('Visual Inspection — By Defect Type (Pareto)', None, None, None, None, None, None)
+    Sheet 'By MFG — Total Receipts' headers:
+      ('Visual Inspection — By MFG  (Defect% = Defects ÷ Vis+Test)', None, None, None, None, None, None)
+    Sheet 'By Spring Type — Total Receipts' headers:
+      ('Visual Inspection — By Spring Type  (combined denom)', None, None, None, None, None, None)
+    Sheet 'MFG × Month — Total Receipts' headers:
+      ('Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)' in sheet 'MFG × Month — Total Receipts'
+      -> Found keyword 'Generated: 2026-03-23  |  23 items × 14 months' in sheet 'MFG × Month — Total Receipts'
+    Sheet 'Spring Type × Month — TotRcpt' headers:
+      ('Visual — Spring Type × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — Spring Type × Month' in sheet 'Spring Type × Month — TotRcpt'
+      -> Found keyword 'Generated: 2026-03-23  |  4 items × 14 months' in sheet 'Spring Type × Month — TotRcpt'
+    Sheet 'YoY — Total Receipts (Apr-Mar)' headers:
+      ('Visual Inspection — FY Year-over-Year (Apr→Mar)', None, None, None, None, None, None)
+      -> Found keyword 'Month' in sheet 'YoY — Total Receipts (Apr-Mar)'
+      -> Found keyword 'Month' in sheet 'YoY — Total Receipts (Apr-Mar)'
+    Sheet 'Defect% Monthly (within Vis)' headers:
+      ('Defect Type % — Monthly  (% within Visual Defects only)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Defect Type % — Monthly  (% within Visual Defects only)' in sheet 'Defect% Monthly (within Vis)'
+      -> Found keyword 'Period: 2025-01-01 → 2026-02-25  |  Generated: 2026-03-23  |  Denominator = Total Visual Defects that month  |  100% means that defect was the ONLY type recorded that month  |  Check 'Total Vis Def' column to see if count is meaningful' in sheet 'Defect% Monthly (within Vis)'
+      -> Found keyword 'CORROSION' in sheet 'Defect% Monthly (within Vis)'
+      -> Found keyword 'Month' in sheet 'Defect% Monthly (within Vis)'
+    Sheet 'Defect% Yearly FY (within Vis)' headers:
+      ('Defect Type % — Financial Year (Apr→Mar)  (% within Visual Defects only)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Period: 2025-01-01 → 2026-02-25  |  Generated: 2026-03-23  |  Denominator = Total Visual Defects that FY  |  Pie charts per FY show defect mix — compare across years to spot trends' in sheet 'Defect% Yearly FY (within Vis)'
+      -> Found keyword 'CORROSION' in sheet 'Defect% Yearly FY (within Vis)'
+
+Checking: C:\Users\User\Downloads\visual_report_2026-03-23 (5).xlsx
+  Sheets: ['Cover', 'Monthly — Total Receipts', 'By Defect Type — Total Receipts', 'By MFG — Total Receipts', 'By Spring Type — Total Receipts', 'MFG × Month — Total Receipts', 'Spring Type × Month — TotRcpt', 'YoY — Total Receipts (Apr-Mar)', 'Defect% Monthly (within Vis)', 'Defect% Yearly FY (within Vis)']
+    Sheet 'Cover' headers:
+      ('Visual Inspection Report\nLHB & VB Springs Analytics', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection Report
+LHB & VB Springs Analytics' in sheet 'Cover'
+    Sheet 'Monthly — Total Receipts' headers:
+      ('Visual Inspection — Monthly Summary (Defect% = Visual ÷ Total Receipts)', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection — Monthly Summary (Defect% = Visual ÷ Total Receipts)' in sheet 'Monthly — Total Receipts'
+      -> Found keyword 'Month' in sheet 'Monthly — Total Receipts'
+      -> Found keyword 'vs Prior Month' in sheet 'Monthly — Total Receipts'
+    Sheet 'By Defect Type — Total Receipts' headers:
+      ('Visual Inspection — By Defect Type (Pareto)', None, None, None, None, None, None)
+    Sheet 'By MFG — Total Receipts' headers:
+      ('Visual Inspection — By MFG  (Defect% = Defects ÷ Vis+Test)', None, None, None, None, None, None)
+    Sheet 'By Spring Type — Total Receipts' headers:
+      ('Visual Inspection — By Spring Type  (combined denom)', None, None, None, None, None, None)
+    Sheet 'MFG × Month — Total Receipts' headers:
+      ('Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)' in sheet 'MFG × Month — Total Receipts'
+      -> Found keyword 'Generated: 2026-03-23  |  23 items × 14 months' in sheet 'MFG × Month — Total Receipts'
+    Sheet 'Spring Type × Month — TotRcpt' headers:
+      ('Visual — Spring Type × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — Spring Type × Month' in sheet 'Spring Type × Month — TotRcpt'
+      -> Found keyword 'Generated: 2026-03-23  |  4 items × 14 months' in sheet 'Spring Type × Month — TotRcpt'
+    Sheet 'YoY — Total Receipts (Apr-Mar)' headers:
+      ('Visual Inspection — FY Year-over-Year (Apr→Mar)', None, None, None, None, None, None)
+      -> Found keyword 'Month' in sheet 'YoY — Total Receipts (Apr-Mar)'
+      -> Found keyword 'Month' in sheet 'YoY — Total Receipts (Apr-Mar)'
+    Sheet 'Defect% Monthly (within Vis)' headers:
+      ('Defect Type % — Monthly  (% within Visual Defects only)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Defect Type % — Monthly  (% within Visual Defects only)' in sheet 'Defect% Monthly (within Vis)'
+      -> Found keyword 'Period: 2025-01-01 → 2026-02-25  |  Generated: 2026-03-23  |  Denominator = Total Visual Defects that month  |  100% means that defect was the ONLY type recorded that month  |  Check 'Total Vis Def' column to see if count is meaningful' in sheet 'Defect% Monthly (within Vis)'
+      -> Found keyword 'CORROSION' in sheet 'Defect% Monthly (within Vis)'
+      -> Found keyword 'Month' in sheet 'Defect% Monthly (within Vis)'
+    Sheet 'Defect% Yearly FY (within Vis)' headers:
+      ('Defect Type % — Financial Year (Apr→Mar)  (% within Visual Defects only)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Period: 2025-01-01 → 2026-02-25  |  Generated: 2026-03-23  |  Denominator = Total Visual Defects that FY  |  Pie charts per FY show defect mix — compare across years to spot trends' in sheet 'Defect% Yearly FY (within Vis)'
+      -> Found keyword 'CORROSION' in sheet 'Defect% Yearly FY (within Vis)'
+
+Checking: C:\Users\User\Downloads\visual_report_2026-03-23 (6).xlsx
+  Sheets: ['Cover', 'Monthly — Total Receipts', 'By Defect Type — Total Receipts', 'By MFG — Total Receipts', 'By Spring Type — Total Receipts', 'MFG × Month — Total Receipts', 'Spring Type × Month — TotRcpt', 'YoY — Total Receipts (Apr-Mar)', 'Defect% Monthly (within Vis)', 'Defect% Yearly FY (within Vis)']
+    Sheet 'Cover' headers:
+      ('Visual Inspection Report\nLHB & VB Springs Analytics', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection Report
+LHB & VB Springs Analytics' in sheet 'Cover'
+    Sheet 'Monthly — Total Receipts' headers:
+      ('Visual Inspection — Monthly Summary (Defect% = Visual ÷ Total Receipts)', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection — Monthly Summary (Defect% = Visual ÷ Total Receipts)' in sheet 'Monthly — Total Receipts'
+      -> Found keyword 'Month' in sheet 'Monthly — Total Receipts'
+      -> Found keyword 'vs Prior Month' in sheet 'Monthly — Total Receipts'
+    Sheet 'By Defect Type — Total Receipts' headers:
+      ('Visual Inspection — By Defect Type (Pareto)', None, None, None, None, None, None)
+    Sheet 'By MFG — Total Receipts' headers:
+      ('Visual Inspection — By MFG  (Defect% = Defects ÷ Vis+Test)', None, None, None, None, None, None)
+    Sheet 'By Spring Type — Total Receipts' headers:
+      ('Visual Inspection — By Spring Type  (combined denom)', None, None, None, None, None, None)
+    Sheet 'MFG × Month — Total Receipts' headers:
+      ('Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)' in sheet 'MFG × Month — Total Receipts'
+      -> Found keyword 'Generated: 2026-03-23  |  24 items × 23 months' in sheet 'MFG × Month — Total Receipts'
+    Sheet 'Spring Type × Month — TotRcpt' headers:
+      ('Visual — Spring Type × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — Spring Type × Month' in sheet 'Spring Type × Month — TotRcpt'
+      -> Found keyword 'Generated: 2026-03-23  |  4 items × 23 months' in sheet 'Spring Type × Month — TotRcpt'
+    Sheet 'YoY — Total Receipts (Apr-Mar)' headers:
+      ('Visual Inspection — FY Year-over-Year (Apr→Mar)', None, None, None, None, None, None)
+      -> Found keyword 'Month' in sheet 'YoY — Total Receipts (Apr-Mar)'
+      -> Found keyword 'Month' in sheet 'YoY — Total Receipts (Apr-Mar)'
+    Sheet 'Defect% Monthly (within Vis)' headers:
+      ('Defect Type % — Monthly  (% within Visual Defects only)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Defect Type % — Monthly  (% within Visual Defects only)' in sheet 'Defect% Monthly (within Vis)'
+      -> Found keyword 'Period: 2024-04-01 → 2026-02-25  |  Generated: 2026-03-23  |  Denominator = Total Visual Defects that month  |  100% means that defect was the ONLY type recorded that month  |  Check 'Total Vis Def' column to see if count is meaningful' in sheet 'Defect% Monthly (within Vis)'
+      -> Found keyword 'CORROSION' in sheet 'Defect% Monthly (within Vis)'
+      -> Found keyword 'Month' in sheet 'Defect% Monthly (within Vis)'
+    Sheet 'Defect% Yearly FY (within Vis)' headers:
+      ('Defect Type % — Financial Year (Apr→Mar)  (% within Visual Defects only)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Period: 2024-04-01 → 2026-02-25  |  Generated: 2026-03-23  |  Denominator = Total Visual Defects that FY  |  Pie charts per FY show defect mix — compare across years to spot trends' in sheet 'Defect% Yearly FY (within Vis)'
+      -> Found keyword 'CORROSION' in sheet 'Defect% Yearly FY (within Vis)'
+
+Checking: C:\Users\User\Downloads\visual_report_2026-03-23.xlsx
+  Sheets: ['Cover', 'Monthly Summary', 'By Defect Type', 'By MFG', 'By Spring Type', 'MFG × Month', 'Spring Type × Month', 'Year-over-Year']
+    Sheet 'Cover' headers:
+      ('Visual Inspection Report\nLHB & VB Springs Analytics', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection Report
+LHB & VB Springs Analytics' in sheet 'Cover'
+    Sheet 'Monthly Summary' headers:
+      ('Visual Inspection — Monthly Summary', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection — Monthly Summary' in sheet 'Monthly Summary'
+      -> Found keyword 'Month' in sheet 'Monthly Summary'
+      -> Found keyword 'vs Prior Month' in sheet 'Monthly Summary'
+    Sheet 'By Defect Type' headers:
+      ('Visual Inspection — By Defect Type (Pareto)', None, None, None, None, None, None)
+    Sheet 'By MFG' headers:
+      ('Visual Inspection — By MFG  (Defect% = Defects ÷ Vis+Test)', None, None, None, None, None, None)
+    Sheet 'By Spring Type' headers:
+      ('Visual Inspection — By Spring Type  (combined denom)', None, None, None, None, None, None)
+    Sheet 'MFG × Month' headers:
+      ('Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)' in sheet 'MFG × Month'
+      -> Found keyword 'Generated: 2026-03-23  |  23 items × 14 months' in sheet 'MFG × Month'
+    Sheet 'Spring Type × Month' headers:
+      ('Visual — Spring Type × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — Spring Type × Month' in sheet 'Spring Type × Month'
+      -> Found keyword 'Generated: 2026-03-23  |  4 items × 14 months' in sheet 'Spring Type × Month'
+    Sheet 'Year-over-Year' headers:
+      ('Visual Inspection — Year-over-Year', None, None, None, None, None, None)
+      -> Found keyword 'Month' in sheet 'Year-over-Year'
+      -> Found keyword 'Month' in sheet 'Year-over-Year'
+
+Checking: C:\Users\User\Downloads\visual_report_2026-05-27.xlsx
+  Sheets: ['Cover', 'Monthly — Total Receipts', 'By Defect Type — Total Receipts', 'By MFG — Total Receipts', 'By Spring Type — Total Receipts', 'MFG × Month — Total Receipts', 'Spring Type × Month — TotRcpt', 'YoY — Total Receipts (Apr-Mar)', 'Defect% Monthly (within Vis)', 'Defect% Yearly FY (within Vis)']
+    Sheet 'Cover' headers:
+      ('Visual Inspection Report\nLHB & VB Springs Analytics', None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection Report
+LHB & VB Springs Analytics' in sheet 'Cover'
+    Sheet 'Monthly — Total Receipts' headers:
+      ('Visual Inspection — Monthly Summary (Defect% = Visual ÷ Total Receipts)', None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual Inspection — Monthly Summary (Defect% = Visual ÷ Total Receipts)' in sheet 'Monthly — Total Receipts'
+      -> Found keyword 'Month' in sheet 'Monthly — Total Receipts'
+      -> Found keyword 'vs Prior Month' in sheet 'Monthly — Total Receipts'
+    Sheet 'By Defect Type — Total Receipts' headers:
+      ('Visual Inspection — By Defect Type (Pareto)', None, None, None, None, None, None)
+    Sheet 'By MFG — Total Receipts' headers:
+      ('Visual Inspection — By MFG  (Defect% = Defects ÷ Vis+Test)', None, None, None, None, None, None)
+    Sheet 'By Spring Type — Total Receipts' headers:
+      ('Visual Inspection — By Spring Type  (combined denom)', None, None, None, None, None, None)
+    Sheet 'MFG × Month — Total Receipts' headers:
+      ('Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — MFG × Month  (Defects ÷ Vis+Test per MFG+Month)' in sheet 'MFG × Month — Total Receipts'
+      -> Found keyword 'Generated: 2026-05-27  |  23 items × 14 months' in sheet 'MFG × Month — Total Receipts'
+    Sheet 'Spring Type × Month — TotRcpt' headers:
+      ('Visual — Spring Type × Month', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Visual — Spring Type × Month' in sheet 'Spring Type × Month — TotRcpt'
+      -> Found keyword 'Generated: 2026-05-27  |  4 items × 14 months' in sheet 'Spring Type × Month — TotRcpt'
+    Sheet 'YoY — Total Receipts (Apr-Mar)' headers:
+      ('Visual Inspection — FY Year-over-Year (Apr→Mar)', None, None, None, None, None, None)
+      -> Found keyword 'Month' in sheet 'YoY — Total Receipts (Apr-Mar)'
+      -> Found keyword 'Month' in sheet 'YoY — Total Receipts (Apr-Mar)'
+    Sheet 'Defect% Monthly (within Vis)' headers:
+      ('Defect Type % — Monthly  (% within Visual Defects only)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Defect Type % — Monthly  (% within Visual Defects only)' in sheet 'Defect% Monthly (within Vis)'
+      -> Found keyword 'Period: 2025-01-01 → 2026-02-25  |  Generated: 2026-05-27  |  Denominator = Total Visual Defects that month  |  100% means that defect was the ONLY type recorded that month  |  Check 'Total Vis Def' column to see if count is meaningful' in sheet 'Defect% Monthly (within Vis)'
+      -> Found keyword 'CORROSION' in sheet 'Defect% Monthly (within Vis)'
+      -> Found keyword 'Month' in sheet 'Defect% Monthly (within Vis)'
+    Sheet 'Defect% Yearly FY (within Vis)' headers:
+      ('Defect Type % — Financial Year (Apr→Mar)  (% within Visual Defects only)', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+      -> Found keyword 'Period: 2025-01-01 → 2026-02-25  |  Generated: 2026-05-27  |  Denominator = Total Visual Defects that FY  |  Pie charts per FY show defect mix — compare across years to spot trends' in sheet 'Defect% Yearly FY (within Vis)'
+      -> Found keyword 'CORROSION' in sheet 'Defect% Yearly FY (within Vis)'
+
+Checking: C:\Users\User\Downloads\workshop_outturn_summary.xlsx
+  Sheets: ['Workshop Outturn']
+    Sheet 'Workshop Outturn' headers:
+      ('Shop', 'Item', 'Cumulative Outturn', 'Average / Month')
+      -> Found keyword 'Cumulative Outturn' in sheet 'Workshop Outturn'
+      -> Found keyword 'Average / Month' in sheet 'Workshop Outturn'
+
+Scanning directory: D:\JIJO\TARGET
+
+Scanning directory: D:\JIJO
+
+Checking: D:\JIJO\INCENTIVE HOURS CLAIMED- FEB 16 TO MARCH `15.xlsx
+  Sheets: ['Sheet1', 'Sheet2', 'Sheet3']
+    Sheet 'Sheet1' headers:
+      ('01889/20', 'C_BOGIE', 200.86, 'AIR', 'BBQ', None, None, None)
+
+Checking: D:\JIJO\IOH BOGIE DESPATCH DATA.xlsx
+  Sheets: ['Sheet1', 'Sheet2', 'summary']
+    Sheet 'Sheet1' headers:
+      (202425.0, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+    Sheet 'Sheet2' headers:
+      ('IOH DESPATCH DETAILS', None, None, None)
+    Sheet 'summary' headers:
+      ('IOH', None, None, None, None, None, 'POH', None, None, None, None)
+
+Checking: D:\JIJO\MATERIAL LIST.xlsx
+  Sheets: ['Sheet1', 'springs', 'Sheet3']
+    Sheet 'Sheet1' headers:
+      ('Sr.', 'Ward', 'PL No', 'ABC', 'Long Description', 'Unit Code', 'Section', 'ZBB 2024-25 ', 'AAC', 'CCONS 2023-24', 'CCONS 2024-25', 'Stock as on 05.12.24', 'LRDT', 'LIDT', 'BAR', 'D.No. 6\n2025-26', 'D.No. 8\n2025-26', 'Total  (06+08) ZBB 2025-26', 'Value 2025-26', 'Item  MCI / SAF / Vital ')
+      -> Found keyword 'LOWER SPRING SEAT FOR AXLE BOX GUIDE ARRANGEMENT TO DRG. NO. DL-0-1-103, ALT. z/14.' in sheet 'Sheet1'
+      -> Found keyword 'DUST SHIELD SPRING FOR AXLE BOX GUIDE ARRGT. TO DRG.NO. T-0-1-607 ALT.k/15.' in sheet 'Sheet1'
+      -> Found keyword 'TOP SPRING SEAT FOR AXLE BOX GUIDE ARRANGEMENT TO ICF DRG NO. T-0-1-608, ALT- l/11, ITEM.1.' in sheet 'Sheet1'
+      -> Found keyword 'COMPENSATING RING FOR AXLE BOX GUIDE ARRANGENENT DL-0-1-105 COL.II ALT-C/8.' in sheet 'Sheet1'
+    Sheet 'springs' headers:
+      ('Sr.', 'PL No', 'ABC', 'Long Description', 'Unit Code', 'Section', 'ZBB 2024-25 ', 'AAC', 'CCONS 2023-24', 'CCONS 2024-25', 'Stock as on 05.12.24', 'LRDT', 'LIDT', 'BAR', 'D.No. 6\n2025-26', 'D.No. 8\n2025-26', 'Total  (06+08) ZBB 2025-26', 'Item  MCI / SAF / Vital ', 'Item Where Used', 'Qty per coach / Equipment')
+      -> Found keyword 'HELICAL SPRING FOR AXLE BOX TO ICF DRG NO. DC/EMU-0-1-002.,ALT -s/5 FOR TRAILER COACH.' in sheet 'springs'
+      -> Found keyword 'HELICAL SPRING FOR BOGIE BOLSTER SUSPENSION OF MEMU MC AS PER ICF DRG.NO.MEMU/DMC 0-5 002 ALT.j/nil, ITEM NO.1 OUTER.' in sheet 'springs'
+      -> Found keyword 'HELICAL SPRING FOR AXLE BOX GUIDE ARRANGEMENT FOR TC (RETRO FITMENT) TO ICF DRG NO DC/EMU 0-1-203 alt. .j/3' in sheet 'springs'
+      -> Found keyword 'HELICAL SPRING FOR AXLE BOX GUIDE TO ICF DRG. NO: EMU/M-0-1-024 ALT.q/nil FOR MOTOR COACHES.' in sheet 'springs'

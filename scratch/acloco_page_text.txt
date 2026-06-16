@@ -1,0 +1,121 @@
+Details of AC Loco available at LW/PER as of now
+# POH
+Priority
+Loco No Nature of
+Repair
+Recd.
+Date
+TFR. No. of W.
+Days
+Shed De-wheelingWheel
+Receipt
+Wheeling
+19th W.
+Day
+Test &
+Trial 20th
+W. Day
+ICO 22nd
+W. Day
+Remarks/ PDC
+1 MAY
+3
+WAP7
+30565
+POH 13/04 16/04 53 LGD 16/04 19/05 22/05 29/05 CAB AC
+2 MAY
+4
+WAG7
+27472
+POH 28/04 29/04 38 ED 29/04 27/05 27/05 POH( III)/HL
+Doom Mod/RS
+Cock
+Mod/Relay to
+FDCS
+Conv./Cubicle
+to Triplate Mod
+3 MAY
+5
+WAP7
+30555
+POH 30/04 04/05 36 ED 04/05 30/05 30/05 30/05 POH (I)/ HOG
+coupler Mod/
+SS Long
+Handrail
+Mod/Cab
+improvement
+Mod
+4 JUN
+1
+WAP4
+22915
+POH/RC 07/05 11/05 29 EDDS 11/05 POH (II)/ RC/
+CP-1 /CAB AC/
+FRP cab
+Mod/ML Base
+Mod/ SS
+pipeline Mod/
+Protruding
+pipeline
+Mod/RS Cock
+Mod/ CAB
+improvement
+Mod.
+5 JUN
+2
+WAP7
+30587
+POH 16/05 25/05 20 LGD 25/05 POH(I)/ HOG
+coupler
+Mod/CAB AC
+Mod
+6 JUN
+3
+WAP7
+30570
+POH 22/05 25/05 14 RPM 25/05 POH(I)/ HOG
+coupler Mod/
+SS Long
+Handrail Mod/
+CAB
+improvement
+Mod/Waterless
+Urinal Mod
+7 JUN
+4
+WAG7
+27384
+POH 25/05 27/05 11 GTL 27/05 CAB AC/
+Heavy
+Corrosion/HL
+Doom Mod
+8 JUN
+5
+WAP4
+22342
+POH 26/05 01/06 10 AJJ 01/06 POH(V)/CAB
+AC/ CP-1&2/
+Heavy
+Corrosion
+9 JUL
+1
+WAP7
+30573
+POH 26/05 10 ED
+Out-turn of AC Loco - Details during the Month
+# Type Loco No Repair Type Date Recd Desp Date # Type Loco No Repair Type Date Recd Desp Date
+Type-Wise Break-up of LHB Coach Holdings (Maximum Holding Capacity at LW/PER is 45.) 05/06/26
+LWACCN LWS LWSCN LS5 Total
+5 1 8 2 16
+Details of LHB coaches available at LW/PER as of now
+# PIT Type Coach No. RLY BASE Rep Type Last POH
+Stn
+Type Recd On TFR Days Corr
+Placed
+Corr.
+Comp.
+Pre Hrs
+1 SY/L3_2 LWSCN 192080 SR MDU SS3 -
+POH/CORR
+GOC ICF 12/08/25 16/08/25 297 14/05/26 1000
+2 OT/YD LS5 246786 SR MDU OR ICF ICF 08/09/25 04/11/25 270

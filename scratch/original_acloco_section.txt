@@ -1,0 +1,243 @@
+=== LINE 480 to 520 ===
+471: 
+472: total   = len(df)
+473: corr    = len(df[df["AERIAL_STATUS"] == "UNDER CORROSION"])
+474: cdone   = len(df[df["AERIAL_STATUS"] == "CORROSION DONE"])
+475: 
+476: m1,m2,m3,m4,m5 = st.columns(5)
+477: m1.metric("🏭 Total Inside",    total)
+478: m2.metric("🔴 Under Corrosion", corr)
+479: m3.metric("🟠 Corrosion Done",  cdone)
+480: 
+481: # =====================================================
+482: # FILTERS  (sidebar)
+483: # =====================================================
+484: 
+485: st.sidebar.header("Filters")
+486: 
+487: all_families = ["ALL"] + sorted(df["family"].dropna().unique().tolist())
+488: sel_family = st.sidebar.selectbox("Coach Family", all_families)
+489: 
+490: all_status = ["ALL"] + list(STATUS_STYLE.keys())
+491: sel_status = st.sidebar.selectbox("Operational Status", all_status)
+492: 
+493: all_types = ["ALL"] + sorted(
+494:     df["coach_desc"].dropna().astype(str).unique().tolist()
+495: )
+496: sel_type = st.sidebar.selectbox("Coach Type (TC/CN/GS...)", all_types)
+497: 
+498: if "repair_type" in df.columns:
+499:     repair_vals = sorted([
+500:         v for v in df["repair_type"]
+501:         .dropna().astype(str).unique()
+502:         if v.strip() not in ("", "nan", "0")
+503:     ])
+504:     all_repairs = ["ALL"] + repair_vals
+505: else:
+506:     all_repairs = ["ALL"]
+507: sel_repair = st.sidebar.selectbox(
+508:     "Repair Type (POH/NMG...)", all_repairs
+509: )
+510: 
+511: all_divs = ["ALL"] + sorted(
+512:     df["last_poh"].dropna().astype(str).unique().tolist()
+513: )
+514: sel_div = st.sidebar.selectbox("Previous Workshop (Division)", all_divs)
+515: 
+516: day_min = int(df["IN_DAYS"].min()) if not df.empty else 0
+517: day_max = int(df["IN_DAYS"].max()) if not df.empty else 365
+518: sel_days = st.sidebar.slider(
+519:     "Incoming Days Range",
+520:     day_min, max(day_max, day_min+1),
+521:     (day_min, max(day_max, day_min+1))
+522: )
+523: 
+524: search_text = st.sidebar.text_input(
+525:     "🔍 Highlight Coach / Type", ""
+526: ).strip().upper()
+527: 
+528: # =====================================================
+529: # APPLY FILTERS TO A VIEW DF
+530: # (df stays full — filters only affect highlighting
+
+=== LINE 1080 to 1250 ===
+1071:     st.dataframe(s2, use_container_width=True, hide_index=True)
+1072: 
+1073: with ch3:
+1074:     st.caption("By Previous Workshop")
+1075:     if "last_poh" in df.columns:
+1076:         s3 = (
+1077:             df["last_poh"]
+1078:             .astype(str)
+1079:             .value_counts()
+1080:             .reset_index()
+1081:         )
+1082:         s3.columns = ["Workshop", "Count"]
+1083:         st.dataframe(s3, use_container_width=True, hide_index=True)
+1084: # =====================================================
+1085: # AC LOCO SECTION
+1086: # Data from http://locoworks/acloco/
+1087: # =====================================================
+1088: 
+1089: st.markdown("---")
+1090: st.subheader("⚡ AC Loco Live Position")
+1091: 
+1092: AC_BASE   = "http://locoworks/acloco"
+1093: AC_USER   = "07602546"
+1094: AC_PASS   = "08041977"
+1095: 
+1096: @st.cache_resource
+1097: def get_ac_session():
+1098:     s = requests.Session()
+1099:     s.post(AC_BASE + "/login",
+1100:            data={"username": AC_USER, "password": AC_PASS})
+1101:     return s
+1102: 
+1103: @st.cache_data(ttl=120)
+1104: def fetch_ac_position():
+1105:     """
+1106:     Fetch live position table from /acloco/Position.
+1107:     Returns list of dicts with parsed fields.
+1108:     """
+1109:     try:
+1110:         from bs4 import BeautifulSoup
+1111:         s   = get_ac_session()
+1112:         r   = s.get(AC_BASE + "/Position", timeout=8)
+1113:         soup= BeautifulSoup(r.text, "html.parser")
+1114:         tables = soup.find_all("table")
+1115: 
+1116:         records = []
+1117:         for table in tables:
+1118:             rows = table.find_all("tr")
+1119:             if len(rows) < 2:
+1120:                 continue
+1121:             headers = [th.get_text(strip=True) for th in rows[0].find_all(["th","td"])]
+1122:             if "LOCO No" not in str(headers):
+1123:                 continue
+1124:             for row in rows[1:]:
+1125:                 cells = [td.get_text(strip=True) for td in row.find_all(["td","th"])]
+1126:                 if len(cells) < 6 or not cells[2]:
+1127:                     continue
+1128:                 # Parse "30562 A WAP7 HIT" → loco_no, class, config, shed
+1129:                 loco_raw = cells[2]
+1130:                 parts    = loco_raw.split()
+1131:                 loco_no  = parts[0] if parts else loco_raw
+1132:                 loco_type= parts[2] if len(parts) > 2 else ""
+1133:                 config   = parts[3] if len(parts) > 3 else ""
+1134: 
+1135:                 records.append({
+1136:                     "sl_no":       cells[0],
+1137:                     "priority":    cells[1],
+1138:                     "loco_no":     loco_no,
+1139:                     "loco_type":   loco_type,
+1140:                     "config":      config,
+1141:                     "shed":        cells[5] if len(cells) > 5 else "",
+1142:                     "recd_on":     cells[3] if len(cells) > 3 else "",
+1143:                     "tfr":         cells[4] if len(cells) > 4 else "",
+1144:                     "dewheel":     cells[6]  if len(cells) > 6  else "",
+1145:                     "stripping":   cells[7]  if len(cells) > 7  else "",
+1146:                     "super_str":   cells[8]  if len(cells) > 8  else "",
+1147:                     "tm":          cells[9]  if len(cells) > 9  else "",
+1148:                     "wheeling":    cells[10] if len(cells) > 10 else "",
+1149:                     "test_trial":  cells[11] if len(cells) > 11 else "",
+1150:                     "ico_tm":      cells[12] if len(cells) > 12 else "",
+1151:                     "traffic":     cells[13] if len(cells) > 13 else "",
+1152:                     "accounted_on":cells[14] if len(cells) > 14 else "",
+1153:                     "pdc":         cells[15] if len(cells) > 15 else "",
+1154:                 })
+1155:         return records
+1156:     except Exception as e:
+1157:         return []
+1158: 
+1159: @st.cache_data(ttl=120)
+1160: def fetch_ac_loco_detail(loco_no):
+1161:     """Fetch master details for a specific loco."""
+1162:     try:
+1163:         from bs4 import BeautifulSoup
+1164:         s    = get_ac_session()
+1165:         r    = s.post(AC_BASE + "/Master",
+1166:                       data={"locoNo": str(loco_no)},
+1167:                       timeout=8)
+1168:         soup = BeautifulSoup(r.text, "html.parser")
+1169:         tables = soup.find_all("table")
+1170:         result = {"loco_no": loco_no}
+1171:         for table in tables:
+1172:             rows = table.find_all("tr")
+1173:             for row in rows:
+1174:                 cells = [td.get_text(strip=True) for td in row.find_all(["td","th"])]
+1175:                 # Parse key-value rows like ['Loco No:', '27472', 'Brake:', 'A', ...]
+1176:                 for j in range(0, len(cells)-1, 2):
+1177:                     key = cells[j].rstrip(":").strip().lower().replace(" ","_")
+1178:                     val = cells[j+1].strip()
+1179:                     if key and val:
+1180:                         result[key] = val
+1181:         return result
+1182:     except Exception as e:
+1183:         return {"loco_no": loco_no, "error": str(e)}
+1184: 
+1185: # ── Determine current stage for each loco ──────────────
+1186: 
+1187: STAGES = [
+1188:     ("dewheel",   "De-Wheel"),
+1189:     ("stripping", "Stripping"),
+1190:     ("super_str", "Super Structure"),
+1191:     ("tm",        "TM Assembly"),
+1192:     ("wheeling",  "Wheeling"),
+1193:     ("test_trial","Test Trial"),
+1194:     ("ico_tm",    "ICO TM"),
+1195:     ("traffic",   "Traffic"),
+1196:     ("accounted_on","Accounted"),
+1197: ]
+1198: 
+1199: STAGE_COLORS = {
+1200:     "De-Wheel":      "#922B21",
+1201:     "Stripping":     "#784212",
+1202:     "Super Structure":"#6E2F1A",
+1203:     "TM Assembly":   "#4A235A",
+1204:     "Wheeling":      "#1A5276",
+1205:     "Test Trial":    "#117A65",
+1206:     "ICO TM":        "#1D6A27",
+1207:     "Traffic":       "#0B5345",
+1208:     "Accounted":     "#145A32",
+1209:     "Received":      "#5D6D7E",
+1210: }
+1211: 
+1212: def get_current_stage(rec):
+1213:     """Return the latest completed milestone stage."""
+1214:     for field, label in reversed(STAGES):
+1215:         if rec.get(field,"").strip():
+1216:             return label
+1217:     return "Received"
+1218: 
+1219: with st.spinner("Loading AC Loco position…"):
+1220:     ac_records = fetch_ac_position()
+1221: 
+1222: if not ac_records:
+1223:     st.warning("Could not load AC Loco data from aerial/view/aclocos.json")
+1224: else:
+1225:     ac_df = pd.DataFrame(ac_records)
+1226:     ac_df["current_stage"] = ac_df.apply(get_current_stage, axis=1)
+1227: 
+1228:     # ── Metrics ────────────────────────────────────────────
+1229:     mc1, mc2, mc3, mc4 = st.columns(4)
+1230:     mc1.metric("Locos in Workshop",  len(ac_df))
+1231:     mc2.metric("Types",              ac_df["loco_type"].nunique())
+1232:     mc3.metric("Sheds",              ac_df["shed"].nunique())
+1233:     mc4.metric("With PDC",           ac_df["pdc"].ne("").sum())
+1234: 
+1235:     # ── Sidebar filter for AC loco ─────────────────────────
+1236:     st.sidebar.markdown("---")
+1237:     st.sidebar.markdown("#### ⚡ AC Loco Filters")
+1238:     ac_types = ["ALL"] + sorted(ac_df["loco_type"].dropna().unique().tolist())
+1239:     ac_sheds  = ["ALL"] + sorted(ac_df["shed"].dropna().unique().tolist())
+1240:     sel_ac_type = st.sidebar.selectbox("Loco Type", ac_types, key="ac_type")
+1241:     sel_ac_shed = st.sidebar.selectbox("Loco Shed", ac_sheds, key="ac_shed")
+1242: 
+1243:     ac_view = ac_df.copy()
+1244:     if sel_ac_type != "ALL":
+1245:         ac_view = ac_view[ac_view["loco_type"] == sel_ac_type]
+1246:     if sel_ac_shed != "ALL":
+1247:         ac_view = ac_view[ac_view["shed"] == sel_ac_shed]
+1248: 
+1249:     # ── Position cards ─────────────────────────────────────
+1250:     st.markdown("##### 🔵 Live Stage Position")

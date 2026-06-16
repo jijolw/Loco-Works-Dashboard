@@ -1,0 +1,24 @@
+import os
+import sys
+
+filepath = r"C:\Users\User\Supabase_ERP\static\js\app.js"
+if not os.path.exists(filepath):
+    filepath = r"C:\Users\User\.gemini\antigravity\scratch\Supabase_ERP\static\js\app.js"
+
+sys.stdout.reconfigure(encoding='utf-8')
+
+with open(filepath, "r", encoding="utf-8") as f:
+    lines = f.readlines()
+
+start = -1
+for idx, line in enumerate(lines):
+    if "async function loadAcLoco()" in line or "function loadAcLoco()" in line:
+        start = idx
+        break
+
+if start != -1:
+    print("Found loadAcLoco at line:", start + 1)
+    for i in range(start, min(len(lines), start + 120)):
+        print(f"{i+1}: {lines[i]}", end="")
+else:
+    print("loadAcLoco definition not found")

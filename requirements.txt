@@ -1,0 +1,9 @@
+flask
+requests
+pandas
+beautifulsoup4
+lxml
+openpyxl
+xlrd
+gspread
+google-auth

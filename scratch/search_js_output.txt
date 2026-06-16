@@ -1,0 +1,14 @@
+=== Matches for 'Previous Workshop' ===
+2130: <p class="page-subtitle">Analyze performance of previous workshop cycles, audit schedule selections, and evaluate monthly target achievements.</p>
+2154: <button class="tab-nav-btn active" data-tab="wks-performance" onclick="switchPohTab('wks-performance')">🔬 Previous Workshop Performance</button>
+2232: <div style="color:var(--text-secondary);">No previous workshop data available in ERP records.</div>
+2268: <div class="card-title">🔬 Previous Workshop Performance Analysis</div>
+=== Matches for 'poh/analysis' ===
+2178: const data = await api('poh/analysis', fy ? { fy: fy } : {});
+=== Matches for 'renderWksPerformance' ===
+2180: renderWksPerformanceTab();
+2221: function renderWksPerformanceTab() {
+=== Matches for 'renderWksPerformanceTab' ===
+2180: renderWksPerformanceTab();
+2221: function renderWksPerformanceTab() {
+=== Matches for 'downloadWksPerformanceCSV' ===

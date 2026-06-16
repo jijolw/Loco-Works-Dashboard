@@ -1,0 +1,12 @@
+=== Matches for 'csv' ===
+482: <button class="btn btn-secondary btn-sm" onclick="downloadAerialCSV()">📥 Download CSV</button>
+497: /** Cached data for CSV download & re-renders */
+665: /* ---------- CSV download for aerial ---------- */
+667: function downloadAerialCSV() {
+680: downloadCSV(data, 'aerial_view_coaches.csv');
+=== Matches for 'button' ===
+410: <button class="btn btn-secondary btn-sm" onclick="clearAerialFilters()">Clear</button>
+482: <button class="btn btn-secondary btn-sm" onclick="downloadAerialCSV()">📥 Download CSV</button>
+=== Matches for 'buildFilterControls' ===
+356: function buildFilterControls(coaches) {
+582: html += buildFilterControls(coaches);
