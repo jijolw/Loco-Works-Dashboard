@@ -3570,7 +3570,7 @@ async function loadDataTools() {
                         Synchronize active workshop coaches and historical outturn records from the local ERP system to the cloud Supabase database.
                     </p>
                     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
-                        <button class="btn btn-primary" id="btn-sync-incremental" onclick="triggerErpSync('incremental')">⚡ Sync Last 7 Days (Fast)</button>
+                        <button class="btn btn-primary" id="btn-sync-incremental" onclick="triggerErpSync('incremental')">⚡ Sync Last 45 Days (Fast)</button>
                         <button class="btn btn-secondary" id="btn-sync-full" onclick="triggerErpSync('full')">🔄 Sync Full History (Since 1990)</button>
                     </div>
                     <div id="erp-sync-status-container" style="font-size:13px;padding:12px;border-radius:6px;background:var(--bg-secondary);display:none;">
