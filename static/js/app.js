@@ -1326,6 +1326,10 @@ async function saveManualUpdates(coachno) {
             alert('Milestones updated successfully in Supabase!');
             // Re-run search to refresh display
             searchCoach();
+            // Force refresh the active page behind the modal to update lists
+            if (typeof currentPage !== 'undefined' && currentPage && currentPage !== 'search') {
+                navigate(currentPage, true);
+            }
         } else {
             alert('Error updating milestones: ' + result.error);
         }
@@ -5300,17 +5304,17 @@ async function loadAuditModule() {
                 <div style="flex:1;min-width:0;">
                     <!-- Navigation Tabs -->
                     <div class="tabs-nav-container" style="margin-bottom: 20px;">
-                        <button class="tab-nav-btn active" id="audit-tab-btn-fnd" onclick="switchAuditTab('fnd')">📋 FND (Pending VG & Physical Despatch)</button>
-                        <button class="tab-nav-btn" id="audit-tab-btn-rankings" onclick="switchAuditTab('rankings')">🏢 Workshop & Division Rankings</button>
-                        <button class="tab-nav-btn" id="audit-tab-btn-missing" onclick="switchAuditTab('missing')">⚠️ Coaches Without Hours</button>
-                        <button class="tab-nav-btn" id="audit-tab-btn-condemned" onclick="switchAuditTab('condemned')">🗑️ Condemned & Returned</button>
+                        <button class="tab-nav-btn ${_activeAuditTab === 'fnd' ? 'active' : ''}" id="audit-tab-btn-fnd" onclick="switchAuditTab('fnd')">📋 FND (Pending VG & Physical Despatch)</button>
+                        <button class="tab-nav-btn ${_activeAuditTab === 'rankings' ? 'active' : ''}" id="audit-tab-btn-rankings" onclick="switchAuditTab('rankings')">🏢 Workshop & Division Rankings</button>
+                        <button class="tab-nav-btn ${_activeAuditTab === 'missing' ? 'active' : ''}" id="audit-tab-btn-missing" onclick="switchAuditTab('missing')">⚠️ Coaches Without Hours</button>
+                        <button class="tab-nav-btn ${_activeAuditTab === 'condemned' ? 'active' : ''}" id="audit-tab-btn-condemned" onclick="switchAuditTab('condemned')">🗑️ Condemned & Returned</button>
                     </div>
 
                     <!-- Tab Contents -->
-                    <div id="audit-tab-fnd" class="audit-tab-content"></div>
-                    <div id="audit-tab-rankings" class="audit-tab-content" style="display:none;"></div>
-                    <div id="audit-tab-missing" class="audit-tab-content" style="display:none;"></div>
-                    <div id="audit-tab-condemned" class="audit-tab-content" style="display:none;"></div>
+                    <div id="audit-tab-fnd" class="audit-tab-content" style="${_activeAuditTab === 'fnd' ? '' : 'display:none;'}"></div>
+                    <div id="audit-tab-rankings" class="audit-tab-content" style="${_activeAuditTab === 'rankings' ? '' : 'display:none;'}"></div>
+                    <div id="audit-tab-missing" class="audit-tab-content" style="${_activeAuditTab === 'missing' ? '' : 'display:none;'}"></div>
+                    <div id="audit-tab-condemned" class="audit-tab-content" style="${_activeAuditTab === 'condemned' ? '' : 'display:none;'}"></div>
                 </div>
             </div>
         </div>
@@ -5482,23 +5486,8 @@ function renderActiveAuditTab() {
                                     ? '<span class="badge badge-success">Despatched</span>'
                                     : '<span class="badge badge-danger">Pending</span>';
                                     
-                                // Dynamic current month detection
-                                const now = new Date();
-                                const currentMonthStr = '/' + String(now.getMonth() + 1).padStart(2, '0') + '/' + now.getFullYear();
-                                const currentMonthStrShort = '/' + String(now.getMonth() + 1).padStart(2, '0') + '/' + String(now.getFullYear()).slice(-2);
-                                const currentMonthIso = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
-                                
-                                const isCurrentMonth = 
-                                    (c.desp_date && (c.desp_date.includes(currentMonthStr) || c.desp_date.includes(currentMonthStrShort) || c.desp_date.includes(currentMonthIso))) ||
-                                    (c.recd_date && (c.recd_date.includes(currentMonthStr) || c.recd_date.includes(currentMonthStrShort) || c.recd_date.includes(currentMonthIso)));
-                                    
-                                const checkboxHtml = isCurrentMonth 
-                                    ? `<input type="checkbox" class="fnd-checkbox" disabled title="Current month outturns must be updated manually" value="${escapeHtml(c.coachno)}">`
-                                    : `<input type="checkbox" class="fnd-checkbox" value="${escapeHtml(c.coachno)}">`;
-                                    
-                                const coachNoLabel = isCurrentMonth
-                                    ? `${escapeHtml(c.coachno)} <span class="badge badge-warning" style="font-size: 10px; margin-left: 5px; vertical-align: middle;">Manual Only</span>`
-                                    : escapeHtml(c.coachno);
+                                const checkboxHtml = `<input type="checkbox" class="fnd-checkbox" value="${escapeHtml(c.coachno)}">`;
+                                const coachNoLabel = `<a href="javascript:void(0)" onclick="window.navigateToSearch('${escapeHtml(c.coachno)}')" class="table-link">${escapeHtml(c.coachno)}</a>`;
                                     
                                 return `
                                     <tr>
@@ -5640,7 +5629,7 @@ function renderActiveAuditTab() {
                         <tbody>
                             ${list.map(c => `
                                 <tr>
-                                    <td style="font-weight: 600; color: var(--accent);">${escapeHtml(c.coachno)}</td>
+                                    <td style="font-weight: 600; color: var(--accent);"><a href="javascript:void(0)" onclick="window.navigateToSearch('${escapeHtml(c.coachno)}')" class="table-link">${escapeHtml(c.coachno)}</a></td>
                                     <td>${escapeHtml(c.coach_desc)}</td>
                                     <td><span class="badge badge-info">${escapeHtml(c.family)}</span></td>
                                     <td>${escapeHtml(c.division || '—')}</td>
@@ -5694,7 +5683,7 @@ function renderActiveAuditTab() {
                         <tbody>
                             ${list.map(c => `
                                 <tr>
-                                    <td style="font-weight: 600; color: var(--accent);">${escapeHtml(c.coachno)}</td>
+                                    <td style="font-weight: 600; color: var(--accent);"><a href="javascript:void(0)" onclick="window.navigateToSearch('${escapeHtml(c.coachno)}')" class="table-link">${escapeHtml(c.coachno)}</a></td>
                                     <td>${escapeHtml(c.coach_desc)}</td>
                                     <td><span class="badge badge-info">${escapeHtml(c.family)}</span></td>
                                     <td>${escapeHtml(c.division || '—')}</td>

@@ -376,35 +376,6 @@ def api_audit_batch_despatch():
         if not coachnos:
             return jsonify({"error": "No coaches selected"}), 400
 
-        # Check if any selected coach belongs to the present calendar month
-        master = fetch_master()
-        master_map = {str(r.get("coachno")).strip(): r for r in master}
-        now = datetime.now()
-        present_month_coaches = []
-        
-        for coachno in coachnos:
-            coachno_str = str(coachno).strip()
-            rec = master_map.get(coachno_str)
-            if rec:
-                recd_str = rec.get("recd_date") or rec.get("recddate")
-                recd_dt = _parse_date(recd_str)
-                desp_str = rec.get("desp_date") or rec.get("despdate") or ""
-                desp_dt = _parse_date(desp_str)
-                
-                is_present_month = False
-                if recd_dt and recd_dt.year == now.year and recd_dt.month == now.month:
-                    is_present_month = True
-                if desp_dt and desp_dt.year == now.year and desp_dt.month == now.month:
-                    is_present_month = True
-                    
-                if is_present_month:
-                    present_month_coaches.append(coachno_str)
-
-        if present_month_coaches:
-            return jsonify({
-                "error": f"Coaches from the current month ({now.strftime('%B %Y')}) cannot be batch-updated: {', '.join(present_month_coaches)}. Please update them manually."
-            }), 400
-            
         # Use current date if none provided
         if not desp_date:
             desp_date = datetime.now().strftime("%d/%m/%Y")
