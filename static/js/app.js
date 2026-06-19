@@ -1208,9 +1208,11 @@ async function searchCoach() {
                 const movements = await api(`coach/${encodeURIComponent(coach.coachno)}/movements`);
                 if (movements && movements.length > 0) {
                     movementsHtml = `
-                        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-                            <h4 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-primary);">📍 Shop Location History (Timeline)</h4>
-                            <div class="movement-timeline">
+                        <details style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);cursor:pointer;">
+                            <summary style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-primary);user-select:none;">
+                                📍 Shop Location History (Timeline) (Click to expand)
+                            </summary>
+                            <div class="movement-timeline" style="margin-top:12px;cursor:default;">
                                 ${movements.map(m => `
                                     <div class="timeline-step">
                                         <div class="timeline-dot"></div>
@@ -1223,17 +1225,31 @@ async function searchCoach() {
                                     </div>
                                 `).join('')}
                             </div>
-                        </div>
+                        </details>
                     `;
                 } else {
                     movementsHtml = `
-                        <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);color:var(--text-muted);font-size:12px;">
-                            📍 No movements logged for this coach.
-                        </div>
+                        <details style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);cursor:pointer;">
+                            <summary style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-primary);user-select:none;">
+                                📍 Shop Location History (Timeline) (Click to expand)
+                            </summary>
+                            <div style="margin-top:12px;color:var(--text-muted);font-size:12px;cursor:default;">
+                                📍 No movements logged for this coach.
+                            </div>
+                        </details>
                     `;
                 }
             } catch (me) {
                 console.warn('Failed to load movements history', me);
+            }
+
+            let pohHistoryHtml = '';
+            try {
+                const pohHistory = await api(`coach/${encodeURIComponent(coach.coachno)}/historical_poh`);
+                pohHistoryHtml = renderPohHistoryComponentHtml(coach.coachno, pohHistory);
+            } catch (he) {
+                console.warn('Failed to load POH history', he);
+                pohHistoryHtml = `<div style="color:var(--danger);padding:8px;">Failed to load POH history.</div>`;
             }
 
             return `<div class="card coach-detail-card anim-slide" style="margin-bottom:16px;">
@@ -1281,6 +1297,16 @@ async function searchCoach() {
                     </div>
                     <button class="btn btn-primary btn-sm" onclick="saveManualUpdates('${coach.coachno}')">Save Milestone Updates</button>
                 </div>
+
+                <!-- POH History & Previous Corrosion Hours Section -->
+                <details style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);cursor:pointer;" open>
+                    <summary style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-primary);user-select:none;">
+                        ⏳ POH History & Previous Corrosion Hours (Click to collapse)
+                    </summary>
+                    <div id="poh-history-container-${coach.coachno}" style="margin-top:12px;cursor:default;">
+                        ${pohHistoryHtml}
+                    </div>
+                </details>
 
                 ${movementsHtml}
             </div>`;
@@ -1340,6 +1366,189 @@ async function saveManualUpdates(coachno) {
     }
 }
 window.saveManualUpdates = saveManualUpdates;
+
+/* ---------- Historical POH & Corrosion Hours Helpers ---------- */
+
+function renderPohHistoryComponentHtml(coachno, records) {
+    let rowsHtml = '';
+    if (!records || records.length === 0) {
+        rowsHtml = `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:12px;">No POH history recorded.</td></tr>`;
+    } else {
+        rowsHtml = records.map(r => {
+            const isManual = r.source === 'Manual';
+            const deleteBtn = isManual 
+                ? `<button class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);padding:2px 6px;font-size:11px;" onclick="deletePohHistoryRecord('${escapeHtml(coachno)}', ${r.id})">Delete</button>` 
+                : '—';
+            const sourceBadge = isManual
+                ? `<span class="badge badge-purple" style="font-size:10px;padding:2px 4px;">Manual</span>`
+                : `<span class="badge badge-info" style="font-size:10px;padding:2px 4px;">${escapeHtml(r.source)}</span>`;
+                
+            return `
+                <tr>
+                    <td>${formatDate(r.poh_date)}</td>
+                    <td style="font-weight:600;">${escapeHtml(r.workshop)}</td>
+                    <td style="font-weight:600;color:var(--accent);">${r.corrosion_hours || 0} hrs</td>
+                    <td>${sourceBadge} ${r.remarks ? `<br><small style="color:var(--text-muted);">${escapeHtml(r.remarks)}</small>` : ''}</td>
+                    <td style="text-align:center;">${deleteBtn}</td>
+                </tr>
+            `;
+        }).join('');
+    }
+
+    return `
+        <div style="overflow-x:auto;margin-bottom:16px;border:1px solid var(--border);border-radius:var(--radius);">
+            <table class="data-table" style="font-size:12px;margin:0;width:100%;">
+                <thead>
+                    <tr>
+                        <th>POH Date</th>
+                        <th>Workshop</th>
+                        <th>Corrosion Hours</th>
+                        <th>Source/Remarks</th>
+                        <th style="text-align:center;width:80px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="card card-no-hover" style="background:var(--bg-secondary);border:1px solid var(--border);padding:12px;margin-top:12px;">
+            <div style="font-weight:600;font-size:12px;margin-bottom:8px;color:var(--text-primary);">✍️ Record External / Previous POH & Corrosion Hours</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+                <div class="filter-group" style="margin-bottom:0;min-width:120px;flex:1;">
+                    <label class="filter-label" style="font-size:10px;margin-bottom:2px;">POH Date</label>
+                    <input type="date" id="add-poh-date-${escapeHtml(coachno)}" class="filter-input" style="padding:4px 8px;font-size:12px;">
+                </div>
+                <div class="filter-group" style="margin-bottom:0;min-width:110px;flex:1;">
+                    <label class="filter-label" style="font-size:10px;margin-bottom:2px;">Workshop</label>
+                    <input type="text" id="add-poh-workshop-${escapeHtml(coachno)}" class="filter-input" placeholder="e.g. MYS, KPA" style="padding:4px 8px;font-size:12px;">
+                </div>
+                <div class="filter-group" style="margin-bottom:0;min-width:100px;flex:1;">
+                    <label class="filter-label" style="font-size:10px;margin-bottom:2px;">Corrosion Hours</label>
+                    <input type="number" id="add-poh-hours-${escapeHtml(coachno)}" class="filter-input" placeholder="e.g. 350" style="padding:4px 8px;font-size:12px;">
+                </div>
+                <div class="filter-group" style="margin-bottom:0;min-width:150px;flex:2;">
+                    <label class="filter-label" style="font-size:10px;margin-bottom:2px;">Remarks</label>
+                    <input type="text" id="add-poh-remarks-${escapeHtml(coachno)}" class="filter-input" placeholder="Optional notes" style="padding:4px 8px;font-size:12px;">
+                </div>
+                <button class="btn btn-primary btn-sm" style="padding:6px 12px;font-size:12px;height:30px;" onclick="submitPohHistoryRecord('${escapeHtml(coachno)}')">Add Record</button>
+            </div>
+        </div>
+    `;
+}
+
+async function refreshPohHistory(coachno) {
+    try {
+        const records = await api(`coach/${encodeURIComponent(coachno)}/historical_poh`);
+        
+        const container = document.getElementById(`poh-history-container-${coachno}`);
+        if (container) {
+            container.innerHTML = renderPohHistoryComponentHtml(coachno, records);
+        }
+        
+        const modalContainer = document.getElementById(`modal-poh-history-container-${coachno}`);
+        if (modalContainer) {
+            modalContainer.innerHTML = renderPohHistoryComponentHtml(coachno, records);
+        }
+    } catch (err) {
+        console.error('Failed to refresh POH history', err);
+    }
+}
+
+window.submitPohHistoryRecord = async function(coachno) {
+    const dateInput = document.getElementById(`add-poh-date-${coachno}`);
+    const wsInput = document.getElementById(`add-poh-workshop-${coachno}`);
+    const hrsInput = document.getElementById(`add-poh-hours-${coachno}`);
+    const remInput = document.getElementById(`add-poh-remarks-${coachno}`);
+    
+    if (!dateInput || !wsInput || !hrsInput) return;
+    
+    const poh_date = dateInput.value.trim();
+    const workshop = wsInput.value.trim();
+    const corrosion_hours = parseFloat(hrsInput.value.trim()) || 0;
+    const remarks = remInput.value.trim();
+    
+    if (!poh_date) {
+        alert('Please select a POH Date.');
+        return;
+    }
+    if (!workshop) {
+        alert('Please enter the Workshop name.');
+        return;
+    }
+    
+    showLoading();
+    try {
+        const res = await fetch('/api/coach/historical_poh', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                coachno: coachno,
+                poh_date: poh_date,
+                workshop: workshop,
+                corrosion_hours: corrosion_hours,
+                remarks: remarks
+            })
+        });
+        const data = await res.json();
+        if (data.error) {
+            alert('Failed to add record: ' + data.error);
+        } else {
+            await refreshPohHistory(coachno);
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Error adding POH record.');
+    } finally {
+        hideLoading();
+    }
+};
+
+window.deletePohHistoryRecord = async function(coachno, id) {
+    if (!confirm('Are you sure you want to delete this historical POH record?')) return;
+    
+    showLoading();
+    try {
+        const res = await fetch(`/api/coach/historical_poh/${id}`, {
+            method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.error) {
+            alert('Failed to delete record: ' + data.error);
+        } else {
+            await refreshPohHistory(coachno);
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Error deleting POH record.');
+    } finally {
+        hideLoading();
+    }
+};
+
+window.showCoachPohHistoryModal = async function(coachno) {
+    const modal = document.getElementById('analytics-coaches-modal');
+    const titleEl = document.getElementById('modal-title');
+    const containerEl = document.getElementById('modal-table-container');
+    
+    if (!modal || !titleEl || !containerEl) return;
+    
+    titleEl.innerHTML = `⏳ POH & Corrosion History — Coach ${escapeHtml(coachno)}`;
+    containerEl.innerHTML = `<div style="color:var(--text-secondary);padding:16px;">Loading POH History…</div>`;
+    modal.style.display = 'flex';
+    
+    try {
+        const records = await api(`coach/${encodeURIComponent(coachno)}/historical_poh`);
+        containerEl.innerHTML = `
+            <div id="modal-poh-history-container-${escapeHtml(coachno)}">
+                ${renderPohHistoryComponentHtml(coachno, records)}
+            </div>
+        `;
+    } catch (err) {
+        containerEl.innerHTML = `<div style="color:var(--danger);padding:16px;">Failed to load POH history: ${escapeHtml(err.message)}</div>`;
+    }
+};
 
 let _outturnData = null;
 
@@ -2393,6 +2602,7 @@ function renderCoachListTab(filteredCoaches, overrides) {
                 </td>
                 <td style="font-weight:600;font-family:var(--font-mono);">
                     <a href="javascript:void(0)" onclick="window.navigateToSearch('${escapeHtml(c.coachno)}')" class="table-link">${escapeHtml(c.coachno)}</a>
+                    <button class="btn btn-secondary btn-sm" style="padding:1px 4px;font-size:10px;margin-left:4px;" onclick="window.showCoachPohHistoryModal('${escapeHtml(c.coachno)}')" title="View/Edit POH History">⏳ History</button>
                 </td>
                 <td>
                     <span style="font-weight:500;">${escapeHtml(c.coach_desc || '—')}</span><br>
@@ -2477,6 +2687,7 @@ function renderDataQualityTab(filteredCoaches, suspectCount, overriddenCount, ex
                                 <tr>
                                     <td style="font-weight:600;font-family:var(--font-mono);">
                                         <a href="javascript:void(0)" onclick="window.navigateToSearch('${escapeHtml(sc.coachno)}')" class="table-link">${escapeHtml(sc.coachno)}</a>
+                                        <button class="btn btn-secondary btn-sm" style="padding:1px 4px;font-size:10px;margin-left:4px;" onclick="window.showCoachPohHistoryModal('${escapeHtml(sc.coachno)}')" title="View/Edit POH History">⏳ History</button>
                                     </td>
                                     <td>${escapeHtml(sc.coach_desc || sc.family || '—')}</td>
                                     <td style="color:var(--danger);">${sc.suspect_reasons.join(', ')}</td>

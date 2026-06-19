@@ -148,7 +148,8 @@ def prefetch_last_movements():
         return cache_entry["map"]
 
     try:
-        url = f"{SUPABASE_URL}/coach_movements?select=coachno,from_location,to_location,timestamp&order=id.asc"
+        # Fetch the latest 3000 movements in descending order to avoid pagination cutoff
+        url = f"{SUPABASE_URL}/coach_movements?select=coachno,from_location,to_location,timestamp&order=id.desc&limit=3000"
         resp = requests.get(url, headers=get_headers(), timeout=30)
         resp.raise_for_status()
         rows = resp.json()
@@ -156,7 +157,8 @@ def prefetch_last_movements():
         movements_map = {}
         for r in rows:
             cno = str(r.get("coachno") or "").strip()
-            if cno:
+            if cno and cno not in movements_map:
+                # Keep the first seen (latest) record for each coach
                 movements_map[cno] = r
 
         _movements_cache["all_movements"] = {
@@ -255,6 +257,41 @@ def sync_active_coaches_to_supabase(coaches_list, clear_table=True):
             resp = requests.post(url_insert, data=json.dumps(chunk), headers=headers)
             resp.raise_for_status()
             logger.info("Uploaded chunk of %d records (total synced: %d/%d)", len(chunk), min(i + chunk_size, len(coaches_list)), len(coaches_list))
+
+# --- historical_poh_records ---
+
+def get_historical_poh_records(coachno):
+    """Fetch manual historical POH records for a coach from Supabase."""
+    coachno = str(coachno).strip()
+    url = f"{SUPABASE_URL}/historical_poh_records?coachno=eq.{coachno}&select=*&order=poh_date.desc"
+    try:
+        resp = requests.get(url, headers=get_headers())
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        logger.error(f"Error fetching historical POH records for coach {coachno}: {e}")
+        return []
+
+def add_historical_poh_record(coachno, poh_date, workshop, corrosion_hours, remarks):
+    """Insert a new manual historical POH record to Supabase."""
+    url = f"{SUPABASE_URL}/historical_poh_records"
+    payload = {
+        "coachno": str(coachno).strip(),
+        "poh_date": poh_date,
+        "workshop": str(workshop).strip(),
+        "corrosion_hours": float(corrosion_hours),
+        "remarks": str(remarks or "").strip()
+    }
+    resp = requests.post(url, data=json.dumps(payload), headers=get_headers())
+    resp.raise_for_status()
+    return resp.json()
+
+def delete_historical_poh_record(record_id):
+    """Delete a manual historical POH record from Supabase."""
+    url = f"{SUPABASE_URL}/historical_poh_records?id=eq.{record_id}"
+    resp = requests.delete(url, headers=get_headers())
+    resp.raise_for_status()
+    return True
 
 # Initialize database checks
 init_db()

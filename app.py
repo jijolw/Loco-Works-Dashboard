@@ -96,7 +96,7 @@ def api_coaches_progress():
 def api_coach_search(coachno):
     """Search for a specific coach by number."""
     try:
-        from services.erp_service import fetch_master, fetch_single, fetch_year_built, _parse_date
+        from services.erp_service import fetch_master_live_search, fetch_single, fetch_year_built, _parse_date
         from services.decoders import (
             decode_repair, decode_division, decode_workshop,
             decode_family, decode_corrosion, decode_all,
@@ -106,14 +106,17 @@ def api_coach_search(coachno):
         from datetime import datetime
 
         coachno = str(coachno).strip()
-        master = fetch_master()
+        # Query live intranet ERP directly using the search filter
+        matches = fetch_master_live_search(coachno)
 
-        # Find matching coaches in master list
-        matches = []
-        for row in master:
-            rn = str(row.get("coachno", "")).strip()
-            if coachno.lower() in rn.lower():
-                matches.append(row)
+        # Fallback to Supabase cache master if live search returned nothing
+        if not matches:
+            from services.erp_service import fetch_master
+            master = fetch_master()
+            for row in master:
+                rn = str(row.get("coachno", "")).strip()
+                if coachno.lower() in rn.lower():
+                    matches.append(row)
 
         if not matches:
             return jsonify({"matches": [], "count": 0})
@@ -450,6 +453,198 @@ def api_acloco_outturn():
 def api_acloco_program():
     """AC Loco program — Phase 3."""
     return jsonify({"status": "coming_soon", "module": "AC Loco Program"})
+
+
+# =====================================================
+# API — Historical POH & Corrosion Hours
+# =====================================================
+
+@app.route("/api/coach/<coachno>/historical_poh")
+def api_coach_historical_poh(coachno):
+    """Fetch merged POH history and manual records for a coach."""
+    try:
+        from services.db_service import get_historical_poh_records
+        from services.erp_service import fetch_master, fetch_master_live_search, fetch_single, _parse_date
+        
+        coachno = str(coachno).strip()
+        
+        # 1. Fetch manual records from Supabase
+        manual_records = get_historical_poh_records(coachno)
+        
+        # 2. Fetch ERP records
+        erp_visits = []
+        matches = fetch_master_live_search(coachno)
+        if not matches:
+            master = fetch_master()
+            matches = [row for row in master if str(row.get("coachno", "")).strip() == coachno]
+        
+        for m in matches[:10]: # limit to 10 ERP visits
+            demandid = m.get("demandid")
+            if not demandid:
+                continue
+            d = fetch_single(demandid)
+            
+            # A. Current/Last ERP visit
+            recd_str = d.get("recd_date") or d.get("recddate")
+            desp_str = d.get("desp_date") or d.get("despdate") or d.get("actualdespdate")
+            poh_date_dt = _parse_date(desp_str) if desp_str else _parse_date(recd_str)
+            poh_date_str = poh_date_dt.strftime("%Y-%m-%d") if poh_date_dt else None
+            
+            corr_hrs = d.get("finalhrs") or d.get("presurveyhrs") or 0
+            try:
+                corr_hrs = float(corr_hrs) if corr_hrs else 0
+            except:
+                corr_hrs = 0
+                
+            if poh_date_str:
+                erp_visits.append({
+                    "id": None,
+                    "coachno": coachno,
+                    "poh_date": poh_date_str,
+                    "workshop": "LW/PER",
+                    "corrosion_hours": corr_hrs,
+                    "remarks": f"ERP Record (Demand ID: {demandid})",
+                    "source": "ERP"
+                })
+                
+            # B. Last POH info registered in this ERP visit
+            prev_poh_date_str = d.get("last_pohdate")
+            prev_poh_ws = d.get("last_poh")
+            prev_dt = _parse_date(prev_poh_date_str) if prev_poh_date_str else None
+            prev_date_str = prev_dt.strftime("%Y-%m-%d") if prev_dt else None
+            
+            if prev_date_str and prev_poh_ws:
+                erp_visits.append({
+                    "id": None,
+                    "coachno": coachno,
+                    "poh_date": prev_date_str,
+                    "workshop": prev_poh_ws,
+                    "corrosion_hours": 0,
+                    "remarks": "ERP Previous POH Metadata",
+                    "source": "ERP (Previous)"
+                })
+                
+        # Combine all candidates
+        candidates = []
+        for r in manual_records:
+            candidates.append({
+                "id": r.get("id"),
+                "coachno": coachno,
+                "poh_date": r.get("poh_date"),
+                "workshop": r.get("workshop"),
+                "corrosion_hours": r.get("corrosion_hours"),
+                "remarks": r.get("remarks"),
+                "source": "Manual"
+            })
+            
+        candidates.extend(erp_visits)
+        
+        # Deduplicate records within 10 days of each other
+        valid_candidates = [c for c in candidates if c.get("poh_date")]
+        invalid_candidates = [c for c in candidates if not c.get("poh_date")]
+        
+        valid_candidates.sort(key=lambda x: x["poh_date"])
+        
+        deduped = []
+        for c in valid_candidates:
+            if not deduped:
+                deduped.append(c)
+                continue
+                
+            prev = deduped[-1]
+            try:
+                # parse YYYY-MM-DD
+                d1 = datetime.strptime(prev["poh_date"], "%Y-%m-%d")
+                d2 = datetime.strptime(c["poh_date"], "%Y-%m-%d")
+                days_diff = abs((d2 - d1).days)
+            except Exception:
+                days_diff = 999
+                
+            if days_diff <= 10:
+                # Priority: Manual (3) > ERP (2) > ERP (Previous) (1)
+                def get_priority(src):
+                    if src == "Manual": return 3
+                    if src == "ERP": return 2
+                    if src == "ERP (Previous)": return 1
+                    return 0
+                
+                p1 = get_priority(prev["source"])
+                p2 = get_priority(c["source"])
+                
+                if p2 > p1:
+                    deduped[-1] = c
+                elif p2 == p1:
+                    # Tie-breaker: keep the one with hours
+                    prev_hrs = prev.get("corrosion_hours") or 0
+                    c_hrs = c.get("corrosion_hours") or 0
+                    if c_hrs > prev_hrs:
+                        deduped[-1] = c
+            else:
+                deduped.append(c)
+                
+        merged = deduped + invalid_candidates
+        
+        # Sort by POH Date descending
+        merged.sort(key=lambda x: x["poh_date"] or "", reverse=True)
+        
+        return jsonify(merged)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/coach/historical_poh", methods=["POST"])
+def api_add_historical_poh():
+    """Accepts coachno, poh_date, workshop, corrosion_hours, remarks and saves to Supabase."""
+    try:
+        from services.db_service import add_historical_poh_record
+        data = request.json or {}
+        coachno = str(data.get("coachno", "")).strip()
+        poh_date = str(data.get("poh_date", "")).strip()
+        workshop = str(data.get("workshop", "")).strip()
+        corrosion_hours = data.get("corrosion_hours", 0)
+        remarks = str(data.get("remarks", "")).strip()
+        
+        if not coachno or not poh_date or not workshop:
+            return jsonify({"error": "Coach No, POH Date and Workshop are required."}), 400
+            
+        # Parse POH date to YYYY-MM-DD
+        from services.erp_service import _parse_date
+        parsed_dt = _parse_date(poh_date)
+        if not parsed_dt:
+            try:
+                parsed_dt = datetime.strptime(poh_date, "%Y-%m-%d")
+            except:
+                pass
+                
+        if not parsed_dt:
+            return jsonify({"error": "Invalid date format. Use YYYY-MM-DD or DD/MM/YYYY."}), 400
+            
+        poh_date_str = parsed_dt.strftime("%Y-%m-%d")
+        
+        res = add_historical_poh_record(
+            coachno=coachno,
+            poh_date=poh_date_str,
+            workshop=workshop,
+            corrosion_hours=corrosion_hours,
+            remarks=remarks
+        )
+        return jsonify({"success": True, "record": res})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/coach/historical_poh/<record_id>", methods=["DELETE"])
+def api_delete_historical_poh(record_id):
+    """Deletes a historical POH record from Supabase."""
+    try:
+        from services.db_service import delete_historical_poh_record
+        delete_historical_poh_record(int(record_id))
+        return jsonify({"success": True})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 # =====================================================

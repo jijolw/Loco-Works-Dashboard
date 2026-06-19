@@ -277,6 +277,77 @@ def fetch_master():
         
     return _get_cached(cache_key, CACHE_TTL_MASTER) or []
 
+def fetch_master_live_search(coachno):
+    """Fetch matching coach records directly from live intranet ERP listdata2.html using search term."""
+    try:
+        from config import COACH_ERP_BASE_URL, COACH_ERP_USERNAME, COACH_ERP_PASSWORD
+        sess = requests.Session()
+        # 1. Login to live ERP
+        login_url = f"{COACH_ERP_BASE_URL}/coach/login"
+        sess.post(login_url, data={
+            "username": COACH_ERP_USERNAME,
+            "password": COACH_ERP_PASSWORD,
+        }, timeout=10)
+        
+        # 2. Query listdata2.html with search parameter
+        url = f"{COACH_ERP_BASE_URL}/coach/pohmaster/listdata2.html"
+        payload = {
+            "draw": "1",
+            "start": "0",
+            "length": "25000",
+            "search[value]": str(coachno).strip(),
+            "search[regex]": "false",
+            "order[0][column]": "1",
+            "order[0][dir]": "asc",
+            "columns[0][data]": "rno",
+            "columns[0][searchable]": "true",
+            "columns[0][orderable]": "true",
+            "columns[1][data]": "coachno",
+            "columns[1][searchable]": "true",
+            "columns[1][orderable]": "true",
+        }
+        resp = sess.post(url, data=payload, headers={"X-Requested-With": "XMLHttpRequest"}, timeout=15)
+        if resp.ok:
+            data = resp.json()
+            records = data.get("data", [])
+            mapped = []
+            for r in records:
+                cno = str(r.get("newcoachno") or r.get("coachno") or "").strip()
+                # filter exactly or matching prefix
+                if str(coachno).strip().lower() in cno.lower():
+                    mapped.append({
+                        "coachno": cno,
+                        "coachdesc": r.get("coachdesc") or r.get("coach_desc") or "",
+                        "coach_desc": r.get("coachdesc") or r.get("coach_desc") or "",
+                        "demandid": str(r.get("demandid")),
+                        "pitnum": r.get("pitnum") or "",
+                        "recddate": r.get("recddate") or r.get("recd_date") or "",
+                        "recd_date": r.get("recddate") or r.get("recd_date") or "",
+                        "status": r.get("status") or "",
+                        "pohstatus": r.get("status") or "",
+                        "division": r.get("division") or "",
+                        "dvnid": r.get("dvnid") or r.get("division") or "",
+                        "repair_type": r.get("repair_type") or r.get("repairid") or "",
+                        "repairid": r.get("repairid") or r.get("repair_type") or "",
+                        "year_built": r.get("year_built") or "",
+                        "make": r.get("make") or "",
+                        "presurveyhrs": r.get("presurveyhrs") or "",
+                        "finalhrs": r.get("finalhrs") or "",
+                        "last_poh": r.get("last_poh") or "",
+                        "last_pohdate": r.get("last_pohdate") or "",
+                        "tfr_date": r.get("tfr_date") or "",
+                        "corr_place": r.get("corr_place") or "",
+                        "corr_comp": r.get("corr_comp") or "",
+                        "desp_date": r.get("desp_date") or r.get("despdate") or "",
+                        "actualdespdate": r.get("actualdespdate") or "",
+                        "pohdays": r.get("pohdays") or "",
+                        "remarks": r.get("remarks") or ""
+                    })
+            return mapped
+    except Exception as e:
+        logger.error(f"fetch_master_live_search failed for coachno {coachno}: {e}")
+    return []
+
 # 2. fetch_clean() - pre-processed list (uses batch cache)
 def fetch_clean():
     cache_key = "clean_master"
@@ -382,6 +453,31 @@ def fetch_single(demandid):
 
     coach = demandid_map.get(demandid)
     if not coach:
+        # Fallback: Query live intranet ERP directly
+        try:
+            from config import COACH_ERP_BASE_URL, COACH_ERP_USERNAME, COACH_ERP_PASSWORD
+            sess = requests.Session()
+            sess.post(f"{COACH_ERP_BASE_URL}/coach/login", data={
+                "username": COACH_ERP_USERNAME,
+                "password": COACH_ERP_PASSWORD
+            }, timeout=5)
+            
+            resp = sess.post(f"{COACH_ERP_BASE_URL}/coach/pohmaster/singledata.html", data={"demandid": demandid}, headers={"X-Requested-With": "XMLHttpRequest"}, timeout=10)
+            if resp.ok:
+                detail = resp.json()
+                if detail:
+                    # Map the fields to conform with downstream logic expects
+                    detail["demandid"] = str(detail.get("demandid") or demandid)
+                    detail["coachno"] = str(detail.get("coachno") or "")
+                    detail["presurveyhrs"] = detail.get("presurveyhrs") or ""
+                    detail["finalhrs"] = detail.get("finalhrs") or ""
+                    detail["last_poh"] = detail.get("last_poh") or ""
+                    detail["last_pohdate"] = detail.get("last_pohdate") or ""
+                    detail["desp_date"] = detail.get("desp_date") or detail.get("despdate") or ""
+                    detail["actualdespdate"] = detail.get("actualdespdate") or ""
+                    return detail
+        except Exception as e:
+            logger.error(f"Fallback live ERP fetch failed for demandid {demandid}: {e}")
         return {}
 
     coachno = coach.get("coachno")
