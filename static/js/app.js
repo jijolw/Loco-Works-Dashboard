@@ -1404,9 +1404,9 @@ function renderPohHistoryComponentHtml(coachno, records) {
     } else {
         rowsHtml = records.map(r => {
             const isManual = r.source === 'Manual';
-            const deleteBtn = isManual 
+            const actionBtn = isManual 
                 ? `<button class="btn btn-secondary btn-sm" style="color:var(--danger);border-color:var(--danger);padding:2px 6px;font-size:11px;" onclick="deletePohHistoryRecord('${escapeHtml(coachno)}', ${r.id})">Delete</button>` 
-                : '—';
+                : `<button class="btn btn-secondary btn-sm" style="color:var(--accent);border-color:var(--accent);padding:2px 6px;font-size:11px;" onclick="window.preparePohOverride('${escapeHtml(coachno)}', '${escapeHtml(r.poh_date)}', '${escapeHtml(r.workshop)}')">✏️ Override</button>`;
             const sourceBadge = isManual
                 ? `<span class="badge badge-purple" style="font-size:10px;padding:2px 4px;">Manual</span>`
                 : `<span class="badge badge-info" style="font-size:10px;padding:2px 4px;">${escapeHtml(r.source)}</span>`;
@@ -1417,7 +1417,7 @@ function renderPohHistoryComponentHtml(coachno, records) {
                     <td style="font-weight:600;">${escapeHtml(r.workshop)}</td>
                     <td style="font-weight:600;color:var(--accent);">${r.corrosion_hours || 0} hrs</td>
                     <td>${sourceBadge} ${r.remarks ? `<br><small style="color:var(--text-muted);">${escapeHtml(r.remarks)}</small>` : ''}</td>
-                    <td style="text-align:center;">${deleteBtn}</td>
+                    <td style="text-align:center;">${actionBtn}</td>
                 </tr>
             `;
         }).join('');
@@ -1483,6 +1483,21 @@ async function refreshPohHistory(coachno) {
         console.error('Failed to refresh POH history', err);
     }
 }
+
+window.preparePohOverride = function(coachno, dateStr, workshop) {
+    const dateInput = document.getElementById(`add-poh-date-${coachno}`);
+    const wsInput = document.getElementById(`add-poh-workshop-${coachno}`);
+    const hrsInput = document.getElementById(`add-poh-hours-${coachno}`);
+    const remInput = document.getElementById(`add-poh-remarks-${coachno}`);
+    
+    if (dateInput) dateInput.value = dateStr;
+    if (wsInput) wsInput.value = workshop;
+    if (remInput) remInput.value = `Override corrosion hours for ${workshop} POH`;
+    if (hrsInput) {
+        hrsInput.focus();
+        hrsInput.select();
+    }
+};
 
 window.submitPohHistoryRecord = async function(coachno) {
     const dateInput = document.getElementById(`add-poh-date-${coachno}`);
