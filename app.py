@@ -517,7 +517,7 @@ def api_coach_historical_poh(coachno):
                     "poh_date": poh_date_str,
                     "workshop": "LW/PER",
                     "corrosion_hours": corr_hrs,
-                    "remarks": f"ERP Record (Demand ID: {demandid})",
+                    "remarks": f"POH Visit (Demand ID: {demandid})",
                     "source": "ERP"
                 })
                 
@@ -528,13 +528,26 @@ def api_coach_historical_poh(coachno):
             prev_date_str = prev_dt.strftime("%Y-%m-%d") if prev_dt else None
             
             if prev_date_str and prev_poh_ws:
+                # Entry error override for coach 126416: 23/11/2021 was actually 23/11/2020
+                if coachno == "126416" and prev_date_str == "2021-11-23":
+                    prev_date_str = "2020-11-23"
+                    
+                from services.decoders import decode_workshop
+                ws_decoded = decode_workshop(prev_poh_ws)
+                
+                # Determine remarks based on where POH was done
+                if ws_decoded != "LW/PER":
+                    remarks_str = f"POH done at {ws_decoded}"
+                else:
+                    remarks_str = "Previous POH at LW/PER"
+                    
                 erp_visits.append({
                     "id": None,
                     "coachno": coachno,
                     "poh_date": prev_date_str,
-                    "workshop": prev_poh_ws,
+                    "workshop": ws_decoded,
                     "corrosion_hours": 0,
-                    "remarks": "ERP Previous POH Metadata",
+                    "remarks": remarks_str,
                     "source": "ERP (Previous)"
                 })
                 
@@ -601,6 +614,11 @@ def api_coach_historical_poh(coachno):
         # Sort by POH Date descending
         merged.sort(key=lambda x: x["poh_date"] or "", reverse=True)
         
+        # Clean source label for display: map "ERP (Previous)" to standard "ERP"
+        for m_rec in merged:
+            if m_rec.get("source") == "ERP (Previous)":
+                m_rec["source"] = "ERP"
+                
         return jsonify(merged)
     except Exception as e:
         traceback.print_exc()
