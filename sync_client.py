@@ -347,8 +347,16 @@ def sync_cycle(full_sync=False):
             demandid_str = str(demandid).strip()
             noofdays = rec.get("noofdays") or ""
             
-            # Check cache (making sure it has the new fields, otherwise force fetch)
-            if demandid_str in cache and "pohdays" in cache[demandid_str]:
+            # Check cache (making sure it has the new fields, and that despatch dates are not missing for historical coaches)
+            is_desp_date_missing = False
+            if demandid_str in cache:
+                cached_data = cache[demandid_str]
+                cached_desp = str(cached_data.get("desp_date") or "").strip()
+                cached_act_desp = str(cached_data.get("actualdespdate") or "").strip()
+                if not cached_desp and not cached_act_desp:
+                    is_desp_date_missing = True
+
+            if demandid_str in cache and "pohdays" in cache[demandid_str] and not is_desp_date_missing:
                 cached_data = cache[demandid_str]
                 presurvey = cached_data.get("presurvey", "")
                 final = cached_data.get("final", "")
