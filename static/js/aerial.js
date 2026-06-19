@@ -95,16 +95,14 @@ function getStatusClass(coach) {
     const s = (coach.AERIAL_STATUS || coach.status || '').toUpperCase();
     if (s.includes('UNDER CORROSION')) return 's-corr';
     if (s.includes('CORROSION DONE')) return 's-cdone';
-    if (s.includes('PDC')) return 's-pdc';
     return 's-normal';
 }
 
 function getStatusLabel(coach) {
     const cls = getStatusClass(coach);
-    if (cls === 's-corr') return 'Corrosion';
-    if (cls === 's-cdone') return 'Corr. Done';
-    if (cls === 's-pdc') return 'PDC';
-    return 'Normal';
+    if (cls === 's-corr') return 'Under Corrosion';
+    if (cls === 's-cdone') return 'Corrosion Completed';
+    return 'Routine POH';
 }
 
 /* ---------- Coach lookup helpers ---------- */
@@ -206,6 +204,64 @@ function coachBoxHtml(coach, searchText, filteredSet) {
         dimClass = 'cb-dimmed';
     }
 
+    // Resolve Family Badge (LHB, TC, TW, ICF, NMG)
+    const family = (coach.family || '').toUpperCase();
+    const desc = (coach.coach_desc || coach.coach_type || '').toUpperCase();
+    let familyBadgeHtml = '';
+    
+    if (family === 'LHB') {
+        familyBadgeHtml = '<span class="c-badge badge-lhb">LHB</span>';
+    } else if (family === 'TW') {
+        familyBadgeHtml = '<span class="c-badge badge-tw">TW</span>';
+    } else if (family === 'ICF') {
+        familyBadgeHtml = '<span class="c-badge badge-icf">ICF</span>';
+    } else if (family === 'NMG') {
+        familyBadgeHtml = '<span class="c-badge badge-nmg">NMG</span>';
+    } else if (family === 'DEMU' || family === 'EMU' || family === 'MEMU' || family.includes('TC') || desc.includes('DPC') || desc.includes('DTC') || desc.includes('YSY') || desc.includes('YSD') || desc.includes('MC') || desc.includes('TC')) {
+        // Resolve sub-type within EMU/MEMU/DEMU/TC family
+        let badgeText = 'TC';
+        if (desc.includes('DPC')) {
+            badgeText = 'DPC';
+        } else if (desc.includes('DTC')) {
+            badgeText = 'DTC';
+        } else if (desc.includes('MEMUTC') || desc.includes('MEMU TC')) {
+            badgeText = 'M TC';
+        } else if (desc.includes('MEMUMC') || desc.includes('MEMU MC')) {
+            badgeText = 'M MC';
+        } else if (desc.includes('EMUTC') || desc.includes('EMU TC') || desc.includes('YSY') || desc.includes('YFSY') || desc.includes('YZZS')) {
+            badgeText = 'ETC';
+        } else if (desc.includes('EMUMC') || desc.includes('EMU MC') || desc.includes('YSD') || desc.includes('DMSC')) {
+            badgeText = 'E MC';
+        } else if (desc.includes('MC') || desc.includes('MOTOR')) {
+            if (family === 'MEMU' || desc.includes('MEMU')) badgeText = 'M MC';
+            else if (family === 'EMU' || desc.includes('EMU')) badgeText = 'E MC';
+            else badgeText = 'MC';
+        } else if (desc.includes('TC') || desc.includes('TRAILER')) {
+            if (family === 'MEMU' || desc.includes('MEMU')) badgeText = 'M TC';
+            else if (family === 'EMU' || desc.includes('EMU')) badgeText = 'ETC';
+            else badgeText = 'TC';
+        } else {
+            // Defaults based on family
+            if (family === 'MEMU') badgeText = 'M TC';
+            else if (family === 'EMU') badgeText = 'ETC';
+            else badgeText = 'TC';
+        }
+        familyBadgeHtml = `<span class="c-badge badge-tc">${badgeText}</span>`;
+    }
+
+    // Resolve Severity Badge (local rules: VH > 1000, H 500-1000, L < 500)
+    let sevBadgeHtml = '';
+    const hrs = parseFloat(coach.man_hours || coach.effective_hours || coach.eff_hours || 0);
+    if (statusCls === 's-corr' || statusCls === 's-cdone') {
+        if (hrs >= 1000) {
+            sevBadgeHtml = '<span class="c-badge badge-vh" title="Very Heavy Corrosion (1000+ hrs)">VH</span>';
+        } else if (hrs >= 500) {
+            sevBadgeHtml = '<span class="c-badge badge-h" title="Heavy Corrosion (500-1000 hrs)">H</span>';
+        } else {
+            sevBadgeHtml = '<span class="c-badge badge-l" title="Light Corrosion (<500 hrs)">L</span>';
+        }
+    }
+
     let tooltip = `${escapeHtml(String(num))} — ${escapeHtml(getStatusLabel(coach))}&#10;` +
                   `${escapeHtml(coachType)} | ${escapeHtml(repairType)}&#10;` +
                   `Days Inside: ${escapeHtml(String(daysStr || '—'))}`;
@@ -214,11 +270,17 @@ function coachBoxHtml(coach, searchText, filteredSet) {
     if (coach.lowering_status) tooltip += `&#10;Lowering: ${escapeHtml(coach.lowering_status)}`;
     if (coach.furnishing_status) tooltip += `&#10;Furnishing: ${escapeHtml(coach.furnishing_status)}`;
     if (coach.despatch_status) tooltip += `&#10;Despatch Stage: ${escapeHtml(coach.despatch_status)}`;
-    if (coach.google_pdc) tooltip += `&#10;GS Target PDC: ${escapeHtml(coach.google_pdc)}`;
     if (coach.google_remarks) tooltip += `&#10;GS Remarks: ${escapeHtml(coach.google_remarks)}`;
+    if (coach.remarks) tooltip += `&#10;ERP Remarks: ${escapeHtml(coach.remarks)}`;
 
     return `<div class="cb ${statusCls} ${hlClass} ${dimClass}" style="cursor: pointer;" title="${tooltip}" onclick="window.navigateToSearch('${escapeHtml(String(num))}')">
-        <span>${escapeHtml(String(num))}</span>
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-bottom:4px;">
+            <span style="font-weight:700;">${escapeHtml(String(num))}</span>
+            <div class="cb-badges">
+                ${familyBadgeHtml}
+                ${sevBadgeHtml}
+            </div>
+        </div>
         <span class="cb-sub">${escapeHtml(subText)}</span>
     </div>`;
 }
@@ -430,9 +492,8 @@ function buildLegend() {
     return `
     <div class="legend">
         <div class="legend-item"><div class="legend-dot" style="background:rgba(192,57,43,0.85)"></div> Under Corrosion</div>
-        <div class="legend-item"><div class="legend-dot" style="background:rgba(211,84,0,0.85)"></div> Corrosion Done</div>
-        <div class="legend-item"><div class="legend-dot" style="background:rgba(108,52,131,0.85)"></div> PDC Assigned</div>
-        <div class="legend-item"><div class="legend-dot" style="background:rgba(36,113,163,0.6)"></div> Normal</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f1c40f"></div> Corrosion Completed</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(36,113,163,0.6)"></div> Routine POH</div>
         <div class="legend-item"><div class="legend-dot" style="background:transparent;border:1px dashed rgba(255,255,255,0.3)"></div> Empty Slot</div>
         <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div> Search Match</div>
     </div>`;
@@ -561,7 +622,6 @@ function _renderAerialFull(container, coaches, layout, twoSlotLines, aliases, me
     const total = coaches.length;
     const corrCount = coaches.filter(c => getStatusClass(c) === 's-corr').length;
     const doneCount = coaches.filter(c => getStatusClass(c) === 's-cdone').length;
-    const pdcCount = coaches.filter(c => getStatusClass(c) === 's-pdc').length;
     const normalCount = coaches.filter(c => getStatusClass(c) === 's-normal').length;
 
     // Determine filtered coaches for detail table
@@ -588,9 +648,8 @@ function _renderAerialFull(container, coaches, layout, twoSlotLines, aliases, me
     html += `<div class="metrics-grid anim-slide">`;
     html += createMetricCard('Total Inside', metrics.total || total, '🚃', 'accent-blue');
     html += createMetricCard('Under Corrosion', metrics.under_corrosion || corrCount, '🔴', 'accent-danger');
-    html += createMetricCard('Corrosion Done', metrics.corrosion_done || doneCount, '🟠', 'accent-warning');
-    html += createMetricCard('PDC Assigned', metrics.pdc_assigned || pdcCount, '🟣', 'accent-purple');
-    html += createMetricCard('Normal', metrics.normal || normalCount, '🔵', 'accent-info');
+    html += createMetricCard('Corrosion Completed', metrics.corrosion_done || doneCount, '🟡', 'accent-warning');
+    html += createMetricCard('Routine POH', metrics.normal || normalCount, '🔵', 'accent-info');
     html += `</div>`;
 
     // Filters

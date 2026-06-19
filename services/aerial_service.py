@@ -81,22 +81,38 @@ def _compute_aerial_status(coach):
     Determine the aerial status category for a coach.
 
     Priority order:
-    1. UNDER CORROSION — corr_place filled AND corr_comp blank
-    2. CORROSION DONE  — corr_comp filled
-    3. PDC ASSIGNED    — desp_date filled
-    4. NORMAL          — everything else
+    1. Check if physically despatched, returned, or condemned
+    2. UNDER CORROSION — corr_place filled AND corr_comp blank
+    3. CORROSION DONE  — corr_comp filled
+    4. ROUTINE POH     — everything else
     """
+    status = str(coach.get("status") or "").strip().upper()
+    physical_status = str(coach.get("physical_status") or "").strip().upper()
+    actual_desp = str(coach.get("actualdespdate") or coach.get("desp_date") or coach.get("despdate") or "").strip()
+
+    is_inactive = (
+        status in ("DESPATCHED", "OUTTURN", "RETURN", "COND", "CONDEMNED", "BHOPAL") or
+        physical_status == "DESPATCHED" or
+        (actual_desp and actual_desp.lower() not in ("none", "null", "nan", ""))
+    )
+
+    if is_inactive:
+        if "COND" in status:
+            return "CONDEMNED"
+        if "RETURN" in status:
+            return "RETURNED"
+        if "BHOPAL" in status:
+            return "BHOPAL"
+        return "DESPATCHED"
+
     corr_place = str(coach.get("corr_place", "") or "").strip()
     corr_comp = str(coach.get("corr_comp", "") or "").strip()
-    desp_date = str(coach.get("desp_date", "") or coach.get("despdate", "") or "").strip()
 
-    if desp_date:
-        return "PDC ASSIGNED"
     if corr_place and not corr_comp:
         return "UNDER CORROSION"
     if corr_comp:
         return "CORROSION DONE"
-    return "NORMAL"
+    return "ROUTINE POH"
 
 
 # =====================================================
@@ -182,7 +198,6 @@ def get_aerial_data():
         "total": 0,
         "under_corrosion": 0,
         "corrosion_done": 0,
-        "pdc_assigned": 0,
         "normal": 0,
     }
 
@@ -297,8 +312,6 @@ def get_aerial_data():
             metrics["under_corrosion"] += 1
         elif aerial_status == "CORROSION DONE":
             metrics["corrosion_done"] += 1
-        elif aerial_status == "PDC ASSIGNED":
-            metrics["pdc_assigned"] += 1
         else:
             metrics["normal"] += 1
 

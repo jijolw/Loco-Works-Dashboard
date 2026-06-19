@@ -743,6 +743,7 @@ a:hover {
 
 .badge-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid rgba(192, 57, 43, 0.3); }
 .badge-warning { background: var(--warning-bg); color: var(--warning); border: 1px solid rgba(211, 84, 0, 0.3); }
+.badge-completed { background: #f1c40f; color: #000000; border: 1px solid rgba(243, 156, 18, 0.3); }
 .badge-purple { background: var(--purple-bg); color: #a569bd; border: 1px solid rgba(108, 52, 131, 0.3); }
 .badge-info { background: var(--info-bg); color: #5dade2; border: 1px solid rgba(36, 113, 163, 0.3); }
 .badge-success { background: var(--success-bg); color: #2ecc71; border: 1px solid rgba(29, 106, 39, 0.3); }
@@ -911,8 +912,15 @@ a:hover {
 }
 
 .s-cdone {
-    background: rgba(211, 84, 0, 0.85);
-    border-color: rgba(243, 156, 18, 0.4);
+    background: #f1c40f !important;
+    border-color: #f39c12 !important;
+    color: #000000 !important;
+}
+.s-cdone span {
+    color: #000000 !important;
+}
+.s-cdone .cb-sub {
+    color: rgba(0, 0, 0, 0.7) !important;
 }
 
 .s-pdc {
@@ -1937,5 +1945,51 @@ a:hover {
     transform: translateY(-4px) !important;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4) !important;
     border-color: var(--accent) !important;
+}
+
+/* Badges for Coach Family and Severity */
+.cb-badges {
+    display: flex;
+    gap: 3px;
+    align-items: center;
+}
+
+.c-badge {
+    display: inline-block;
+    padding: 1px 3px;
+    font-size: 7.5px;
+    font-weight: 700;
+    border-radius: 2px;
+    line-height: 1.1;
+    text-transform: uppercase;
+    color: #ffffff !important;
+}
+
+/* Severity Badges */
+.badge-vh {
+    background: #c0392b !important; /* Dark Red */
+}
+.badge-h {
+    background: #d35400 !important; /* Orange */
+}
+.badge-l {
+    background: #27ae60 !important; /* Green */
+}
+
+/* Family Badges */
+.badge-lhb {
+    background: #2980b9 !important; /* Steel Blue */
+}
+.badge-tc {
+    background: #8e44ad !important; /* Violet/Purple */
+}
+.badge-tw {
+    background: #16a085 !important; /* Teal */
+}
+.badge-icf {
+    background: #7f8c8d !important; /* Gray */
+}
+.badge-nmg {
+    background: #d35400 !important; /* Orange */
 }
 

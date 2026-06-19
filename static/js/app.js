@@ -1,3 +1,27 @@
+/* ---------- Status Normalization Helpers ---------- */
+window.getAerialStatusLabel = function(status) {
+    if (!status) return 'Routine POH';
+    const s = String(status).toUpperCase();
+    if (s.includes('UNDER CORROSION')) return 'Under Corrosion';
+    if (s.includes('DONE') || s.includes('COMPLETED')) return 'Corrosion Completed';
+    if (s.includes('ROUTINE') || s.includes('NORMAL')) return 'Routine POH';
+    if (s.includes('DESPATCHED') || s.includes('OUTTURN')) return 'Despatched';
+    if (s.includes('COND')) return 'Condemned';
+    if (s.includes('RETURN')) return 'Returned';
+    if (s.includes('BHOPAL')) return 'Bhopal';
+    return status;
+};
+
+window.getAerialStatusBadgeClass = function(status) {
+    if (!status) return 'badge-info';
+    const s = String(status).toUpperCase();
+    if (s.includes('UNDER CORROSION')) return 'badge-danger';
+    if (s.includes('DONE') || s.includes('COMPLETED')) return 'badge-completed';
+    if (s.includes('DESPATCHED') || s.includes('OUTTURN')) return 'badge-success';
+    if (s.includes('COND') || s.includes('RETURN') || s.includes('BHOPAL')) return 'badge-warning';
+    return 'badge-info';
+};
+
 /* ---------- Navigation Helper ---------- */
 window.navigateToSearch = function(coachNo) {
     location.hash = '#search';
@@ -754,20 +778,14 @@ function renderLivePosition(data) {
         },
         { key: 'AERIAL_STATUS', label: 'Status', sortable: true,
           format: (v) => {
-              const vl = (v || '').toUpperCase();
-              let badgeCls = 'badge-info';
-              if (vl.includes('UNDER CORROSION')) badgeCls = 'badge-danger';
-              else if (vl.includes('DONE')) badgeCls = 'badge-warning';
-              else if (vl.includes('PDC')) badgeCls = 'badge-purple';
-              return `<span class="badge ${badgeCls}">${escapeHtml(v || 'Normal')}</span>`;
+              const label = getAerialStatusLabel(v);
+              const badgeCls = getAerialStatusBadgeClass(v);
+              return `<span class="badge ${badgeCls}">${escapeHtml(label)}</span>`;
           }
         },
     ];
 
     const colorRowFn = (row) => {
-        const s = (row.AERIAL_STATUS || '').toUpperCase();
-        if (s.includes('PDC')) return 'row-purple';
-        
         const d = row.IN_DAYS;
         if (d !== null && d !== undefined && d > 120) return 'row-danger';
         if (d !== null && d !== undefined && d > 60) return 'row-warning';
@@ -1099,7 +1117,7 @@ function downloadLiveCSV() {
         'Coach Type': c.coach_desc || '',
         'Repair Type': c.repair_type || '',
         'Location': c.pitnum || '',
-        'Status': c.AERIAL_STATUS || c.status || '',
+        'Status': getAerialStatusLabel(c.AERIAL_STATUS || c.status),
         'Division': c.division || '',
         'Entry Date': c.recd_date || '',
         'Days Inside': c.IN_DAYS || '',
@@ -1164,12 +1182,8 @@ async function searchCoach() {
 
         const enrichedHTMLs = await Promise.all(matches.map(async (coach, index) => {
             // Determine status badge
-            const statusVal = coach.AERIAL_STATUS || coach.status || 'Normal';
-            const sl = statusVal.toUpperCase();
-            let badgeCls = 'badge-info';
-            if (sl.includes('UNDER CORROSION')) badgeCls = 'badge-danger';
-            else if (sl.includes('DONE')) badgeCls = 'badge-warning';
-            else if (sl.includes('PDC')) badgeCls = 'badge-purple';
+            const statusLabel = getAerialStatusLabel(coach.AERIAL_STATUS || coach.status || 'Normal');
+            const badgeCls = getAerialStatusBadgeClass(coach.AERIAL_STATUS || coach.status || 'Normal');
 
             // Build key-value pairs
             const fields = [
@@ -1177,7 +1191,7 @@ async function searchCoach() {
                 ['Coach Type',       coach.coach_desc || ''],
                 ['Repair Type',      coach.repair_type || ''],
                 ['Location',         coach.pitnum || ''],
-                ['Status',           `<span class="badge ${badgeCls}">${escapeHtml(statusVal)}</span>`],
+                ['Status',           `<span class="badge ${badgeCls}">${escapeHtml(statusLabel)}</span>`],
                 ['Division',         coach.division || ''],
                 ['Family',           coach.family || ''],
                 ['Entry Date',       formatDate(coach.recd_date)],
@@ -1283,7 +1297,7 @@ async function searchCoach() {
             return `
             <details class="coach-visit-details" ${isOpen} style="margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg-secondary); overflow:hidden; cursor:pointer;">
                 <summary style="padding:12px 16px; font-size:15px; font-weight:600; color:var(--text-primary); user-select:none; display:flex; justify-content:space-between; align-items:center; background:var(--bg-tertiary);">
-                    <span>📅 POH Visit: ${escapeHtml(displayDate || 'Unknown Date')} (${escapeHtml(visitYear || '—')}) &nbsp;&nbsp;&bull;&nbsp;&nbsp; Status: <span class="badge ${badgeCls}">${escapeHtml(statusVal)}</span></span>
+                    <span>📅 POH Visit: ${escapeHtml(displayDate || 'Unknown Date')} (${escapeHtml(visitYear || '—')}) &nbsp;&nbsp;&bull;&nbsp;&nbsp; Status: <span class="badge ${badgeCls}">${escapeHtml(statusLabel)}</span></span>
                     <span style="font-family:var(--font-mono); font-size:12px; color:var(--text-secondary);">Demand ID: ${escapeHtml(demandId)}</span>
                 </summary>
                 
@@ -1441,26 +1455,26 @@ function renderPohHistoryComponentHtml(coachno, records) {
             </table>
         </div>
         
-        <div class="card card-no-hover" style="background:var(--bg-secondary);border:1px solid var(--border);padding:12px;margin-top:12px;">
-            <div style="font-weight:600;font-size:12px;margin-bottom:8px;color:var(--text-primary);">✍️ Record External / Previous POH & Corrosion Hours</div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
-                <div class="filter-group" style="margin-bottom:0;min-width:120px;flex:1;">
-                    <label class="filter-label" style="font-size:10px;margin-bottom:2px;">POH Date</label>
-                    <input type="date" id="add-poh-date-${escapeHtml(coachno)}" class="filter-input" style="padding:4px 8px;font-size:12px;">
-                </div>
+        <div class="card card-no-hover" style="background:var(--bg-secondary);border:1px solid var(--border);padding:10px;margin-top:12px;">
+            <div style="font-weight:600;font-size:11px;margin-bottom:6px;color:var(--text-primary);">✍️ Record External / Previous POH & Corrosion Hours</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-end;">
                 <div class="filter-group" style="margin-bottom:0;min-width:110px;flex:1;">
-                    <label class="filter-label" style="font-size:10px;margin-bottom:2px;">Workshop</label>
-                    <input type="text" id="add-poh-workshop-${escapeHtml(coachno)}" class="filter-input" placeholder="e.g. MYS, KPA" style="padding:4px 8px;font-size:12px;">
+                    <label class="filter-label" style="font-size:9px;margin-bottom:2px;">POH Date</label>
+                    <input type="date" id="add-poh-date-${escapeHtml(coachno)}" class="filter-input" style="padding:3px 6px;font-size:11px;">
                 </div>
                 <div class="filter-group" style="margin-bottom:0;min-width:100px;flex:1;">
-                    <label class="filter-label" style="font-size:10px;margin-bottom:2px;">Corrosion Hours</label>
-                    <input type="number" id="add-poh-hours-${escapeHtml(coachno)}" class="filter-input" placeholder="e.g. 350" style="padding:4px 8px;font-size:12px;">
+                    <label class="filter-label" style="font-size:9px;margin-bottom:2px;">Workshop</label>
+                    <input type="text" id="add-poh-workshop-${escapeHtml(coachno)}" class="filter-input" placeholder="e.g. MYS, KPA" style="padding:3px 6px;font-size:11px;">
                 </div>
-                <div class="filter-group" style="margin-bottom:0;min-width:150px;flex:2;">
-                    <label class="filter-label" style="font-size:10px;margin-bottom:2px;">Remarks</label>
-                    <input type="text" id="add-poh-remarks-${escapeHtml(coachno)}" class="filter-input" placeholder="Optional notes" style="padding:4px 8px;font-size:12px;">
+                <div class="filter-group" style="margin-bottom:0;min-width:90px;flex:1;">
+                    <label class="filter-label" style="font-size:9px;margin-bottom:2px;">Corrosion Hours</label>
+                    <input type="number" id="add-poh-hours-${escapeHtml(coachno)}" class="filter-input" placeholder="e.g. 350" style="padding:3px 6px;font-size:11px;">
                 </div>
-                <button class="btn btn-primary btn-sm" style="padding:6px 12px;font-size:12px;height:30px;" onclick="submitPohHistoryRecord('${escapeHtml(coachno)}')">Add Record</button>
+                <div class="filter-group" style="margin-bottom:0;min-width:130px;flex:2;">
+                    <label class="filter-label" style="font-size:9px;margin-bottom:2px;">Remarks</label>
+                    <input type="text" id="add-poh-remarks-${escapeHtml(coachno)}" class="filter-input" placeholder="Optional notes" style="padding:3px 6px;font-size:11px;">
+                </div>
+                <button class="btn btn-primary btn-sm" style="padding:4px 10px;font-size:11px;height:26px;line-height:1.2;" onclick="submitPohHistoryRecord('${escapeHtml(coachno)}')">Add Record</button>
             </div>
         </div>
     `;
