@@ -146,6 +146,12 @@ def api_coach_search(coachno):
             recd_str = row.get("recd_date", "") or row.get("recddate", "") or d.get("recd_date", "") or d.get("recddate", "")
             recd_dt = _parse_date(recd_str)
             decoded["IN_DAYS"] = (datetime.now() - recd_dt).days if recd_dt else None
+            decoded["recd_date"] = recd_str
+            decoded["recddate"] = recd_str
+
+            desp_str = row.get("desp_date") or row.get("despdate") or d.get("desp_date") or d.get("despdate") or d.get("actualdespdate") or ""
+            decoded["desp_date"] = desp_str
+            decoded["despdate"] = desp_str
 
             # Add year_built from coachmaster
             cm = fetch_year_built(coachno)
@@ -202,6 +208,14 @@ def api_coach_search(coachno):
             decoded["AERIAL_STATUS"] = _compute_aerial_status(decoded)
 
             enriched.append(decoded)
+
+        # Sort matches by received date descending (latest first)
+        def get_sort_key(item):
+            recd_str = item.get("recd_date") or ""
+            dt = _parse_date(recd_str)
+            return dt if dt else datetime.min
+            
+        enriched.sort(key=get_sort_key, reverse=True)
 
         return jsonify({"matches": enriched, "count": len(enriched)})
 

@@ -1162,7 +1162,7 @@ async function searchCoach() {
             return;
         }
 
-        const enrichedHTMLs = await Promise.all(matches.map(async coach => {
+        const enrichedHTMLs = await Promise.all(matches.map(async (coach, index) => {
             // Determine status badge
             const statusVal = coach.AERIAL_STATUS || coach.status || 'Normal';
             const sl = statusVal.toUpperCase();
@@ -1203,17 +1203,31 @@ async function searchCoach() {
                 ['Physical Date (Manual)', coach.physical_date ? formatDate(coach.physical_date) : '—'],
             ];
 
+            // Get display date and year of this POH visit
+            const entryDateStr = formatDate(coach.recd_date);
+            const despDateStr = formatDate(coach.desp_date || coach.actualdespdate);
+            const displayDate = despDateStr && despDateStr !== '—' ? despDateStr : (entryDateStr && entryDateStr !== '—' ? entryDateStr : '');
+            const visitYear = displayDate ? displayDate.split('-')[2] : null;
+
             let movementsHtml = '';
             try {
                 const movements = await api(`coach/${encodeURIComponent(coach.coachno)}/movements`);
-                if (movements && movements.length > 0) {
+                // Filter movements by visit year to show only relevant timeline info
+                const filteredMovements = movements.filter(m => {
+                    if (!visitYear) return true;
+                    if (!m.timestamp) return false;
+                    const mYear = m.timestamp.split('-')[0];
+                    return mYear === visitYear;
+                });
+                
+                if (filteredMovements && filteredMovements.length > 0) {
                     movementsHtml = `
                         <details style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);cursor:pointer;">
                             <summary style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-primary);user-select:none;">
-                                📍 Shop Location History (Timeline) (Click to expand)
+                                📍 Shop Location History (Timeline) - Year ${escapeHtml(visitYear)} (Click to expand)
                             </summary>
                             <div class="movement-timeline" style="margin-top:12px;cursor:default;">
-                                ${movements.map(m => `
+                                ${filteredMovements.map(m => `
                                     <div class="timeline-step">
                                         <div class="timeline-dot"></div>
                                         <div class="timeline-info">
@@ -1231,10 +1245,10 @@ async function searchCoach() {
                     movementsHtml = `
                         <details style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);cursor:pointer;">
                             <summary style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-primary);user-select:none;">
-                                📍 Shop Location History (Timeline) (Click to expand)
+                                📍 Shop Location History (Timeline) - Year ${escapeHtml(visitYear || '')} (Click to expand)
                             </summary>
                             <div style="margin-top:12px;color:var(--text-muted);font-size:12px;cursor:default;">
-                                📍 No movements logged for this coach.
+                                📍 No movements logged for this visit.
                             </div>
                         </details>
                     `;
@@ -1244,72 +1258,86 @@ async function searchCoach() {
             }
 
             let pohHistoryHtml = '';
-            try {
-                const pohHistory = await api(`coach/${encodeURIComponent(coach.coachno)}/historical_poh`);
-                pohHistoryHtml = renderPohHistoryComponentHtml(coach.coachno, pohHistory);
-            } catch (he) {
-                console.warn('Failed to load POH history', he);
-                pohHistoryHtml = `<div style="color:var(--danger);padding:8px;">Failed to load POH history.</div>`;
+            if (index === 0) {
+                try {
+                    const pohHistory = await api(`coach/${encodeURIComponent(coach.coachno)}/historical_poh`);
+                    pohHistoryHtml = `
+                        <details style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);cursor:pointer;" open>
+                            <summary style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-primary);user-select:none;">
+                                ⏳ POH History & Previous Corrosion Hours (Click to collapse)
+                            </summary>
+                            <div id="poh-history-container-${coach.coachno}" style="margin-top:12px;cursor:default;">
+                                ${renderPohHistoryComponentHtml(coach.coachno, pohHistory)}
+                            </div>
+                        </details>
+                    `;
+                } catch (he) {
+                    console.warn('Failed to load POH history', he);
+                    pohHistoryHtml = `<div style="color:var(--danger);padding:8px;">Failed to load POH history.</div>`;
+                }
             }
 
-            return `<div class="card coach-detail-card anim-slide" style="margin-bottom:16px;">
-                <div class="card-title" style="font-size:18px;">
-                    🚃 ${escapeHtml(String(coach.coachno || query))}
-                    <span class="badge ${badgeCls}" style="margin-left:8px;">${escapeHtml(statusVal)}</span>
+            const isOpen = index === 0 ? 'open' : '';
+            const demandId = coach.demandid || '—';
+
+            return `
+            <details class="coach-visit-details" ${isOpen} style="margin-bottom:16px; border:1px solid var(--border); border-radius:8px; background:var(--bg-secondary); overflow:hidden; cursor:pointer;">
+                <summary style="padding:12px 16px; font-size:15px; font-weight:600; color:var(--text-primary); user-select:none; display:flex; justify-content:space-between; align-items:center; background:var(--bg-tertiary);">
+                    <span>📅 POH Visit: ${escapeHtml(displayDate || 'Unknown Date')} (${escapeHtml(visitYear || '—')}) &nbsp;&nbsp;&bull;&nbsp;&nbsp; Status: <span class="badge ${badgeCls}">${escapeHtml(statusVal)}</span></span>
+                    <span style="font-family:var(--font-mono); font-size:12px; color:var(--text-secondary);">Demand ID: ${escapeHtml(demandId)}</span>
+                </summary>
+                
+                <div class="card coach-detail-card anim-slide" style="margin-bottom:0; border:none; border-radius:0; box-shadow:none; padding:16px; background:transparent; cursor:default;">
+                    <div class="card-title" style="font-size:18px;">
+                        🚃 Coach Number: ${escapeHtml(String(coach.coachno || query))}
+                    </div>
+                    
+                    ${fields.map(([k, v]) => `
+                        <div class="detail-row">
+                            <div class="detail-key">${escapeHtml(k)}</div>
+                            <div class="detail-value">${typeof v === 'number' ? v : (v || '—')}</div>
+                        </div>
+                    `).join('')}
+
+                    <!-- Manual Updates Form Section -->
+                    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
+                        <h4 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-primary);">✍️ Update Outturn Milestones (Supabase)</h4>
+                        <div class="filter-bar" style="background:transparent;padding:0;margin-bottom:12px;border:none;gap:12px;flex-wrap:wrap;box-shadow:none;">
+                            <div class="filter-group" style="min-width:200px;flex:1;">
+                                <label class="filter-label" style="font-size:11px;">VG Status</label>
+                                <select class="filter-input" id="manual-vg-status-${coach.coachno}">
+                                    <option value="" ${!coach.vg_status ? 'selected' : ''}>—</option>
+                                    <option value="Pending" ${coach.vg_status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                    <option value="Completed" ${coach.vg_status === 'Completed' ? 'selected' : ''}>Completed</option>
+                                </select>
+                            </div>
+                            <div class="filter-group" style="min-width:200px;flex:1;">
+                                <label class="filter-label" style="font-size:11px;">VG Date</label>
+                                <input type="date" class="filter-input" id="manual-vg-date-${coach.coachno}" value="${coach.vg_date || ''}">
+                            </div>
+                        </div>
+                        <div class="filter-bar" style="background:transparent;padding:0;margin-bottom:16px;border:none;gap:12px;flex-wrap:wrap;box-shadow:none;">
+                            <div class="filter-group" style="min-width:200px;flex:1;">
+                                <label class="filter-label" style="font-size:11px;">Physical Despatch</label>
+                                <select class="filter-input" id="manual-phys-status-${coach.coachno}">
+                                    <option value="" ${!coach.physical_status ? 'selected' : ''}>—</option>
+                                    <option value="Pending" ${coach.physical_status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                    <option value="Despatched" ${coach.physical_status === 'Despatched' ? 'selected' : ''}>Despatched</option>
+                                </select>
+                            </div>
+                            <div class="filter-group" style="min-width:200px;flex:1;">
+                                <label class="filter-label" style="font-size:11px;">Despatch Date</label>
+                                <input type="date" class="filter-input" id="manual-phys-date-${coach.coachno}" value="${coach.physical_date || ''}">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="saveManualUpdates('${coach.coachno}')">Save Milestone Updates</button>
+                    </div>
+
+                    ${pohHistoryHtml}
+
+                    ${movementsHtml}
                 </div>
-                ${fields.map(([k, v]) => `
-                    <div class="detail-row">
-                        <div class="detail-key">${escapeHtml(k)}</div>
-                        <div class="detail-value">${typeof v === 'number' ? v : (v || '—')}</div>
-                    </div>
-                `).join('')}
-
-                <!-- Manual Updates Form Section -->
-                <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-                    <h4 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-primary);">✍️ Update Outturn Milestones (Supabase)</h4>
-                    <div class="filter-bar" style="background:transparent;padding:0;margin-bottom:12px;border:none;gap:12px;flex-wrap:wrap;box-shadow:none;">
-                        <div class="filter-group" style="min-width:200px;flex:1;">
-                            <label class="filter-label" style="font-size:11px;">VG Status</label>
-                            <select class="filter-input" id="manual-vg-status-${coach.coachno}">
-                                <option value="" ${!coach.vg_status ? 'selected' : ''}>—</option>
-                                <option value="Pending" ${coach.vg_status === 'Pending' ? 'selected' : ''}>Pending</option>
-                                <option value="Completed" ${coach.vg_status === 'Completed' ? 'selected' : ''}>Completed</option>
-                            </select>
-                        </div>
-                        <div class="filter-group" style="min-width:200px;flex:1;">
-                            <label class="filter-label" style="font-size:11px;">VG Date</label>
-                            <input type="date" class="filter-input" id="manual-vg-date-${coach.coachno}" value="${coach.vg_date || ''}">
-                        </div>
-                    </div>
-                    <div class="filter-bar" style="background:transparent;padding:0;margin-bottom:16px;border:none;gap:12px;flex-wrap:wrap;box-shadow:none;">
-                        <div class="filter-group" style="min-width:200px;flex:1;">
-                            <label class="filter-label" style="font-size:11px;">Physical Despatch</label>
-                            <select class="filter-input" id="manual-phys-status-${coach.coachno}">
-                                <option value="" ${!coach.physical_status ? 'selected' : ''}>—</option>
-                                <option value="Pending" ${coach.physical_status === 'Pending' ? 'selected' : ''}>Pending</option>
-                                <option value="Despatched" ${coach.physical_status === 'Despatched' ? 'selected' : ''}>Despatched</option>
-                            </select>
-                        </div>
-                        <div class="filter-group" style="min-width:200px;flex:1;">
-                            <label class="filter-label" style="font-size:11px;">Despatch Date</label>
-                            <input type="date" class="filter-input" id="manual-phys-date-${coach.coachno}" value="${coach.physical_date || ''}">
-                        </div>
-                    </div>
-                    <button class="btn btn-primary btn-sm" onclick="saveManualUpdates('${coach.coachno}')">Save Milestone Updates</button>
-                </div>
-
-                <!-- POH History & Previous Corrosion Hours Section -->
-                <details style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);cursor:pointer;" open>
-                    <summary style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-primary);user-select:none;">
-                        ⏳ POH History & Previous Corrosion Hours (Click to collapse)
-                    </summary>
-                    <div id="poh-history-container-${coach.coachno}" style="margin-top:12px;cursor:default;">
-                        ${pohHistoryHtml}
-                    </div>
-                </details>
-
-                ${movementsHtml}
-            </div>`;
+            </details>`;
         }));
 
         let html = `<div style="color:var(--text-secondary);font-size:13px;margin-bottom:12px;">Found ${matches.length} match${matches.length > 1 ? 'es' : ''}</div>`;
