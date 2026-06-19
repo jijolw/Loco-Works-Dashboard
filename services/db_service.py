@@ -282,9 +282,12 @@ def add_historical_poh_record(coachno, poh_date, workshop, corrosion_hours, rema
         "corrosion_hours": float(corrosion_hours),
         "remarks": str(remarks or "").strip()
     }
-    resp = requests.post(url, data=json.dumps(payload), headers=get_headers())
+    resp = requests.post(url, data=json.dumps(payload), headers=get_headers(prefer="return=representation"))
     resp.raise_for_status()
-    return resp.json()
+    res_data = resp.json()
+    if isinstance(res_data, list) and len(res_data) > 0:
+        return res_data[0]
+    return res_data
 
 def delete_historical_poh_record(record_id):
     """Delete a manual historical POH record from Supabase."""
