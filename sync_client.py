@@ -292,7 +292,7 @@ def sync_cycle(full_sync=False):
             
             if demandid:
                 try:
-                    detail = fetch_single(demandid)
+                    detail = fetch_single(demandid, bypass_cache=True)
                     presurvey = detail.get("presurveyhrs") or ""
                     final = detail.get("finalhrs") or ""
                     last_poh = detail.get("last_poh") or ""
@@ -378,7 +378,7 @@ def sync_cycle(full_sync=False):
             else:
                 logger.info(f"Cache miss: Fetching details for historical coach {coachno} (demandid: {demandid_str})...")
                 try:
-                    detail = fetch_single(demandid_str)
+                    detail = fetch_single(demandid_str, bypass_cache=True)
                     presurvey = detail.get("presurveyhrs") or ""
                     final = detail.get("finalhrs") or ""
                     erp_status = detail.get("status") or detail.get("pohstatus") or ""

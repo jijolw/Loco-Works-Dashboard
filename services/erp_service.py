@@ -384,10 +384,10 @@ def fetch_clean():
         if coachno:
             mu = manual_updates_map.get(str(coachno).strip())
             if mu:
-                phys_status = mu.get("physical_status", "")
+                phys_status = (mu.get("physical_status") or "").strip()
                 if phys_status == "Despatched":
                     has_actual_desp = True
-                else:
+                elif phys_status == "Pending":
                     is_manually_pending = True
                     has_actual_desp = False
                     
@@ -443,43 +443,89 @@ def fetch_clean():
     return cleaned
 
 # 3. fetch_single(demandid) - retrieves details from Supabase (fast in-memory map lookup)
-def fetch_single(demandid):
+def fetch_single(demandid, bypass_cache=False):
     demandid = str(demandid).strip()
     
-    # Ensure cache is fresh
-    demandid_map = _get_cached("demandid_map", CACHE_TTL_MASTER)
-    if demandid_map is None:
-        fetch_master()
-        demandid_map = _get_cached("demandid_map", CACHE_TTL_MASTER) or {}
+    if not bypass_cache:
+        # Ensure cache is fresh
+        demandid_map = _get_cached("demandid_map", CACHE_TTL_MASTER)
+        if demandid_map is None:
+            fetch_master()
+            demandid_map = _get_cached("demandid_map", CACHE_TTL_MASTER) or {}
 
-    coach = demandid_map.get(demandid)
-    if not coach:
-        # Fallback: Query live intranet ERP directly
-        try:
-            from config import COACH_ERP_BASE_URL, COACH_ERP_USERNAME, COACH_ERP_PASSWORD
-            sess = requests.Session()
-            sess.post(f"{COACH_ERP_BASE_URL}/coach/login", data={
-                "username": COACH_ERP_USERNAME,
-                "password": COACH_ERP_PASSWORD
-            }, timeout=5)
+        coach = demandid_map.get(demandid)
+        if coach:
+            coachno = coach.get("coachno")
             
-            resp = sess.post(f"{COACH_ERP_BASE_URL}/coach/pohmaster/singledata.html", data={"demandid": demandid}, headers={"X-Requested-With": "XMLHttpRequest"}, timeout=10)
-            if resp.ok:
-                detail = resp.json()
-                if detail:
-                    # Map the fields to conform with downstream logic expects
-                    detail["demandid"] = str(detail.get("demandid") or demandid)
-                    detail["coachno"] = str(detail.get("coachno") or "")
-                    detail["presurveyhrs"] = detail.get("presurveyhrs") or ""
-                    detail["finalhrs"] = detail.get("finalhrs") or ""
-                    detail["last_poh"] = detail.get("last_poh") or ""
-                    detail["last_pohdate"] = detail.get("last_pohdate") or ""
-                    detail["desp_date"] = detail.get("desp_date") or detail.get("despdate") or ""
-                    detail["actualdespdate"] = detail.get("actualdespdate") or ""
-                    return detail
-        except Exception as e:
-            logger.error(f"Fallback live ERP fetch failed for demandid {demandid}: {e}")
-        return {}
+            # Get manual update from cached map
+            manual_updates_map = _get_cached("manual_updates_map", CACHE_TTL_MASTER) or {}
+            manual_update = manual_updates_map.get(str(coachno).strip()) if coachno else None
+
+            # Construct the mock ERP single coach detail structure
+            detail = {
+                "demandid": coach.get("demandid"),
+                "coachno": coach.get("coachno"),
+                "status": coach.get("status"),
+                "pohstatus": coach.get("status"),
+                "repairid": coach.get("repair_type"),
+                "repair_type": coach.get("repair_type"),
+                "dvnid": coach.get("division"),
+                "outdvnid": coach.get("division"),
+                "indvnid": coach.get("division"),
+                "corr_place": coach.get("corr_place", ""),
+                "corr_comp": coach.get("corr_comp", ""),
+                "presurveyhrs": coach.get("presurveyhrs", ""),
+                "finalhrs": coach.get("finalhrs", ""),
+                "last_poh": coach.get("last_poh", ""),
+                "last_pohdate": coach.get("last_pohdate", ""),
+                "tfrdate": coach.get("tfr_date", ""),
+                "tfr_date": coach.get("tfr_date", ""),
+                "despdate": coach.get("desp_date", ""),
+                "desp_date": coach.get("desp_date", ""),
+                "actualdespdate": coach.get("actualdespdate", ""),
+                "pohdays": coach.get("pohdays", ""),
+                "remarks": coach.get("remarks", ""),
+                "noofdays": coach.get("noofdays", ""),
+                "corrosion": coach.get("corrosion", ""),
+                "corr_repair": coach.get("corr_repair", ""),
+                "curheavylow": coach.get("curheavylow", "")
+            }
+
+            # Merge manual updates if they exist
+            if manual_update:
+                detail["vg_status"] = manual_update.get("vg_status") or ""
+                detail["vg_date"] = manual_update.get("vg_date") or ""
+                detail["physical_status"] = manual_update.get("physical_status") or ""
+                detail["physical_date"] = manual_update.get("physical_date") or ""
+                
+            return detail
+
+    # Fallback / Direct fetch: Query live intranet ERP directly
+    try:
+        from config import COACH_ERP_BASE_URL, COACH_ERP_USERNAME, COACH_ERP_PASSWORD
+        sess = requests.Session()
+        sess.post(f"{COACH_ERP_BASE_URL}/coach/login", data={
+            "username": COACH_ERP_USERNAME,
+            "password": COACH_ERP_PASSWORD
+        }, timeout=5)
+        
+        resp = sess.post(f"{COACH_ERP_BASE_URL}/coach/pohmaster/singledata.html", data={"demandid": demandid}, headers={"X-Requested-With": "XMLHttpRequest"}, timeout=10)
+        if resp.ok:
+            detail = resp.json()
+            if detail:
+                # Map the fields to conform with downstream logic expects
+                detail["demandid"] = str(detail.get("demandid") or demandid)
+                detail["coachno"] = str(detail.get("coachno") or "")
+                detail["presurveyhrs"] = detail.get("presurveyhrs") or ""
+                detail["finalhrs"] = detail.get("finalhrs") or ""
+                detail["last_poh"] = detail.get("last_poh") or ""
+                detail["last_pohdate"] = detail.get("last_pohdate") or ""
+                detail["desp_date"] = detail.get("desp_date") or detail.get("despdate") or ""
+                detail["actualdespdate"] = detail.get("actualdespdate") or ""
+                return detail
+    except Exception as e:
+        logger.error(f"Fallback live ERP fetch failed for demandid {demandid}: {e}")
+    return {}
 
     coachno = coach.get("coachno")
     
