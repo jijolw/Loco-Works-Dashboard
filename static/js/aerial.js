@@ -228,9 +228,9 @@ function coachBoxHtml(coach, searchText, filteredSet) {
             badgeText = 'M TC';
         } else if (desc.includes('MEMUMC') || desc.includes('MEMU MC')) {
             badgeText = 'M MC';
-        } else if (desc.includes('EMUTC') || desc.includes('EMU TC') || desc.includes('YSY') || desc.includes('YFSY') || desc.includes('YZZS')) {
+        } else if (desc.includes('EMUTC') || desc.includes('EMU TC') || desc.includes('YSY') || desc.includes('YFSY') || desc.includes('YSD')) {
             badgeText = 'ETC';
-        } else if (desc.includes('EMUMC') || desc.includes('EMU MC') || desc.includes('YSD') || desc.includes('DMSC')) {
+        } else if (desc.includes('EMUMC') || desc.includes('EMU MC') || desc.includes('YZZS') || desc.includes('DMSC')) {
             badgeText = 'E MC';
         } else if (desc.includes('MC') || desc.includes('MOTOR')) {
             if (family === 'MEMU' || desc.includes('MEMU')) badgeText = 'M MC';

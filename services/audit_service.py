@@ -114,10 +114,17 @@ def get_audit_data(fy_filter="ALL", family_filter="ALL", type_filter="ALL"):
         wks = str(rec.get("last_poh") or "").strip().upper()
         if wks and wks not in ("", "NAN", "NONE", "0"):
             if wks not in workshop_groups:
-                workshop_groups[wks] = {"total": 0, "with_hours": 0, "total_hours": 0.0, "heavy_count": 0, "max_hours": 0.0}
+                workshop_groups[wks] = {"total": 0, "with_hours": 0, "total_hours": 0.0, "heavy_count": 0, "max_hours": 0.0, "coaches": []}
             
             w_stats = workshop_groups[wks]
             w_stats["total"] += 1
+            w_stats["coaches"].append({
+                "coachno": rec.get("coachno"),
+                "coach_desc": coach_desc,
+                "recd_date": recd_str,
+                "corrosion_hours": eff_hrs,
+                "status": rec.get("status") or rec.get("pohstatus") or ""
+            })
             if eff_hrs > 0:
                 w_stats["with_hours"] += 1
                 w_stats["total_hours"] += eff_hrs
@@ -131,10 +138,17 @@ def get_audit_data(fy_filter="ALL", family_filter="ALL", type_filter="ALL"):
         if dvn and dvn not in ("", "NAN", "NONE", "0"):
             dvn_name = decode_division(dvn)
             if dvn_name not in division_groups:
-                division_groups[dvn_name] = {"total": 0, "with_hours": 0, "total_hours": 0.0, "heavy_count": 0, "max_hours": 0.0}
+                division_groups[dvn_name] = {"total": 0, "with_hours": 0, "total_hours": 0.0, "heavy_count": 0, "max_hours": 0.0, "coaches": []}
                 
             d_stats = division_groups[dvn_name]
             d_stats["total"] += 1
+            d_stats["coaches"].append({
+                "coachno": rec.get("coachno"),
+                "coach_desc": coach_desc,
+                "recd_date": recd_str,
+                "corrosion_hours": eff_hrs,
+                "status": rec.get("status") or rec.get("pohstatus") or ""
+            })
             if eff_hrs > 0:
                 d_stats["with_hours"] += 1
                 d_stats["total_hours"] += eff_hrs
@@ -154,7 +168,8 @@ def get_audit_data(fy_filter="ALL", family_filter="ALL", type_filter="ALL"):
             "coaches_with_hours": stats["with_hours"],
             "avg_hours": avg,
             "max_hours": stats["max_hours"],
-            "heavy_pct": heavy_pct
+            "heavy_pct": heavy_pct,
+            "coaches": stats["coaches"]
         })
     workshop_rankings.sort(key=lambda x: x["avg_hours"], reverse=True)
 
@@ -168,7 +183,8 @@ def get_audit_data(fy_filter="ALL", family_filter="ALL", type_filter="ALL"):
             "coaches_with_hours": stats["with_hours"],
             "avg_hours": avg,
             "max_hours": stats["max_hours"],
-            "heavy_pct": heavy_pct
+            "heavy_pct": heavy_pct,
+            "coaches": stats["coaches"]
         })
     division_rankings.sort(key=lambda x: x["avg_hours"], reverse=True)
 

@@ -5809,7 +5809,11 @@ function renderActiveAuditTab() {
                                 ${wRankings.map((w, i) => `
                                     <tr>
                                         <td><strong>${i + 1}</strong></td>
-                                        <td style="font-weight: 600; color: var(--text-primary);">${escapeHtml(w.workshop)}</td>
+                                        <td style="font-weight: 600;">
+                                            <a href="javascript:void(0)" style="color: var(--accent); text-decoration: underline;" onclick="window.showRankingsExplanation('${escapeHtml(w.workshop)}', 'workshop')">
+                                                ${escapeHtml(w.workshop)}
+                                            </a>
+                                        </td>
                                         <td>${w.total_received}</td>
                                         <td>${w.coaches_with_hours}</td>
                                         <td style="font-weight: 600; color: ${w.avg_hours > 500 ? 'var(--danger)' : 'var(--accent)'};">${w.avg_hours}</td>
@@ -5845,7 +5849,11 @@ function renderActiveAuditTab() {
                                 ${dRankings.map((d, i) => `
                                     <tr>
                                         <td><strong>${i + 1}</strong></td>
-                                        <td style="font-weight: 600; color: var(--text-primary);">${escapeHtml(d.division)}</td>
+                                        <td style="font-weight: 600;">
+                                            <a href="javascript:void(0)" style="color: var(--accent); text-decoration: underline;" onclick="window.showRankingsExplanation('${escapeHtml(d.division)}', 'division')">
+                                                ${escapeHtml(d.division)}
+                                            </a>
+                                        </td>
                                         <td>${d.total_received}</td>
                                         <td>${d.coaches_with_hours}</td>
                                         <td style="font-weight: 600; color: ${d.avg_hours > 500 ? 'var(--danger)' : 'var(--accent)'};">${d.avg_hours}</td>
@@ -5970,6 +5978,64 @@ function renderActiveAuditTab() {
     }
 }
 window.renderActiveAuditTab = renderActiveAuditTab;
+
+window.showRankingsExplanation = function(name, type) {
+    const modal = document.getElementById('analytics-coaches-modal');
+    const titleEl = document.getElementById('modal-title');
+    const container = document.getElementById('modal-table-container');
+
+    if (!modal || !titleEl || !container || !_auditData) return;
+
+    const rankings = type === 'workshop' 
+        ? (_auditData.workshop_rankings || []) 
+        : (_auditData.division_rankings || []);
+        
+    const item = rankings.find(r => (r.workshop || r.division) === name);
+    if (!item) return;
+
+    const list = item.coaches || [];
+    titleEl.textContent = `📊 Contributing Coaches for ${type === 'workshop' ? 'Workshop' : 'Division'}: ${name}`;
+
+    if (list.length === 0) {
+        container.innerHTML = `<div style="text-align:center;color:var(--text-secondary);padding:20px;">No coaches found.</div>`;
+    } else {
+        container.innerHTML = `
+            <div style="margin-bottom:12px;font-size:13px;color:var(--text-secondary);">
+                Below are the received coaches that contributed to the average corrosion hours calculation for <strong>${escapeHtml(name)}</strong>. Click any Coach Number to view its search details.
+            </div>
+            <div style="max-height: 450px; overflow-y: auto;">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Coach Number</th>
+                            <th>Description</th>
+                            <th>Received Date</th>
+                            <th>Corrosion Hours</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${list.map(c => `
+                            <tr>
+                                <td>
+                                    <a href="#search" style="font-weight:700;color:var(--accent);text-decoration:underline;" onclick="closeAnalyticsModal(); window.navigateToSearch('${escapeHtml(c.coachno)}')">
+                                        ${escapeHtml(c.coachno)}
+                                    </a>
+                                </td>
+                                <td>${escapeHtml(c.coach_desc)}</td>
+                                <td>${formatDate(c.recd_date)}</td>
+                                <td style="font-weight:600;color:var(--accent);">${c.corrosion_hours || 0} hrs</td>
+                                <td>${escapeHtml(c.status || '—')}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    modal.style.display = 'flex';
+};
 
 
 /* ============================================================

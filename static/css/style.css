@@ -754,6 +754,14 @@ a:hover {
    ============================================================ */
 .aerial-container {
     width: 100%;
+    background-image: url('/static/img/aerial_bg.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    box-shadow: inset 0 0 200px rgba(0,0,0,0.85);
+    border: 1px solid var(--border);
 }
 
 /* Directions */
@@ -812,8 +820,10 @@ a:hover {
 .zone {
     border-radius: var(--radius);
     padding: 12px;
-    margin: 4px 0;
-    border: 1px solid var(--border);
+    margin: 6px 0;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    background: rgba(30, 34, 45, 0.8) !important;
+    backdrop-filter: blur(3px);
 }
 
 .zone-title {
@@ -822,7 +832,7 @@ a:hover {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 2px;
-    color: var(--text-primary);
+    color: inherit;
     padding: 4px 0 8px;
 }
 
@@ -873,18 +883,18 @@ a:hover {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-width: 80px;
-    max-width: 110px;
-    padding: 4px 6px;
+    min-width: 110px;
+    max-width: 140px;
+    padding: 6px 8px;
     border-radius: var(--radius-xs);
     font-family: var(--font-mono);
-    font-size: 11px;
-    font-weight: 600;
+    font-size: 12.5px;
+    font-weight: 700;
     color: #fff;
     text-align: center;
     cursor: default;
     transition: all var(--transition);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
     line-height: 1.3;
     flex-shrink: 0;
 }
@@ -896,9 +906,9 @@ a:hover {
 }
 
 .cb-sub {
-    font-size: 8px;
-    font-weight: 400;
-    opacity: 0.8;
+    font-size: 9px;
+    font-weight: 500;
+    opacity: 0.95;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -961,18 +971,18 @@ a:hover {
 }
 
 /* Zone color classes */
-.paint { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
-.lbr { background: #e0f2fe; border-color: #7dd3fc; color: #0369a1; }
-.incoming { background: #ecfdf5; border-color: #a7f3d0; color: #047857; }
-.aug { background: #faf5ff; border-color: #e9d5ff; color: #6b21a8; }
-.demu-wash { background: #f0fdfa; border-color: #ccfbf1; color: #0f766e; }
-.demu { background: #f0fdfa; border-color: #ccfbf1; color: #0f766e; }
-.stabling { background: #fffbeb; border-color: #fef3c7; color: #b45309; }
-.lcb { background: #eef2ff; border-color: #e0e7ff; color: #4338ca; }
-.hcb { background: #fff5f5; border-color: #fed7d7; color: #c53030; }
-.ac { background: #fdf4ff; border-color: #f5d0fe; color: #701a75; }
-.desp { background: #fffbeb; border-color: #fef3c7; color: #b45309; }
-.yard { background: #f0fdf4; border-color: #dcfce7; color: #15803d; }
+.paint { background: rgba(239, 68, 68, 0.15) !important; border-color: rgba(239, 68, 68, 0.4) !important; color: #fecaca !important; }
+.lbr { background: rgba(56, 189, 248, 0.15) !important; border-color: rgba(56, 189, 248, 0.4) !important; color: #bae6fd !important; }
+.incoming { background: rgba(16, 185, 129, 0.15) !important; border-color: rgba(16, 185, 129, 0.4) !important; color: #a7f3d0 !important; }
+.aug { background: rgba(168, 85, 247, 0.15) !important; border-color: rgba(168, 85, 247, 0.4) !important; color: #e9d5ff !important; }
+.demu-wash { background: rgba(20, 184, 166, 0.15) !important; border-color: rgba(20, 184, 166, 0.4) !important; color: #ccfbf1 !important; }
+.demu { background: rgba(20, 184, 166, 0.15) !important; border-color: rgba(20, 184, 166, 0.4) !important; color: #ccfbf1 !important; }
+.stabling { background: rgba(245, 158, 11, 0.15) !important; border-color: rgba(245, 158, 11, 0.4) !important; color: #fef3c7 !important; }
+.lcb { background: rgba(99, 102, 241, 0.15) !important; border-color: rgba(99, 102, 241, 0.4) !important; color: #e0e7ff !important; }
+.hcb { background: rgba(239, 68, 68, 0.15) !important; border-color: rgba(239, 68, 68, 0.4) !important; color: #fecaca !important; }
+.ac { background: rgba(217, 70, 239, 0.15) !important; border-color: rgba(217, 70, 239, 0.4) !important; color: #f5d0fe !important; }
+.desp { background: rgba(245, 158, 11, 0.15) !important; border-color: rgba(245, 158, 11, 0.4) !important; color: #fef3c7 !important; }
+.yard { background: rgba(16, 185, 129, 0.15) !important; border-color: rgba(16, 185, 129, 0.4) !important; color: #dcfce7 !important; }
 
 /* ============================================================
    FILTER BAR
@@ -1956,11 +1966,11 @@ a:hover {
 
 .c-badge {
     display: inline-block;
-    padding: 1px 3px;
-    font-size: 7.5px;
+    padding: 2px 6px;
+    font-size: 9.5px;
     font-weight: 700;
-    border-radius: 2px;
-    line-height: 1.1;
+    border-radius: 3px;
+    line-height: 1.2;
     text-transform: uppercase;
     color: #ffffff !important;
 }
