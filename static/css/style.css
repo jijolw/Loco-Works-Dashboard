@@ -754,7 +754,7 @@ a:hover {
    ============================================================ */
 .aerial-container {
     width: 100%;
-    background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+    background: #f8fafc;
     padding: 20px;
     border-radius: var(--radius-lg);
     border: 1px solid var(--border);
@@ -817,9 +817,8 @@ a:hover {
     border-radius: var(--radius);
     padding: 12px;
     margin: 6px 0;
-    border: 1px solid rgba(255, 255, 255, 0.15) !important;
-    background: rgba(30, 34, 45, 0.8) !important;
-    backdrop-filter: blur(3px);
+    border: 1px solid var(--border) !important;
+    background: var(--bg-card) !important;
 }
 
 .zone-title {
@@ -967,18 +966,18 @@ a:hover {
 }
 
 /* Zone color classes */
-.paint { background: rgba(239, 68, 68, 0.15) !important; border-color: rgba(239, 68, 68, 0.4) !important; color: #fecaca !important; }
-.lbr { background: rgba(56, 189, 248, 0.15) !important; border-color: rgba(56, 189, 248, 0.4) !important; color: #bae6fd !important; }
-.incoming { background: rgba(16, 185, 129, 0.15) !important; border-color: rgba(16, 185, 129, 0.4) !important; color: #a7f3d0 !important; }
-.aug { background: rgba(168, 85, 247, 0.15) !important; border-color: rgba(168, 85, 247, 0.4) !important; color: #e9d5ff !important; }
-.demu-wash { background: rgba(20, 184, 166, 0.15) !important; border-color: rgba(20, 184, 166, 0.4) !important; color: #ccfbf1 !important; }
-.demu { background: rgba(20, 184, 166, 0.15) !important; border-color: rgba(20, 184, 166, 0.4) !important; color: #ccfbf1 !important; }
-.stabling { background: rgba(245, 158, 11, 0.15) !important; border-color: rgba(245, 158, 11, 0.4) !important; color: #fef3c7 !important; }
-.lcb { background: rgba(99, 102, 241, 0.15) !important; border-color: rgba(99, 102, 241, 0.4) !important; color: #e0e7ff !important; }
-.hcb { background: rgba(239, 68, 68, 0.15) !important; border-color: rgba(239, 68, 68, 0.4) !important; color: #fecaca !important; }
-.ac { background: rgba(217, 70, 239, 0.15) !important; border-color: rgba(217, 70, 239, 0.4) !important; color: #f5d0fe !important; }
-.desp { background: rgba(245, 158, 11, 0.15) !important; border-color: rgba(245, 158, 11, 0.4) !important; color: #fef3c7 !important; }
-.yard { background: rgba(16, 185, 129, 0.15) !important; border-color: rgba(16, 185, 129, 0.4) !important; color: #dcfce7 !important; }
+.paint { background: rgba(239, 68, 68, 0.08) !important; border-color: rgba(239, 68, 68, 0.3) !important; color: #991b1b !important; }
+.lbr { background: rgba(56, 189, 248, 0.08) !important; border-color: rgba(56, 189, 248, 0.3) !important; color: #0369a1 !important; }
+.incoming { background: rgba(16, 185, 129, 0.08) !important; border-color: rgba(16, 185, 129, 0.3) !important; color: #047857 !important; }
+.aug { background: rgba(168, 85, 247, 0.08) !important; border-color: rgba(168, 85, 247, 0.3) !important; color: #6b21a8 !important; }
+.demu-wash { background: rgba(20, 184, 166, 0.08) !important; border-color: rgba(20, 184, 166, 0.3) !important; color: #0f766e !important; }
+.demu { background: rgba(20, 184, 166, 0.08) !important; border-color: rgba(20, 184, 166, 0.3) !important; color: #0f766e !important; }
+.stabling { background: rgba(245, 158, 11, 0.08) !important; border-color: rgba(245, 158, 11, 0.3) !important; color: #b45309 !important; }
+.lcb { background: rgba(99, 102, 241, 0.08) !important; border-color: rgba(99, 102, 241, 0.3) !important; color: #4338ca !important; }
+.hcb { background: rgba(239, 68, 68, 0.08) !important; border-color: rgba(239, 68, 68, 0.3) !important; color: #991b1b !important; }
+.ac { background: rgba(217, 70, 239, 0.08) !important; border-color: rgba(217, 70, 239, 0.3) !important; color: #a21caf !important; }
+.desp { background: rgba(245, 158, 11, 0.08) !important; border-color: rgba(245, 158, 11, 0.3) !important; color: #b45309 !important; }
+.yard { background: rgba(16, 185, 129, 0.08) !important; border-color: rgba(16, 185, 129, 0.3) !important; color: #047857 !important; }
 
 /* ============================================================
    FILTER BAR
