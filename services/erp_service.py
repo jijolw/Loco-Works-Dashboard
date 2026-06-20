@@ -387,8 +387,9 @@ def fetch_clean():
                 phys_status = mu.get("physical_status", "")
                 if phys_status == "Despatched":
                     has_actual_desp = True
-                elif phys_status != "Despatched":
+                else:
                     is_manually_pending = True
+                    has_actual_desp = False
                     
         if has_actual_desp:
             continue
