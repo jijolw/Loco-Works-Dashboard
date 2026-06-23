@@ -36,6 +36,11 @@ def print_aerial():
     return render_template("print_aerial.html")
 
 
+@app.route("/report/aerial")
+def report_aerial():
+    return render_template("report_aerial.html")
+
+
 # =====================================================
 # API — Aerial View
 # =====================================================

@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workshop Aerial View & Targets Report</title>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --gold: #ffd700;
+            --blue-normal: #1e3a8a;
+            --blue-border: #3b82f6;
+            --red-danger: #7f1d1d;
+            --red-border: #ef4444;
+            --yellow-done: #eab308;
+            --green-outturned: #15803d;
+            --green-border: #22c55e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            padding: 10px;
+            overflow-x: hidden;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.1);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border-left-color: var(--blue-border);
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Page Layout wrapper */
+        .report-page {
+            max-width: 1350px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Header block */
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 6px;
+        }
+        .report-title {
+            font-size: 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-main);
+        }
+        .report-date {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Targets & Achievements table */
+        .targets-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px;
+        }
+        .section-title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gold);
+            margin-bottom: 6px;
+        }
+        .targets-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+        .targets-table th {
+            text-align: left;
+            padding: 4px 8px;
+            background: rgba(255,255,255,0.05);
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+        }
+        .targets-table td {
+            padding: 4px 8px;
+            border-bottom: 1px dotted var(--border-color);
+        }
+        .targets-table tr:last-child td {
+            border-bottom: none;
+            font-weight: 700;
+            background: rgba(255,255,255,0.02);
+        }
+        .var-neg { color: #f87171; font-weight: 600; }
+        .var-pos { color: #4ade80; font-weight: 600; }
+
+        /* Floating action buttons */
+        .no-print-actions {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+        }
+        .btn-action {
+            background: #2563eb;
+            color: #ffffff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-action:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+        }
+        .btn-back {
+            background: #475569;
+        }
+        .btn-back:hover {
+            background: #334155;
+        }
+
+        /* ── Map Grid layout ── */
+        .map-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .shops-grid {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .left-col, .right-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Zones & Shops */
+        .zone {
+            border: 1px solid var(--border-color);
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: 6px;
+            padding: 5px;
+        }
+        .zone-title {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding-bottom: 2px;
+        }
+
+        .line-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        .line-row:last-child {
+            margin-bottom: 0;
+        }
+        .line-name {
+            width: 75px;
+            font-size: 9px;
+            font-weight: 600;
+            color: var(--text-muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .coach-row {
+            display: flex;
+            gap: 4px;
+            flex-grow: 1;
+        }
+
+        /* Coach Box Card */
+        .coach-box {
+            width: 95px;
+            height: 52px;
+            border-radius: 4px;
+            padding: 3px 4px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .empty-box {
+            width: 95px;
+            height: 52px;
+            border-radius: 4px;
+            border: 1px dashed var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: rgba(255,255,255,0.15);
+        }
+
+        .cb-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+        .cb-num {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+        }
+        .c-badge {
+            font-size: 7px;
+            font-weight: 700;
+            padding: 0.5px 2px;
+            border-radius: 2px;
+            text-transform: uppercase;
+        }
+        .badge-lhb { background: #3b82f6; color: #fff; }
+        .badge-tw { background: #ec4899; color: #fff; }
+        .badge-icf { background: #10b981; color: #fff; }
+        .badge-nmg { background: #f59e0b; color: #000; }
+        .badge-tc { background: #8b5cf6; color: #fff; }
+        .badge-generic { background: #6b7280; color: #fff; }
+
+        .cb-desc {
+            font-size: 8px;
+            color: rgba(255,255,255,0.7);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-top: 1px;
+            margin-bottom: 1px;
+        }
+
+        /* Extra printable fields (Pre-survey hrs and Corrosion dates) */
+        .cb-extra {
+            font-size: 7.5px;
+            line-height: 1;
+            font-weight: 500;
+            color: rgba(255,255,255,0.85);
+            margin-top: 0.5px;
+        }
+
+        /* Custom color coding statuses */
+        .s-normal {
+            background-color: var(--blue-normal) !important;
+            border-color: var(--blue-border) !important;
+            color: #ffffff !important;
+        }
+        .s-danger {
+            background-color: var(--red-danger) !important;
+            border: 1.5px solid var(--red-border) !important;
+            box-shadow: 0 0 5px rgba(239, 68, 68, 0.4);
+            color: #ffffff !important;
+        }
+        .s-cdone {
+            background-color: var(--yellow-done) !important;
+            border-color: #ca8a04 !important;
+            color: #000000 !important;
+        }
+        .s-cdone .cb-desc, .s-cdone .cb-extra {
+            color: rgba(0,0,0,0.8) !important;
+        }
+        .s-outturned {
+            background-color: var(--green-outturned) !important;
+            border-color: var(--green-border) !important;
+            color: #ffffff !important;
+        }
+        .s-corr {
+            background-color: #ea580c !important; /* Orange for under corrosion */
+            border-color: #f97316 !important;
+            color: #ffffff !important;
+        }
+
+        /* Traverser blocks */
+        .traverser-row {
+            height: 14px;
+            background: repeating-linear-gradient(
+                -45deg,
+                #334155,
+                #334155 4px,
+                #1e293b 4px,
+                #1e293b 8px
+            );
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 7px;
+            font-weight: 700;
+            color: var(--text-muted);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Flat sections (Yard, incoming, central) */
+        .flat-row-container {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        /* ── PRINT MEDIA RULES ── */
+        @media print {
+            @page {
+                size: A4 landscape;
+                margin: 0.3cm;
+            }
+            body {
+                background: #ffffff !important;
+                color: #000000 !important;
+                padding: 0 !important;
+                font-size: 9pt;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .report-page {
+                max-width: 100% !important;
+                width: 100% !important;
+                gap: 5px !important;
+            }
+            .report-header {
+                border-bottom-color: #000000 !important;
+            }
+            .report-title {
+                color: #000000 !important;
+                font-size: 15px !important;
+            }
+            .targets-section, .map-section {
+                background: #ffffff !important;
+                border-color: #000000 !important;
+                border-width: 1px !important;
+                padding: 5px !important;
+            }
+            .section-title {
+                color: #000000 !important;
+                font-size: 10px !important;
+                margin-bottom: 4px !important;
+            }
+            .targets-table th {
+                background: #f1f5f9 !important;
+                color: #000000 !important;
+                border-bottom-color: #000000 !important;
+            }
+            .targets-table td {
+                border-bottom-color: #cbd5e1 !important;
+                color: #000000 !important;
+            }
+            .var-neg, .var-pos {
+                color: #000000 !important;
+            }
+            .zone {
+                border-color: #94a3b8 !important;
+                background: #ffffff !important;
+            }
+            .zone-title {
+                color: #000000 !important;
+                border-bottom-color: #cbd5e1 !important;
+            }
+            .line-name {
+                color: #334155 !important;
+            }
+            /* High contrast color coding for print */
+            .s-normal {
+                background-color: #e0f2fe !important;
+                border-color: #0284c7 !important;
+                color: #0369a1 !important;
+            }
+            .s-danger {
+                background-color: #fee2e2 !important;
+                border-color: #dc2626 !important;
+                color: #991b1b !important;
+            }
+            .s-cdone {
+                background-color: #fef9c3 !important;
+                border-color: #ca8a04 !important;
+                color: #854d0e !important;
+            }
+            .s-outturned {
+                background-color: #dcfce7 !important;
+                border-color: #16a34a !important;
+                color: #14532d !important;
+            }
+            .s-corr {
+                background-color: #ffedd5 !important;
+                border-color: #ea580c !important;
+                color: #9a3412 !important;
+            }
+            .empty-box {
+                border-color: #cbd5e1 !important;
+                color: #cbd5e1 !important;
+            }
+            .traverser-row {
+                background: #f1f5f9 !important;
+                border-color: #cbd5e1 !important;
+                color: #475569 !important;
+            }
+            .cb-desc, .cb-extra {
+                color: inherit !important;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Loading screen -->
+    <div class="loading-screen" id="loading">
+        <div class="spinner"></div>
+        <div>Generating Printable Aerial & Targets Report...</div>
+    </div>
+
+    <!-- Floating Action Buttons -->
+    <div class="no-print-actions no-print">
+        <a href="/cr" class="btn-action btn-back">⬅ Back to Dashboard</a>
+        <button onclick="window.print()" class="btn-action">🖨 Print / PDF</button>
+    </div>
+
+    <!-- Main Report Page -->
+    <div class="report-page" id="main-report">
+        <!-- Header -->
+        <header class="report-header">
+            <div class="report-title" id="report-title-text">Workshop Aerial View & Targets Report</div>
+            <div class="report-date" id="report-date-text">As on Date: [Loading...]</div>
+        </header>
+
+        <!-- Targets & Achievements top section -->
+        <section class="targets-section">
+            <div class="section-title">POH Target vs Achievement (Current Month)</div>
+            <div id="targets-table-container">
+                <!-- Targets Table loaded dynamically -->
+            </div>
+        </section>
+
+        <!-- Aerial view map bottom section -->
+        <section class="map-section">
+            <div class="section-title">Carriage Repair Shop Layout Map</div>
+            <div class="shops-grid" id="shops-grid-container">
+                <!-- Shops columns generated dynamically -->
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Global variables for loaded data
+        let _coaches = [];
+        let _topology = {};
+        let _aliases = {};
+        let _twoSlotLines = [];
+
+        // Formatting Helpers
+        function formatShortDate(dateStr) {
+            if (!dateStr || dateStr.toLowerCase().includes('none') || dateStr.toLowerCase().includes('null')) return '';
+            let clean = dateStr.replace('GSheet: ', '').trim();
+            // Match DD/MM/YYYY or DD/MM/YY
+            let match = clean.match(/^(\d{1,2})[\/\-](\d{1,2})/);
+            if (match) {
+                return `${match[1].padStart(2, '0')}/${match[2].padStart(2, '0')}`;
+            }
+            // Match YYYY-MM-DD
+            let matchYmd = clean.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
+            if (matchYmd) {
+                return `${matchYmd[3].padStart(2, '0')}/${matchYmd[2].padStart(2, '0')}`;
+            }
+            return clean;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        // Resolves the color status styling
+        function getStatusClass(coach) {
+            if (!coach) return 's-normal';
+            const s = (coach.AERIAL_STATUS || coach.status || '').toUpperCase();
+            if (s.includes('DANGER')) return 's-danger';
+            if (s.includes('UNDER CORROSION') || s === 'CORROSION') return 's-corr';
+            if (s.includes('CORROSION DONE') || s.includes('CORROSION COMPLETED')) return 's-cdone';
+            if (s.includes('OUTTURNED') || s.includes('DESPATCHED')) return 's-outturned';
+            return 's-normal';
+        }
+
+        function getFamilyBadge(coach) {
+            const family = (coach.family || '').toUpperCase();
+            const desc = (coach.coach_desc || '').toUpperCase();
+            if (family === 'LHB') return '<span class="c-badge badge-lhb">LHB</span>';
+            if (family === 'TW') return '<span class="c-badge badge-tw">TW</span>';
+            if (family === 'ICF') return '<span class="c-badge badge-icf">ICF</span>';
+            if (family === 'NMG') return '<span class="c-badge badge-nmg">NMG</span>';
+            if (family === 'DEMU' || family === 'EMU' || family === 'MEMU' || family.includes('TC') || desc.includes('DPC') || desc.includes('DTC') || desc.includes('TC')) {
+                let text = 'TC';
+                if (desc.includes('DPC')) text = 'DPC';
+                else if (desc.includes('DTC')) text = 'DTC';
+                return `<span class="c-badge badge-tc">${text}</span>`;
+            }
+            return `<span class="c-badge badge-generic">${escapeHtml(family || 'COACH')}</span>`;
+        }
+
+        // Look up coaches at slots or pits
+        function getCoachesForPit(prefix) {
+            if (!_coaches || !_coaches.length) return [];
+            
+            const prefixes = [prefix];
+            if (_aliases) {
+                for (const [alias, canonical] of Object.entries(_aliases)) {
+                    if (canonical.toUpperCase() === prefix.toUpperCase()) prefixes.push(alias);
+                    if (alias.toUpperCase() === prefix.toUpperCase()) prefixes.push(canonical);
+                }
+            }
+
+            return _coaches.filter(c => {
+                const pit = (c.pitnum || c.location || '').toUpperCase().trim();
+                
+                // If this exact pit alias maps to a different prefix, exclude
+                if (_aliases) {
+                    const aliasKey = Object.keys(_aliases).find(k => k.toUpperCase() === pit);
+                    if (aliasKey && _aliases[aliasKey].toUpperCase() !== prefix.toUpperCase()) {
+                        return false;
+                    }
+                }
+
+                for (const pfx of prefixes) {
+                    const up = pfx.toUpperCase();
+                    if (pit === up) return true;
+                    if (pit === up + '_1' || pit === up + '_2') return true;
+                    if (pit.startsWith(up) && /^_?\d?$/.test(pit.slice(up.length))) return true;
+                }
+                return false;
+            });
+        }
+
+        function getCoachAtSlot(prefix, slot) {
+            const all = getCoachesForPit(prefix);
+            const slotStr = prefix.toUpperCase() + '_' + slot;
+            
+            // Try exact slot match
+            const exact = all.find(c => (c.pitnum || c.location || '').toUpperCase().trim() === slotStr);
+            if (exact) return exact;
+
+            // Slot 1 defaults
+            if (slot === 1) {
+                const plain = all.find(c => {
+                    const pit = (c.pitnum || c.location || '').toUpperCase().trim();
+                    if (pit === prefix.toUpperCase()) return true;
+                    if (_aliases) {
+                        const aliasKey = Object.keys(_aliases).find(k => k.toUpperCase() === pit);
+                        if (aliasKey && _aliases[aliasKey].toUpperCase() === prefix.toUpperCase() && !pit.includes('_')) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+                if (plain) return plain;
+            }
+
+            // Alias checking
+            if (_aliases) {
+                for (const [alias, canonical] of Object.entries(_aliases)) {
+                    if (canonical.toUpperCase() === prefix.toUpperCase()) {
+                        const parts = alias.split('_');
+                        const aliasSlot = parts.length > 1 ? parts[parts.length - 1] : '';
+                        if (aliasSlot === String(slot)) {
+                            const match = all.find(c => (c.pitnum || c.location || '').toUpperCase().trim() === alias.toUpperCase());
+                            if (match) return match;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+
+        // Generate Coach box Card
+        function coachBoxHtml(coach) {
+            if (!coach) return '';
+            const num = coach.coachno || '?';
+            const cls = getStatusClass(coach);
+            const type = coach.coach_desc || coach.coach_type || '';
+            const repair = coach.repair_type || '';
+            const days = coach.IN_DAYS;
+            const daysStr = (days !== null && days !== undefined && days !== '') ? days + 'd' : '';
+            const sub = [type, repair, daysStr].filter(Boolean).join(' | ');
+
+            // Pre-survey hours
+            let preHours = coach.presurveyhrs || '';
+            let preHtml = preHours ? `<div class="cb-extra">Pre: ${preHours}h</div>` : '';
+
+            // Corrosion Dates
+            let corrHtml = '';
+            let corrPlace = coach.corr_place || '';
+            let corrComp = coach.corr_comp || '';
+            if (corrPlace && !corrPlace.toLowerCase().includes('none') && !corrPlace.toLowerCase().includes('null')) {
+                let inStr = formatShortDate(corrPlace);
+                let outStr = corrComp ? formatShortDate(corrComp) : 'Pend';
+                corrHtml = `<div class="cb-extra">C: ${inStr} - ${outStr}</div>`;
+            }
+
+            return `
+                <div class="coach-box ${cls}">
+                    <div class="cb-header">
+                        <span class="cb-num">${escapeHtml(num)}</span>
+                        ${getFamilyBadge(coach)}
+                    </div>
+                    <div class="cb-desc">${escapeHtml(sub)}</div>
+                    ${preHtml}
+                    ${corrHtml}
+                </div>
+            `;
+        }
+
+        // Render nodes
+        function renderShop(title, pits, label) {
+            let html = `<div class="zone">`;
+            html += `<div class="zone-title">${escapeHtml(label || title)}</div>`;
+            pits.forEach(pit => {
+                const isTwoSlot = _twoSlotLines.includes(pit);
+                html += `<div class="line-row">`;
+                html += `<div class="line-name">${escapeHtml(pit)}</div>`;
+                html += `<div class="coach-row">`;
+                if (isTwoSlot) {
+                    for (let slot = 1; slot <= 2; slot++) {
+                        const c = getCoachAtSlot(pit, slot);
+                        html += c ? coachBoxHtml(c) : `<div class="empty-box">—</div>`;
+                    }
+                } else {
+                    const coaches = getCoachesForPit(pit);
+                    if (coaches.length) {
+                        coaches.forEach(c => { html += coachBoxHtml(c); });
+                    } else {
+                        html += `<div class="empty-box">—</div>`;
+                    }
+                }
+                html += `</div></div>`;
+            });
+            html += `</div>`;
+            return html;
+        }
+
+        function renderFlat(title, pits, label) {
+            let html = `<div class="zone">`;
+            html += `<div class="zone-title">${escapeHtml(label || title)}</div>`;
+            html += `<div class="flat-row-container">`;
+            pits.forEach(pit => {
+                const coaches = getCoachesForPit(pit);
+                if (coaches.length) {
+                    html += `<div class="line-row">`;
+                    html += `<div class="line-name">${escapeHtml(pit)}</div>`;
+                    html += `<div class="coach-row" style="flex-wrap:wrap;gap:4px;">`;
+                    coaches.forEach(c => { html += coachBoxHtml(c); });
+                    html += `</div></div>`;
+                }
+            });
+            html += `</div></div>`;
+            return html;
+        }
+
+        function renderTraverser(label) {
+            return `<div class="traverser-row">${escapeHtml(label)}</div>`;
+        }
+
+        function renderLayoutNode(node) {
+            if (!node) return '';
+            const type = node.type;
+
+            if (type === 'row') {
+                let html = `<div style="display:flex;gap:10px;width:100%;">`;
+                (node.zones || []).forEach((z, idx) => {
+                    const colStyle = node.cols && node.cols[idx] ? ` style="flex:${node.cols[idx]}"` : ' style="flex:1"';
+                    html += `<div${colStyle}>${renderLayoutNode(z)}</div>`;
+                });
+                html += `</div>`;
+                return html;
+            }
+
+            if (type === 'stack') {
+                let html = `<div style="display:flex;flex-direction:column;gap:8px;width:100%;">`;
+                (node.zones || []).forEach(z => {
+                    html += renderLayoutNode(z);
+                });
+                html += `</div>`;
+                return html;
+            }
+
+            if (type === 'shop') {
+                return renderShop(node.zone, node.order || node.pits || [], node.label);
+            }
+
+            if (type === 'flat') {
+                return renderFlat(node.zone, node.pitnums || [], node.label);
+            }
+
+            if (type === 'traverser') {
+                return renderTraverser(node.label || 'TRAVERSER');
+            }
+
+            return '';
+        }
+
+        // Initialize report load
+        async function loadReportData() {
+            try {
+                // Set current date in header
+                const today = new Date();
+                const dateOptions = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+                document.getElementById('report-date-text').textContent = "As on Date: " + today.toLocaleString('en-GB', dateOptions);
+
+                // Determine Current FY
+                const currentMonth = today.getMonth() + 1; // 1-indexed
+                const currentYear = today.getFullYear();
+                const currentFy = (currentMonth >= 4) 
+                    ? `${currentYear}-${String(currentYear + 1).slice(-2)}` 
+                    : `${currentYear - 1}-${String(currentYear).slice(-2)}`;
+
+                // 1. Fetch Targets Data
+                const targetsResp = await fetch(`/api/poh/targets?fy=${currentFy}`);
+                const targetsData = await targetsResp.json();
+                
+                // Filter to current calendar month
+                const monthlyTargets = targetsData.filter(t => t.month === currentMonth && t.type === 'monthly');
+                
+                // Filter out stock types with no targets and no actuals
+                const activeTargets = monthlyTargets.filter(t => t.target > 0 || t.actual > 0);
+                
+                // Render Targets Table
+                let targetsHtml = `
+                    <table class="targets-table">
+                        <thead>
+                            <tr>
+                                <th>Coach Stock Type (POH Schedule)</th>
+                                <th style="text-align:right;">Target Qty</th>
+                                <th style="text-align:right;">Achieved Qty</th>
+                                <th style="text-align:right;">Variance</th>
+                                <th style="text-align:right;">Working Days</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                let totalTarget = 0;
+                let totalActual = 0;
+                let workingDays = activeTargets.length > 0 ? activeTargets[0].working_days : 0;
+
+                if (activeTargets.length > 0) {
+                    activeTargets.forEach(t => {
+                        totalTarget += t.target;
+                        totalActual += t.actual;
+                        const variance = t.actual - t.target;
+                        const varCls = variance < 0 ? 'var-neg' : (variance > 0 ? 'var-pos' : '');
+                        const varStr = variance > 0 ? `+${variance}` : variance;
+                        
+                        targetsHtml += `
+                            <tr>
+                                <td style="font-weight:500;">${escapeHtml(t.family)}</td>
+                                <td style="text-align:right;font-weight:600;">${t.target}</td>
+                                <td style="text-align:right;font-weight:600;">${t.actual}</td>
+                                <td style="text-align:right;${varCls}">${varStr}</td>
+                                <td style="text-align:right;color:var(--text-muted);">${t.working_days}</td>
+                            </tr>
+                        `;
+                    });
+
+                    // Add total row
+                    const totalVariance = totalActual - totalTarget;
+                    const totVarCls = totalVariance < 0 ? 'var-neg' : (totalVariance > 0 ? 'var-pos' : '');
+                    const totVarStr = totalVariance > 0 ? `+${totalVariance}` : totalVariance;
+                    targetsHtml += `
+                        <tr style="border-top:1.5px solid var(--border-color);">
+                            <td style="font-weight:700;">TOTAL SHOP OUTTURN</td>
+                            <td style="text-align:right;font-weight:700;color:var(--gold);">${totalTarget}</td>
+                            <td style="text-align:right;font-weight:700;color:#22c55e;">${totalActual}</td>
+                            <td style="text-align:right;${totVarCls}">${totVarStr}</td>
+                            <td style="text-align:right;font-weight:700;">${workingDays}</td>
+                        </tr>
+                    `;
+                } else {
+                    targetsHtml += `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No targets or achievements configured for this month.</td></tr>`;
+                }
+                
+                targetsHtml += `</tbody></table>`;
+                document.getElementById('targets-table-container').innerHTML = targetsHtml;
+
+                // Update Report Title
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                document.getElementById('report-title-text').textContent = `Carriage Repair Shop Intelligence Report — ${monthNames[today.getMonth()]} ${currentYear}`;
+
+                // 2. Fetch Aerial Map Data
+                const aerialResp = await fetch('/api/aerial');
+                const aerialData = await aerialResp.json();
+                
+                _coaches = aerialData.coaches || [];
+                _topology = aerialData.topology || {};
+                _aliases = _topology.PITNUM_ALIASES || {};
+                _twoSlotLines = _topology.TWO_SLOT_LINES || [];
+
+                // 3. Render Two Columns Map layout dynamically from topology
+                const layout = _topology.LAYOUT || [];
+                
+                // Split the layout elements into 2 balanced columns:
+                // Column 1 (Left): PAINT, LBR, Incoming, Spring, DEMU wash, DEMU, Stabling
+                // Column 2 (Right): LCB, Central lines, HCB, AC, Despatch, Yard
+                // This corresponds to a clean two-column grid.
+                const midPoint = Math.ceil(layout.length / 2);
+                const leftLayout = layout.slice(0, midPoint);
+                const rightLayout = layout.slice(midPoint);
+
+                let leftColHtml = '';
+                leftLayout.forEach(node => {
+                    leftColHtml += renderLayoutNode(node);
+                });
+
+                let rightColHtml = '';
+                rightLayout.forEach(node => {
+                    rightColHtml += renderLayoutNode(node);
+                });
+
+                const shopsHtml = `
+                    <div class="left-col">${leftColHtml}</div>
+                    <div class="right-col">${rightColHtml}</div>
+                `;
+                document.getElementById('shops-grid-container').innerHTML = shopsHtml;
+
+                // Hide loading screen
+                document.getElementById('loading').style.display = 'none';
+
+            } catch (err) {
+                console.error("Error loading report data:", err);
+                document.getElementById('loading').innerHTML = `
+                    <div style="color:#ef4444;font-size:18px;font-weight:700;">Failed to Load Report Data</div>
+                    <div style="color:var(--text-muted);margin-top:10px;">${err.message}</div>
+                `;
+            }
+        }
+
+        // Trigger on load
+        window.addEventListener('DOMContentLoaded', loadReportData);
+    </script>
+</body>
+</html>

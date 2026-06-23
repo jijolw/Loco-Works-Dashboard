@@ -529,6 +529,7 @@ function buildFilterControls(coaches) {
         </div>
         <div class="filter-group" style="align-self:flex-end;display:flex;gap:8px;">
             <button class="btn btn-secondary btn-sm" onclick="clearAerialFilters()">Clear</button>
+            <a class="btn btn-secondary btn-sm" href="/report/aerial" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;height:32px;box-sizing:border-box;">📊 Monthly Report</a>
             <a class="btn btn-primary btn-sm" href="/coach/reports/aerialview/print.html" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;height:32px;box-sizing:border-box;">🖨️ Print Layout</a>
         </div>
     </div>`;
@@ -606,6 +607,7 @@ function buildDetailTable(coaches, filteredCoaches) {
             </h3>
             <div style="display:flex;gap:8px;">
                 <button class="btn btn-secondary btn-sm" onclick="downloadAerialCSV()">📥 Download CSV</button>
+                <a class="btn btn-secondary btn-sm" href="/report/aerial" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;height:32px;box-sizing:border-box;">📊 Monthly Report</a>
                 <a class="btn btn-primary btn-sm" href="/coach/reports/aerialview/print.html" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;height:32px;box-sizing:border-box;">🖨️ Print Layout</a>
             </div>
         </div>
