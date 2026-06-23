@@ -100,16 +100,25 @@ def _populate_batch_cache():
             logger.error("Failed to fetch erp_active_coaches chunk: %s", exc)
             return False
 
-    # 2. Fetch all manual updates
-    url_manual = f"{SUPABASE_URL}/manual_coach_updates?select=*"
+    # 2. Fetch all manual updates in chunks of 1000
     manual_updates = []
-    try:
-        resp_m = requests.get(url_manual, headers=get_headers(), timeout=30)
-        resp_m.raise_for_status()
-        manual_updates = resp_m.json()
-    except Exception as exc:
-        logger.error("Failed to fetch manual_coach_updates: %s", exc)
-        # Keep going even if manual updates fail
+    limit = 1000
+    offset = 0
+    while True:
+        url_manual = f"{SUPABASE_URL}/manual_coach_updates?select=*&limit={limit}&offset={offset}"
+        try:
+            resp_m = requests.get(url_manual, headers=get_headers(), timeout=30)
+            resp_m.raise_for_status()
+            chunk = resp_m.json()
+            if not chunk:
+                break
+            manual_updates.extend(chunk)
+            if len(chunk) < limit:
+                break
+            offset += limit
+        except Exception as exc:
+            logger.error("Failed to fetch manual_coach_updates chunk: %s", exc)
+            break
 
     # 3. Process and map active coaches
     mapped_records = []
@@ -376,22 +385,51 @@ def fetch_clean():
 
         # Check actualdespdate (physically despatched in ERP)
         act_desp = str(item.get("actualdespdate") or "").strip()
-        has_actual_desp = act_desp and act_desp.lower() not in ("none", "null", "nan", "")
+        status_val = str(item.get("status") or "").strip().upper()
+        has_actual_desp = False
+        if act_desp and act_desp.lower() not in ("none", "null", "nan", ""):
+            act_desp_dt = _parse_date(act_desp)
+            if act_desp_dt and recd_dt:
+                if act_desp_dt >= recd_dt:
+                    has_actual_desp = True
+            else:
+                has_actual_desp = True
+        elif status_val in ("DESPATCHED", "OUTTURN"):
+            has_actual_desp = True
         
         # Check manual update override in Supabase
         coachno = item.get("coachno")
         is_manually_pending = False
+        vg_completed = False
         if coachno:
             mu = manual_updates_map.get(str(coachno).strip())
             if mu:
-                phys_status = (mu.get("physical_status") or "").strip()
-                if phys_status == "Despatched":
-                    has_actual_desp = True
-                elif phys_status == "Pending":
-                    is_manually_pending = True
-                    has_actual_desp = False
+                # Check if manual update is stale (i.e. it was entered for a past visit)
+                mu_date_str = mu.get("physical_date") or mu.get("vg_date") or ""
+                mu_dt = _parse_date(mu_date_str)
+                if not mu_dt and mu.get("updated_at"):
+                    try:
+                        iso_date = mu.get("updated_at").split('T')[0]
+                        mu_dt = datetime.strptime(iso_date, "%Y-%m-%d")
+                    except Exception:
+                        pass
+                
+                is_mu_stale = False
+                if mu_dt and recd_dt and mu_dt < recd_dt:
+                    is_mu_stale = True
                     
-        if has_actual_desp:
+                if not is_mu_stale:
+                    phys_status = (mu.get("physical_status") or "").strip()
+                    if phys_status == "Despatched":
+                        has_actual_desp = True
+                    elif phys_status == "Pending":
+                        is_manually_pending = True
+                        has_actual_desp = False
+                    
+                    if mu.get("vg_status") == "Completed" and mu.get("physical_status") == "Despatched":
+                        vg_completed = True
+                    
+        if has_actual_desp and vg_completed:
             continue
 
         # Skip stale (>365 days) unless it is manually pending
@@ -400,18 +438,19 @@ def fetch_clean():
 
         # Check paper despatch threshold: if desp_date is set and older than 15 days, treat as physically despatched!
         # ONLY for non-SPECIAL, non-LOCO, and non-TW families
-        desp_date = item.get("desp_date") or ""
-        if not desp_date and "||" in (item.get("make") or ""):
-            parts = item.get("make").split("||")
-            if len(parts) > 8:
-                desp_date = parts[8]
-                
-        desp_dt = _parse_date(desp_date)
-        if desp_dt and not is_manually_pending:
-            family = decode_family(item.get("coach_desc") or item.get("coachdesc") or "")
-            if family not in ("SPECIAL", "LOCO", "TW"):
-                if (now - desp_dt).days > 15:
-                    continue
+        # UPDATED: Removed 15-day paper despatch cutoff to keep FND coaches inside the workshop until physically despatched.
+        # desp_date = item.get("desp_date") or ""
+        # if not desp_date and "||" in (item.get("make") or ""):
+        #     parts = item.get("make").split("||")
+        #     if len(parts) > 8:
+        #         desp_date = parts[8]
+        #         
+        # desp_dt = _parse_date(desp_date)
+        # if desp_dt and not is_manually_pending:
+        #     family = decode_family(item.get("coach_desc") or item.get("coachdesc") or "")
+        #     if family not in ("SPECIAL", "LOCO", "TW"):
+        #         if (now - desp_dt).days > 15:
+        #             continue
 
         status_val = str(item.get("status") or "").strip().upper()
         if status_val in _LIVE_INACTIVE_STATUSES:
@@ -491,12 +530,27 @@ def fetch_single(demandid, bypass_cache=False):
                 "curheavylow": coach.get("curheavylow", "")
             }
 
-            # Merge manual updates if they exist
+            # Merge manual updates if they exist and are not stale
             if manual_update:
-                detail["vg_status"] = manual_update.get("vg_status") or ""
-                detail["vg_date"] = manual_update.get("vg_date") or ""
-                detail["physical_status"] = manual_update.get("physical_status") or ""
-                detail["physical_date"] = manual_update.get("physical_date") or ""
+                recd_dt = _parse_date(coach.get("recd_date") or coach.get("recddate"))
+                mu_date_str = manual_update.get("physical_date") or manual_update.get("vg_date") or ""
+                mu_dt = _parse_date(mu_date_str)
+                if not mu_dt and manual_update.get("updated_at"):
+                    try:
+                        iso_date = manual_update.get("updated_at").split('T')[0]
+                        mu_dt = datetime.strptime(iso_date, "%Y-%m-%d")
+                    except Exception:
+                        pass
+                
+                is_mu_stale = False
+                if mu_dt and recd_dt and mu_dt < recd_dt:
+                    is_mu_stale = True
+                    
+                if not is_mu_stale:
+                    detail["vg_status"] = manual_update.get("vg_status") or ""
+                    detail["vg_date"] = manual_update.get("vg_date") or ""
+                    detail["physical_status"] = manual_update.get("physical_status") or ""
+                    detail["physical_date"] = manual_update.get("physical_date") or ""
                 
             return detail
 
@@ -564,6 +618,25 @@ def fetch_single(demandid, bypass_cache=False):
     }
 
     # Merge manual updates if they exist
+    if manual_update:
+        recd_str = coach.get("recd_date") or coach.get("recddate") or ""
+        recd_dt = _parse_date(recd_str)
+        mu_date_str = manual_update.get("physical_date") or manual_update.get("vg_date") or ""
+        mu_dt = _parse_date(mu_date_str)
+        if not mu_dt and manual_update.get("updated_at"):
+            try:
+                iso_date = manual_update.get("updated_at").split('T')[0]
+                mu_dt = datetime.strptime(iso_date, "%Y-%m-%d")
+            except:
+                pass
+        
+        is_mu_stale = False
+        if mu_dt and recd_dt and mu_dt < recd_dt:
+            is_mu_stale = True
+            
+        if is_mu_stale:
+            manual_update = None
+
     if manual_update:
         detail["vg_status"] = manual_update.get("vg_status") or ""
         detail["vg_date"] = manual_update.get("vg_date") or ""

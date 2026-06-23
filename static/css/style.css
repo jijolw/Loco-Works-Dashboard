@@ -916,6 +916,12 @@ a:hover {
     border-color: rgba(231, 76, 60, 0.4);
 }
 
+.s-danger {
+    background: rgba(139, 0, 0, 0.95) !important;
+    border: 2px solid #ff0000 !important;
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.6) !important;
+}
+
 .s-cdone {
     background: #f1c40f !important;
     border-color: #f39c12 !important;
@@ -928,9 +934,9 @@ a:hover {
     color: rgba(0, 0, 0, 0.7) !important;
 }
 
-.s-pdc {
-    background: rgba(108, 52, 131, 0.85);
-    border-color: rgba(165, 105, 189, 0.4);
+.s-outturned {
+    background: rgba(22, 163, 74, 0.85);
+    border-color: rgba(22, 163, 74, 0.4);
 }
 
 .s-normal {

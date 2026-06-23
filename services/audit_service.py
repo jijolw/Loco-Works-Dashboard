@@ -231,16 +231,7 @@ def get_audit_data(fy_filter="ALL", family_filter="ALL", type_filter="ALL"):
         has_manual_override = ("vg_status" in detail)
         
         if status_upper in ("DESPATCHED", "OUTTURN") or (desp_date and desp_date not in ("—", "None", "null", "")):
-            if has_manual_override:
-                is_first_despatch = True
-            elif desp_dt:
-                now = datetime.now()
-                # Only include current month outturns
-                if desp_dt.year == now.year and desp_dt.month == now.month:
-                    is_first_despatch = True
-            elif status_upper in ("DESPATCHED", "OUTTURN"):
-                # Default to current month if status is outturn but date is vacant in ERP
-                is_first_despatch = True
+            is_first_despatch = True
         
         if is_first_despatch:
             vg_status = detail.get("vg_status") or ""

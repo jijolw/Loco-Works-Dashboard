@@ -135,6 +135,8 @@ TWO_SLOT_LINES = {
 # ── Pit number aliases (display overrides) ───────────
 PITNUM_ALIASES = {
     "SY/P2_1": "SY/P1",
+    "SY/P2_2": "SY/P1",
+    "SY/P2": "SY/P1",
     "DM/BL": "DM/B",
 }
 

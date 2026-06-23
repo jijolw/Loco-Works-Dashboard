@@ -39,7 +39,10 @@ def sync_corrosion_from_sheet(gsheet):
     tabs = [
         {"name": "LHB", "header_row": 0},
         {"name": "ICF NAC", "header_row": 1},
-        {"name": "MEMU/EMU TC", "header_row": 0}
+        {"name": "MEMU/EMU TC", "header_row": 0},
+        {"name": "NMGHS CONV", "header_row": 1},
+        {"name": "NMG POH", "header_row": 1},
+        {"name": "DEMU", "header_row": 0}
     ]
     
     for tab in tabs:
@@ -52,15 +55,35 @@ def sync_corrosion_from_sheet(gsheet):
                 # Map headers to lower case
                 headers = [h.strip().lower() for h in rows[header_row_idx]]
                 
-                if "coach no" not in headers:
-                    logger.warning("Worksheet %s missing 'coach no' column. Skipping.", tab_name)
+                c_idx = -1
+                for idx, h in enumerate(headers):
+                    if h in ("coach no", "rs no", "rs. no"):
+                        c_idx = idx
+                        break
+                        
+                if c_idx == -1:
+                    logger.warning("Worksheet %s missing coach number column (coach no or rs no). Skipping.", tab_name)
                     continue
                     
-                c_idx = headers.index("coach no")
-                corr_in_idx = headers.index("corr in date") if "corr in date" in headers else -1
-                corr_idx = headers.index("corrosion") if "corrosion" in headers else -1
+                corr_in_idx = -1
+                for idx, h in enumerate(headers):
+                    if h in ("corr in date", "corrosion in date"):
+                        corr_in_idx = idx
+                        break
+                        
+                corr_idx = -1
+                for idx, h in enumerate(headers):
+                    if h in ("corrosion", "cr corrosion"):
+                        corr_idx = idx
+                        break
+                        
                 bio_tank_idx = headers.index("bio tank loaded") if "bio tank loaded" in headers else -1
-                lowering_idx = headers.index("lowering") if "lowering" in headers else -1
+                
+                lowering_idx = -1
+                for idx, h in enumerate(headers):
+                    if h in ("lowering", "bogie wheeling"):
+                        lowering_idx = idx
+                        break
                 
                 # Furnishing column
                 furn_idx = -1
@@ -85,7 +108,7 @@ def sync_corrosion_from_sheet(gsheet):
                         
                 desp_date_idx = -1
                 for idx, h in enumerate(headers):
-                    if "desp date" in h or "despatch date" in h:
+                    if "desp date" in h or "despatch date" in h or h == "tfr on":
                         desp_date_idx = idx
                         break
                         
@@ -128,7 +151,7 @@ def sync_corrosion_from_sheet(gsheet):
         except Exception as e:
             logger.error("Error syncing worksheet %s: %s", tab_name, e)
 
-def sync_targets():
+def sync_targets(full_sync=False):
     """
     Sync outturn targets from Google Sheet to Supabase:
     - Current year (2026-27): month-wise from 'HQ_Targets' worksheet.
@@ -383,8 +406,11 @@ def track_coach_movements():
             row = get_last_coach_movement(coachno)
             
             if row is None:
-                # First time logging location for this coach - log arrival
-                insert_coach_movement(coachno, "ARRIVED", current_loc, now_str)
+                # First time logging location for this coach - log arrival using recd_date from ERP
+                recd_str = coach.get("recd_date") or coach.get("recddate") or ""
+                recd_dt = _parse_date(recd_str)
+                recd_now_str = recd_dt.strftime("%Y-%m-%d 00:00:00") if recd_dt else now_str
+                insert_coach_movement(coachno, "ARRIVED", current_loc, recd_now_str)
                 movements_logged += 1
             else:
                 last_loc = row.get("to_location")

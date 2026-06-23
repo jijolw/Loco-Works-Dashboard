@@ -626,17 +626,48 @@
             return hasCorr ? `${num} / C` : num;
         }
 
+        function parseDate(dateStr) {
+            if (!dateStr || dateStr.toLowerCase().trim() === 'none') return null;
+            const parts = dateStr.split(/[\/\-]/);
+            if (parts.length < 3) return null;
+            if (parts[0].length === 4) {
+                return new Date(parts[0], parts[1]-1, parts[2]);
+            } else {
+                let yr = parts[2];
+                if (yr.length === 2) yr = '20' + yr;
+                return new Date(yr, parts[1]-1, parts[0]);
+            }
+        }
+
+        function getValidDespDate(c) {
+            if (!c) return '';
+            let despDateStr = String(c.desp_date || c.actualdespdate || c.despdate || '').trim();
+            if (c.actualdespdate && c.recd_date) {
+                const recdD = parseDate(c.recd_date);
+                const despD = parseDate(c.actualdespdate);
+                if (recdD && despD && despD < recdD) {
+                    if (despDateStr === String(c.actualdespdate).trim()) {
+                        despDateStr = '';
+                    }
+                }
+            }
+            return despDateStr;
+        }
+
         // Helper to check styling color (blue for corrosion, red for stranger/special stock)
         // Helper to check styling color (only yellow-gold for outturn taken coaches)
         function getCoachColorStyle(c, defaultColor) {
             if (!c) return '';
+            if (c.AERIAL_STATUS === 'DANGER') {
+                return 'color: #c0392b; font-weight: 700; border: 1.5px solid #c0392b; padding: 1px 2px;';
+            }
             const pit = String(c.pitnum || c.location || '').toUpperCase().trim();
-            const despDate = String(c.desp_date || c.actualdespdate || c.despdate || '').trim();
-            const isDesp = pit.includes('DESP') || c.AERIAL_STATUS === 'PDC ASSIGNED' || (despDate !== '' && despDate.toLowerCase() !== 'none' && despDate.toLowerCase() !== 'nan');
+            const despDate = getValidDespDate(c);
+            const isDesp = pit.includes('DESP') || c.AERIAL_STATUS === 'OUTTURNED' || (despDate !== '' && despDate.toLowerCase() !== 'none' && despDate.toLowerCase() !== 'nan');
             
             // 1. First Despatch / Outturned
             if (isDesp) {
-                return 'color: #c69c00; font-weight: 700;'; // yellow-gold (highly legible yellow on white background)
+                return 'color: #2e7d32; font-weight: 700;'; // green (highly legible on white background)
             }
             return ''; // default styling (standard black)
         }
@@ -794,6 +825,15 @@
                     }
                     return coaches.filter(c => {
                         const pit = (c.pitnum || c.location || '').toUpperCase().trim();
+
+                        // If the coach's exact location is aliased to a different prefix, exclude it.
+                        if (aliases) {
+                            const aliasKey = Object.keys(aliases).find(k => k.toUpperCase() === pit.toUpperCase());
+                            if (aliasKey && aliases[aliasKey].toUpperCase() !== prefix.toUpperCase()) {
+                                return false;
+                            }
+                        }
+
                         for (const pfx of prefixes) {
                             const up = pfx.toUpperCase();
                             if (pit === up) return true;
@@ -811,14 +851,24 @@
                     if (exact) return exact;
 
                     if (slot === 1) {
-                        const plain = all.find(c => (c.pitnum || c.location || '').toUpperCase().trim() === prefix.toUpperCase());
+                        const plain = all.find(c => {
+                            const pit = (c.pitnum || c.location || '').toUpperCase().trim();
+                            if (pit === prefix.toUpperCase()) return true;
+                            if (aliases) {
+                                const aliasKey = Object.keys(aliases).find(k => k.toUpperCase() === pit);
+                                if (aliasKey && aliases[aliasKey].toUpperCase() === prefix.toUpperCase() && !pit.includes('_')) {
+                                    return true;
+                                }
+                            }
+                            return false;
+                        });
                         if (plain) return plain;
                     }
 
                     for (const [alias, canonical] of Object.entries(aliases)) {
                         if (canonical.toUpperCase() === prefix.toUpperCase()) {
                             const parts = alias.split('_');
-                            const aliasSlot = parts[parts.length - 1];
+                            const aliasSlot = parts.length > 1 ? parts[parts.length - 1] : '';
                             if (aliasSlot === String(slot)) {
                                 const match = all.find(c => (c.pitnum || c.location || '').toUpperCase().trim() === alias.toUpperCase());
                                 if (match) return match;
@@ -1058,9 +1108,30 @@
                 document.getElementById('acloco-body').innerHTML = aclocoHtml;
 
                 // ── 8. RENDER YARD TABLES ──
+                const shopPrefixes = [
+                    'PS/P2', 'PS/L2', 'PS/L1', 'PS/P1',
+                    'SY/WP', 'SY/L4', 'SY/L3', 'SY/L2', 'SY/P1', 'SY/L1', 'SY/P2',
+                    'AS/L6', 'AS/L5', 'AS/P4', 'AS/P3', 'AS/P2', 'AS/L1',
+                    'DM/L32A', 'DM/L32', 'DM/L31', 'DM/L30', 'DM/L29', 'DM/L28', 'DM/L27', 'DM/C', 'DM/B', 'DM/BL',
+                    'LCB/L16A', 'LCB/L16', 'LCB/L15', 'LCB/P14', 'LCB/L13', 'LCB/L12', 'LCB/L11', 'LCB/C',
+                    'HCB/L26', 'HCB/L25', 'HCB/L24', 'HCB/L23', 'HCB/L22', 'HCB/L21', 'HCB/L20', 'HCB/L19', 'HCB/L18', 'HCB/L17', 'HCB/DESP',
+                    'AC/P10', 'AC/P9', 'AC/L8', 'AC/L7', 'AC/L6', 'AC/L5', 'AC/L4', 'AC/L3', 'AC/L2', 'AC/L1',
+                    'ACB/P10', 'ACB/P9', 'ACB/L8', 'ACB/L7', 'ACB/L6', 'ACB/L5', 'ACB/L4', 'ACB/L3', 'ACB/L2', 'ACB/L1',
+                    'OT/IN', 'DESP', 'OT/DESP', 'HCB/DESP'
+                ];
                 const yardCoaches = coaches.filter(c => {
                     const pit = String(c.pitnum || c.location || '').toUpperCase().trim();
-                    return pit.startsWith('OT/YD') || pit.includes('YARD') || pit.includes('YD');
+                    if (!pit) return true;
+                    if (pit.startsWith('OT/YD') || pit.includes('YARD') || pit.includes('YD')) return true;
+                    
+                    const isShop = shopPrefixes.some(pfx => {
+                        const up = pfx.toUpperCase();
+                        if (pit === up) return true;
+                        if (pit === up + '_1' || pit === up + '_2') return true;
+                        if (pit.startsWith(up) && /^_?\d?$/.test(pit.slice(up.length))) return true;
+                        return false;
+                    });
+                    return !isShop;
                 });
                 
                 yardCoaches.sort((a, b) => {
@@ -1120,7 +1191,7 @@
                 const yesterdayStr2 = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
                 
                 const outturned = coaches.filter(c => {
-                    const desp = String(c.desp_date || c.actualdespdate || '').trim();
+                    const desp = getValidDespDate(c);
                     return desp.startsWith(yesterdayStr1) || desp.startsWith(yesterdayStr2);
                 });
 

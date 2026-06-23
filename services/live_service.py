@@ -153,8 +153,40 @@ def get_live_data():
 
         # ── Skip physically despatched coaches ────
         actual_desp = str(detail.get("actualdespdate") or "").strip()
-        if actual_desp and actual_desp.lower() not in ("none", "null", "nan"):
-            continue
+        status_erp = str(rec.get("status") or "").strip().upper()
+        recd_str = rec.get("recd_date", "") or rec.get("recddate", "")
+        recd_dt = _parse_date(recd_str)
+        
+        is_desp = False
+        if actual_desp and actual_desp.lower() not in ("none", "null", "nan", ""):
+            act_desp_dt = _parse_date(actual_desp)
+            if act_desp_dt and recd_dt:
+                if act_desp_dt >= recd_dt:
+                    is_desp = True
+            else:
+                is_desp = True
+        elif status_erp in ("DESPATCHED", "OUTTURN"):
+            is_desp = True
+                
+        if is_desp:
+            # Keep in live list (for FND) if manual VG / physical is not completed
+            vg_completed = False
+            if coachno:
+                try:
+                    from services.db_service import get_manual_coach_update
+                    mu = get_manual_coach_update(coachno)
+                    if mu:
+                        mu_date_str = mu.get("physical_date") or mu.get("vg_date") or ""
+                        mu_dt = _parse_date(mu_date_str)
+                        is_mu_stale = False
+                        if mu_dt and recd_dt and mu_dt < recd_dt:
+                            is_mu_stale = True
+                        if not is_mu_stale and mu.get("vg_status") == "Completed" and mu.get("physical_status") == "Despatched":
+                            vg_completed = True
+                except Exception:
+                    pass
+            if vg_completed:
+                continue
 
         # ── Resolve division ──────────────────────
         division = _resolve_division(rec, detail)
@@ -180,6 +212,46 @@ def get_live_data():
 
         pitnum = rec.get("pitnum", "")
 
+        # ── Corrosion fields & Google Sheets enrichment ──
+        corr_place = detail.get("corr_place", "")
+        corr_comp = detail.get("corr_comp", "")
+        try:
+            from services.db_service import get_google_corrosion
+            google_corr = get_google_corrosion(coachno)
+            if google_corr:
+                g_corr_in = google_corr.get("corr_in_date") or ""
+                g_corr_status = google_corr.get("corrosion_status") or ""
+                if (not corr_place or str(corr_place).strip() in ("", "None", "null", "0")) and g_corr_in:
+                    corr_place = "GSheet: " + g_corr_in
+                if (not corr_comp or str(corr_comp).strip() in ("", "None", "null", "0")) and g_corr_status:
+                    if "completed" in g_corr_status.lower() or "/" in g_corr_status or "-" in g_corr_status:
+                        corr_comp = g_corr_status if ("/" in g_corr_status or "-" in g_corr_status) else "Completed"
+        except Exception:
+            pass
+
+        # ── Determine if FND coach ────────────────
+        is_fnd = False
+        desp_date = detail.get("desp_date") or detail.get("despdate") or ""
+        if not desp_date and "||" in (rec.get("make") or ""):
+            parts = rec.get("make").split("||")
+            if len(parts) > 8:
+                desp_date = parts[8]
+                
+        desp_dt = _parse_date(desp_date)
+        has_desp_date = False
+        if desp_dt:
+            recd_str = rec.get("recd_date", "") or rec.get("recddate", "")
+            recd_dt = _parse_date(recd_str)
+            if recd_dt:
+                if desp_dt >= recd_dt:
+                    has_desp_date = True
+            else:
+                has_desp_date = True
+
+        status_upper = status.upper()
+        if status_upper in ("DESPATCHED", "OUTTURN") or has_desp_date:
+            is_fnd = True
+
         # ── Build enriched record ─────────────────
         coach = {
             "coachno": coachno,
@@ -194,7 +266,20 @@ def get_live_data():
             "year_built": yb_info.get("year_built", ""),
             "make": yb_info.get("make", ""),
             "status": status,
+            "is_fnd": is_fnd,
+            "corr_place": corr_place,
+            "corr_comp": corr_comp,
+            "physical_status": detail.get("physical_status", ""),
+            "actualdespdate": detail.get("actualdespdate", ""),
+            "desp_date": desp_date,
         }
+
+        # ── Compute AERIAL_STATUS dynamically ─────
+        try:
+            from services.aerial_service import _compute_aerial_status
+            coach["AERIAL_STATUS"] = _compute_aerial_status(coach)
+        except Exception:
+            coach["AERIAL_STATUS"] = "ROUTINE POH"
 
         # ── Apply full decode_all ─────────────────
         decode_all(coach, summary_coachno=coachno, summary_desc=coach_desc)
@@ -237,6 +322,8 @@ def get_live_data():
                 "year_built": l.get("pdc") or "",
                 "make": "AC LOCO",
                 "status": "AC LOCO",
+                "is_fnd": False,
+                "AERIAL_STATUS": "NORMAL",
             }
             
             # Apply decode_all
@@ -252,6 +339,11 @@ def get_live_data():
     except Exception as exc:
         logger.error("Error enriching AC Locos in get_live_data: %s", exc)
 
+    # Calculate split-up counts
+    fnd_count = sum(1 for c in enriched if c.get("is_fnd"))
+    ac_loco_count = sum(1 for c in enriched if c.get("status") == "AC LOCO" or c.get("family") == "LOCO")
+    active_count = len(enriched) - fnd_count - ac_loco_count
+
     # ── Build metrics ─────────────────────────────────
     metrics = {
         "total": len(enriched),
@@ -259,6 +351,9 @@ def get_live_data():
         "coach_types": dict(family_counter.most_common()),
         "divisions": dict(division_counter.most_common()),
         "long_stay": len(suspicious),
+        "fnd_count": fnd_count,
+        "ac_loco_count": ac_loco_count,
+        "active_count": active_count,
     }
 
     result = {

@@ -93,15 +93,19 @@ const ZONE_NAMES = {
 function getStatusClass(coach) {
     if (!coach) return 's-normal';
     const s = (coach.AERIAL_STATUS || coach.status || '').toUpperCase();
+    if (s.includes('DANGER')) return 's-danger';
     if (s.includes('UNDER CORROSION')) return 's-corr';
     if (s.includes('CORROSION DONE')) return 's-cdone';
+    if (s.includes('OUTTURNED')) return 's-outturned';
     return 's-normal';
 }
 
 function getStatusLabel(coach) {
     const cls = getStatusClass(coach);
+    if (cls === 's-danger') return 'Danger: VG Pending';
     if (cls === 's-corr') return 'Under Corrosion';
     if (cls === 's-cdone') return 'Corrosion Completed';
+    if (cls === 's-outturned') return 'Outturn Taken';
     return 'Routine POH';
 }
 
@@ -114,6 +118,33 @@ function getStatusLabel(coach) {
 function getCoachesForPit(prefix, coaches, aliases) {
     if (!coaches || !coaches.length) return [];
 
+    if (prefix === 'OT/YD') {
+        const shopPrefixes = [
+            'PS/P2', 'PS/L2', 'PS/L1', 'PS/P1',
+            'SY/WP', 'SY/L4', 'SY/L3', 'SY/L2', 'SY/P1', 'SY/L1', 'SY/P2',
+            'AS/L6', 'AS/L5', 'AS/P4', 'AS/P3', 'AS/P2', 'AS/L1',
+            'DM/L32A', 'DM/L32', 'DM/L31', 'DM/L30', 'DM/L29', 'DM/L28', 'DM/L27', 'DM/C', 'DM/B', 'DM/BL',
+            'LCB/L16A', 'LCB/L16', 'LCB/L15', 'LCB/P14', 'LCB/L13', 'LCB/L12', 'LCB/L11', 'LCB/C',
+            'HCB/L26', 'HCB/L25', 'HCB/L24', 'HCB/L23', 'HCB/L22', 'HCB/L21', 'HCB/L20', 'HCB/L19', 'HCB/L18', 'HCB/L17', 'HCB/DESP',
+            'AC/P10', 'AC/P9', 'AC/L8', 'AC/L7', 'AC/L6', 'AC/L5', 'AC/L4', 'AC/L3', 'AC/L2', 'AC/L1',
+            'ACB/P10', 'ACB/P9', 'ACB/L8', 'ACB/L7', 'ACB/L6', 'ACB/L5', 'ACB/L4', 'ACB/L3', 'ACB/L2', 'ACB/L1',
+            'OT/IN', 'DESP', 'OT/DESP', 'HCB/DESP'
+        ];
+        return coaches.filter(c => {
+            const pit = (c.pitnum || c.pit_num || c.location || '').toUpperCase().trim();
+            if (!pit) return true;
+            if (pit.startsWith('OT/YD') || pit.includes('YARD') || pit.includes('YD')) return true;
+            const isShop = shopPrefixes.some(pfx => {
+                const up = pfx.toUpperCase();
+                if (pit === up) return true;
+                if (pit === up + '_1' || pit === up + '_2') return true;
+                if (pit.startsWith(up) && /^_?\d?$/.test(pit.slice(up.length))) return true;
+                return false;
+            });
+            return !isShop;
+        });
+    }
+
     // Gather all possible prefixes (including aliases)
     const prefixes = [prefix];
     if (aliases) {
@@ -125,6 +156,15 @@ function getCoachesForPit(prefix, coaches, aliases) {
 
     return coaches.filter(c => {
         const pit = (c.pitnum || c.pit_num || c.location || '').toUpperCase().trim();
+        
+        // If the coach's exact location is aliased to a different prefix, exclude it.
+        if (aliases) {
+            const aliasKey = Object.keys(aliases).find(k => k.toUpperCase() === pit.toUpperCase());
+            if (aliasKey && aliases[aliasKey].toUpperCase() !== prefix.toUpperCase()) {
+                return false;
+            }
+        }
+
         for (const pfx of prefixes) {
             const up = pfx.toUpperCase();
             if (pit === up) return true;
@@ -149,11 +189,19 @@ function getCoachAtSlot(prefix, slot, coaches, aliases) {
     });
     if (exact) return exact;
 
-    // If slot is 1, try plain prefix
+    // If slot is 1, try plain prefix or plain alias (without slot suffix)
     if (slot === 1) {
         const plain = all.find(c => {
             const pit = (c.pitnum || c.pit_num || c.location || '').toUpperCase().trim();
-            return pit === prefix.toUpperCase();
+            if (pit === prefix.toUpperCase()) return true;
+            if (aliases) {
+                // Find case-insensitive alias match
+                const aliasKey = Object.keys(aliases).find(k => k.toUpperCase() === pit);
+                if (aliasKey && aliases[aliasKey].toUpperCase() === prefix.toUpperCase() && !pit.includes('_')) {
+                    return true;
+                }
+            }
+            return false;
         });
         if (plain) return plain;
     }
@@ -491,8 +539,10 @@ function buildFilterControls(coaches) {
 function buildLegend() {
     return `
     <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(139,0,0,0.95);border:1px solid #ff0000;box-shadow:0 0 4px rgba(255,0,0,0.6)"></div> Danger: VG Pending</div>
         <div class="legend-item"><div class="legend-dot" style="background:rgba(192,57,43,0.85)"></div> Under Corrosion</div>
         <div class="legend-item"><div class="legend-dot" style="background:#f1c40f"></div> Corrosion Completed</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(22,163,74,0.85)"></div> Outturn Taken</div>
         <div class="legend-item"><div class="legend-dot" style="background:rgba(36,113,163,0.6)"></div> Routine POH</div>
         <div class="legend-item"><div class="legend-dot" style="background:transparent;border:1px dashed rgba(255,255,255,0.3)"></div> Empty Slot</div>
         <div class="legend-item"><div class="legend-dot" style="background:var(--gold)"></div> Search Match</div>
@@ -518,9 +568,10 @@ function buildDetailTable(coaches, filteredCoaches) {
           format: (v, row) => {
               const cls = getStatusClass(row);
               const lbl = getStatusLabel(row);
-              const badgeCls = cls === 's-corr' ? 'badge-danger' :
+              const badgeCls = cls === 's-danger' ? 'badge-danger' :
+                               cls === 's-corr' ? 'badge-danger' :
                                cls === 's-cdone' ? 'badge-warning' :
-                               cls === 's-pdc' ? 'badge-purple' : 'badge-info';
+                               cls === 's-outturned' ? 'badge-success' : 'badge-info';
               return `<span class="badge ${badgeCls}">${escapeHtml(lbl)}</span>`;
           }
         },
@@ -540,9 +591,10 @@ function buildDetailTable(coaches, filteredCoaches) {
 
     const colorRowFn = (row) => {
         const cls = getStatusClass(row);
+        if (cls === 's-danger') return 'row-danger';
         if (cls === 's-corr') return 'row-danger';
         if (cls === 's-cdone') return 'row-warning';
-        if (cls === 's-pdc') return 'row-purple';
+        if (cls === 's-outturned') return 'row-success';
         return 'row-info';
     };
 
@@ -620,8 +672,10 @@ function renderAerialView(data) {
 function _renderAerialFull(container, coaches, layout, twoSlotLines, aliases, metrics, searchText, filteredSet) {
     // Count metrics
     const total = coaches.length;
+    const dangerCount = coaches.filter(c => getStatusClass(c) === 's-danger').length;
     const corrCount = coaches.filter(c => getStatusClass(c) === 's-corr').length;
     const doneCount = coaches.filter(c => getStatusClass(c) === 's-cdone').length;
+    const outturnCount = coaches.filter(c => getStatusClass(c) === 's-outturned').length;
     const normalCount = coaches.filter(c => getStatusClass(c) === 's-normal').length;
 
     // Determine filtered coaches for detail table
@@ -647,8 +701,10 @@ function _renderAerialFull(container, coaches, layout, twoSlotLines, aliases, me
     // Metrics
     html += `<div class="metrics-grid anim-slide">`;
     html += createMetricCard('Total Inside', metrics.total || total, '🚃', 'accent-blue');
+    html += createMetricCard('Danger: VG Pending', metrics.danger || dangerCount, '🚨', 'accent-danger');
     html += createMetricCard('Under Corrosion', metrics.under_corrosion || corrCount, '🔴', 'accent-danger');
     html += createMetricCard('Corrosion Completed', metrics.corrosion_done || doneCount, '🟡', 'accent-warning');
+    html += createMetricCard('Outturn Taken', metrics.outturned || outturnCount, '🟢', 'accent-success');
     html += createMetricCard('Routine POH', metrics.normal || normalCount, '🔵', 'accent-info');
     html += `</div>`;
 

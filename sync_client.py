@@ -44,7 +44,15 @@ sys.modules["supabase_db_service"] = supabase_db_service
 spec.loader.exec_module(supabase_db_service)
 sync_active_coaches_to_supabase = supabase_db_service.sync_active_coaches_to_supabase
 
-from services.sync_service import sync_targets
+# Load Supabase sync_service directly via importlib to avoid collision with local ERP services
+spec_sync = importlib.util.spec_from_file_location(
+    "supabase_sync_service",
+    os.path.join(current_dir, "services", "sync_service.py")
+)
+supabase_sync_service = importlib.util.module_from_spec(spec_sync)
+sys.modules["supabase_sync_service"] = supabase_sync_service
+spec_sync.loader.exec_module(supabase_sync_service)
+sync_targets = supabase_sync_service.sync_targets
 from services.live_service import get_live_data, _resolve_division
 from services.erp_service import fetch_master, fetch_single, fetch_year_built, _parse_date
 from services.decoders import decode_repair
@@ -208,32 +216,7 @@ def fetch_local_ac_locos():
         enriched_locos.append(merged)
         seen_locos.add(lno)
 
-    # Hardcode/inject missing locos that are still inside the shop (30555 and 22472)
-    for lno in ["30555", "22472"]:
-        if lno not in seen_locos:
-            loco_desc = "WAP7" if lno == "30555" else "WAP4"
-            merged = {
-                "loco_no": lno,
-                "loco_desc": loco_desc,
-                "pitnum": "",  # Off-pit/yard
-                "date_recd": "01/05/26",
-                "tfr_date": "",
-                "division": "RPM" if lno == "30555" else "EDDS",
-                "dvnid": "RPM" if lno == "30555" else "EDDS",
-                "shed": "RPM" if lno == "30555" else "EDDS",
-                "recd_on": "01/05",
-                "stripping": "",
-                "dewheel": "",
-                "wheeling": "",
-                "test_trial": "",
-                "traffic": "",
-                "super_str": "",
-                "tm": "",
-                "ico_tm": "",
-                "tfr": ""
-            }
-            enriched_locos.append(merged)
-            seen_locos.add(lno)
+    # Hardcoded injection of locos 30555 and 22472 has been removed since they are now despatched.
 
     return enriched_locos
 

@@ -8,7 +8,7 @@
 Builds the data payload consumed by the aerial-view frontend.
 
 Each coach is enriched with:
-- AERIAL_STATUS  (UNDER CORROSION / CORROSION DONE / PDC ASSIGNED / NORMAL)
+- AERIAL_STATUS  (UNDER CORROSION / CORROSION DONE / OUTTURNED / NORMAL)
 - Family, repair type, division labels (via decoders)
 - IN_DAYS calculated from recd_date
 
@@ -84,16 +84,40 @@ def _compute_aerial_status(coach):
     1. Check if physically despatched, returned, or condemned
     2. UNDER CORROSION — corr_place filled AND corr_comp blank
     3. CORROSION DONE  — corr_comp filled
-    4. ROUTINE POH     — everything else
+    4. OUTTURNED       — desp_date filled
+    5. ROUTINE POH     — everything else
     """
     status = str(coach.get("status") or "").strip().upper()
     physical_status = str(coach.get("physical_status") or "").strip().upper()
-    actual_desp = str(coach.get("actualdespdate") or coach.get("desp_date") or coach.get("despdate") or "").strip()
+    actual_desp = str(coach.get("actualdespdate") or "").strip()
+    desp_date = str(coach.get("desp_date") or coach.get("despdate") or "").strip()
+
+    recd_str = coach.get("recd_date") or coach.get("recddate") or ""
+    recd_dt = _parse_date(recd_str)
+    act_desp_dt = _parse_date(actual_desp) if actual_desp and actual_desp.lower() not in ("none", "null", "nan", "") else None
+    
+    has_actual_desp = False
+    if act_desp_dt:
+        if recd_dt:
+            if act_desp_dt >= recd_dt:
+                has_actual_desp = True
+        else:
+            has_actual_desp = True
+
+    desp_dt = _parse_date(desp_date) if desp_date and desp_date.lower() not in ("none", "null", "nan", "") else None
+    has_desp_date = False
+    if desp_dt:
+        if recd_dt:
+            if desp_dt >= recd_dt:
+                has_desp_date = True
+        else:
+            has_desp_date = True
 
     is_inactive = (
-        status in ("DESPATCHED", "OUTTURN", "RETURN", "COND", "CONDEMNED", "BHOPAL") or
-        physical_status == "DESPATCHED" or
-        (actual_desp and actual_desp.lower() not in ("none", "null", "nan", ""))
+        (status in ("RETURN", "COND", "CONDEMNED", "BHOPAL")) or
+        (physical_status == "DESPATCHED") or
+        has_actual_desp or
+        (status in ("DESPATCHED", "OUTTURN") and has_desp_date)
     )
 
     if is_inactive:
@@ -103,7 +127,16 @@ def _compute_aerial_status(coach):
             return "RETURNED"
         if "BHOPAL" in status:
             return "BHOPAL"
+        # Check if manual updates are pending for physically despatched coaches, outturned coaches, or manual overrides
+        if has_actual_desp or (physical_status == "DESPATCHED") or (status in ("DESPATCHED", "OUTTURN") and has_desp_date):
+            vg_status = str(coach.get("vg_status") or "").strip()
+            phys_status_man = str(coach.get("physical_status") or "").strip()
+            if vg_status != "Completed" or phys_status_man != "Despatched":
+                return "DANGER"
         return "DESPATCHED"
+
+    if has_desp_date:
+        return "OUTTURNED"
 
     corr_place = str(coach.get("corr_place", "") or "").strip()
     corr_comp = str(coach.get("corr_comp", "") or "").strip()
@@ -172,7 +205,7 @@ def get_aerial_data():
             "coaches":  [enriched coach dicts ...],
             "ac_locos": [loco dicts ...],
             "metrics":  {total, under_corrosion, corrosion_done,
-                         pdc_assigned, normal},
+                         outturned, normal},
             "topology": LAYOUT (from topology.py),
         }
     """
@@ -188,8 +221,10 @@ def get_aerial_data():
     for r in raw_records:
         make_val = str(r.get("make") or "").strip()
         status_val = str(r.get("status") or "").strip().upper()
-        if make_val != "AC LOCO" and status_val != "AC LOCO":
-            coaches_records.append(r)
+        if make_val == "AC LOCO" or status_val == "AC LOCO":
+            continue
+
+        coaches_records.append(r)
 
     ac_locos_list = _fetch_ac_locos()
 
@@ -198,7 +233,9 @@ def get_aerial_data():
         "total": 0,
         "under_corrosion": 0,
         "corrosion_done": 0,
+        "outturned": 0,
         "normal": 0,
+        "danger": 0,
     }
 
     for rec in coaches_records:
@@ -210,7 +247,12 @@ def get_aerial_data():
         coachno = rec.get("coachno", "")
         coach_desc = rec.get("coach_desc", "") or rec.get("coachdesc", "")
         demandid = rec.get("demandid", "")
-        pitnum = rec.get("pitnum", "")
+        
+        # Override ERP pitnum anomaly/mismatch for coach 086442 to place it in LBR Pit 1 Slot 1
+        if coachno == "086442":
+            pitnum = "SY/P2_1"
+        else:
+            pitnum = rec.get("pitnum", "")
 
         # ── Parse received date & calculate IN_DAYS
         recd_str = rec.get("recd_date", "") or rec.get("recddate", "")
@@ -227,8 +269,41 @@ def get_aerial_data():
 
         # ── Skip physically despatched coaches ────
         actual_desp = str(detail.get("actualdespdate") or "").strip()
-        if actual_desp and actual_desp.lower() not in ("none", "null", "nan"):
-            continue
+        desp_date = str(detail.get("desp_date") or detail.get("despdate") or "").strip()
+        status_erp = str(rec.get("status") or "").strip().upper()
+        
+        has_actual_desp = False
+        if actual_desp and actual_desp.lower() not in ("none", "null", "nan", ""):
+            act_desp_dt = _parse_date(actual_desp)
+            if act_desp_dt and recd_dt:
+                if act_desp_dt >= recd_dt:
+                    has_actual_desp = True
+            else:
+                has_actual_desp = True
+
+        has_desp_date = False
+        if desp_date and desp_date.lower() not in ("none", "null", "nan", ""):
+            desp_dt = _parse_date(desp_date)
+            if desp_dt and recd_dt:
+                if desp_dt >= recd_dt:
+                    has_desp_date = True
+            else:
+                has_desp_date = True
+
+        is_desp = (
+            has_actual_desp or 
+            (str(detail.get("physical_status") or "").strip() == "Despatched") or
+            (status_erp in ("DESPATCHED", "OUTTURN") and has_desp_date)
+        )
+
+        if is_desp:
+            vg_status = str(detail.get("vg_status") or "").strip()
+            phys_status = str(detail.get("physical_status") or "").strip()
+            if vg_status != "Completed" or phys_status != "Despatched":
+                # Pending manual clearance - DO NOT skip!
+                pass
+            else:
+                continue
 
         # ── Fetch year-built info ─────────────────
         yb_info = {}
@@ -312,6 +387,10 @@ def get_aerial_data():
             metrics["under_corrosion"] += 1
         elif aerial_status == "CORROSION DONE":
             metrics["corrosion_done"] += 1
+        elif aerial_status == "OUTTURNED":
+            metrics["outturned"] += 1
+        elif aerial_status == "DANGER":
+            metrics["danger"] += 1
         else:
             metrics["normal"] += 1
 

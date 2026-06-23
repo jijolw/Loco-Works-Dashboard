@@ -1,9 +1,9 @@
-/* ---------- Status Normalization Helpers ---------- */
 window.getAerialStatusLabel = function(status) {
     if (!status) return 'Routine POH';
     const s = String(status).toUpperCase();
     if (s.includes('UNDER CORROSION')) return 'Under Corrosion';
     if (s.includes('DONE') || s.includes('COMPLETED')) return 'Corrosion Completed';
+    if (s.includes('OUTTURNED')) return 'Outturn Taken';
     if (s.includes('ROUTINE') || s.includes('NORMAL')) return 'Routine POH';
     if (s.includes('DESPATCHED') || s.includes('OUTTURN')) return 'Despatched';
     if (s.includes('COND')) return 'Condemned';
@@ -17,6 +17,7 @@ window.getAerialStatusBadgeClass = function(status) {
     const s = String(status).toUpperCase();
     if (s.includes('UNDER CORROSION')) return 'badge-danger';
     if (s.includes('DONE') || s.includes('COMPLETED')) return 'badge-completed';
+    if (s.includes('OUTTURNED')) return 'badge-success';
     if (s.includes('DESPATCHED') || s.includes('OUTTURN')) return 'badge-success';
     if (s.includes('COND') || s.includes('RETURN') || s.includes('BHOPAL')) return 'badge-warning';
     return 'badge-info';
@@ -90,6 +91,7 @@ window.getCoachCategoryString = function(c) {
 };
 
 window.filterLiveByType = function(type) {
+    window._fndOnlyFilter = false;
     const el = document.getElementById('lf-coachtype');
     if (el) {
         el.value = type;
@@ -107,6 +109,7 @@ window.filterLiveByType = function(type) {
 };
 
 window.filterLiveByFamily = function(family) {
+    window._fndOnlyFilter = false;
     const el = document.getElementById('lf-family');
     if (!el) return;
     
@@ -133,6 +136,7 @@ window.filterLiveByFamily = function(family) {
 };
 
 window.filterLiveByDivision = function(div) {
+    window._fndOnlyFilter = false;
     const el = document.getElementById('lf-division');
     if (el) {
         el.value = div;
@@ -147,6 +151,22 @@ window.filterLiveByDivision = function(div) {
         }
         applyLiveFilters();
     }
+};
+
+window.filterLiveByFND = function(fndOnly) {
+    window._fndOnlyFilter = fndOnly;
+    if (fndOnly) {
+        ['lf-family', 'lf-coachtype', 'lf-division'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+        window._customFamilyFilter = null;
+        const cb = document.getElementById('lf-longstay');
+        if (cb) cb.checked = false;
+        const searchEl = document.getElementById('lf-search');
+        if (searchEl) searchEl.value = '';
+    }
+    applyLiveFilters();
 };
 
 function filterOutturnByType(type) {
@@ -432,45 +452,26 @@ async function loadDashboard() {
     const container = document.getElementById('main-content');
     showLoading();
 
-    let metrics = { total: '—', corrosion: '—', outturn: '—', long_stay: '—' };
+    let metrics = { total: '', active: '', ac_loco: '', fnd: '', corrosion: '', outturn: '', long_stay: '' };
 
     try {
-        const data = await api('aerial');
+        const data = await api('live');
         if (data && data.coaches) {
             const coaches = data.coaches;
-            metrics.total = coaches.length + (data.ac_locos ? data.ac_locos.length : 0);
+            const liveMetrics = data.metrics || {};
+            
+            metrics.total = liveMetrics.total || coaches.length;
+            metrics.ac_loco = liveMetrics.ac_loco_count !== undefined ? liveMetrics.ac_loco_count : coaches.filter(c => c.family === 'LOCO' || c.status === 'AC LOCO').length;
+            metrics.fnd = liveMetrics.fnd_count !== undefined ? liveMetrics.fnd_count : coaches.filter(c => c.is_fnd).length;
+            metrics.active = liveMetrics.active_count !== undefined ? liveMetrics.active_count : (metrics.total - metrics.ac_loco - metrics.fnd);
+            
             metrics.corrosion = coaches.filter(c => {
+                if (c.is_fnd || c.family === 'LOCO' || c.status === 'AC LOCO') return false;
                 const s = (c.AERIAL_STATUS || '').toUpperCase();
                 return s.includes('UNDER CORROSION');
             }).length;
             
-            let longStayCount = coaches.filter(c => c.IN_DAYS !== null && c.IN_DAYS > 120).length;
-            if (data.ac_locos) {
-                data.ac_locos.forEach(l => {
-                    const recd = l.date_recd || l.recd_on;
-                    if (recd) {
-                        const parse = (s) => {
-                            if (s.includes('-')) return new Date(s);
-                            if (s.includes('/')) {
-                                const parts = s.split('/');
-                                const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
-                                return new Date(year, parts[1] - 1, parts[0]);
-                            }
-                            return new Date(s);
-                        };
-                        try {
-                            const recdDt = parse(recd);
-                            const today = new Date();
-                            const diffTime = Math.abs(today - recdDt);
-                            const days = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                            if (days > 120) {
-                                longStayCount++;
-                            }
-                        } catch (err) {}
-                    }
-                });
-            }
-            metrics.long_stay = longStayCount;
+            metrics.long_stay = coaches.filter(c => c.IN_DAYS !== null && c.IN_DAYS > 120).length;
         }
         const oData = await api('outturn');
         if (oData && oData.metrics) {
@@ -487,11 +488,14 @@ async function loadDashboard() {
                 <div class="welcome-subtitle">Real-time coach tracking, workshop analytics, and operational insights for Loco Workshop, Perambur</div>
             </div>
 
-            <div class="metrics-grid">
-                ${createMetricCard('Total Inside Workshop', metrics.total, '🚃', 'accent-blue')}
-                ${createMetricCard('Under Corrosion', metrics.corrosion, '🔴', 'accent-danger')}
-                ${createMetricCard('Outturn This Month', metrics.outturn, '📦', 'accent-success')}
-                ${createMetricCard('Long Stay (>120d)', metrics.long_stay, '⏰', 'accent-gold')}
+            <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
+                ${createMetricCard('Total Inside Workshop', metrics.total, 'All coaches & locos currently in shop', 'accent-blue')}
+                ${createMetricCard('Under Repair (Active)', metrics.active, 'Coaches actively undergoing repair', 'accent-info')}
+                ${createMetricCard('AC Locomotives', metrics.ac_loco, 'AC locomotives under POH/repair', 'accent-danger')}
+                ${createMetricCard('FND / Pending Despatch', metrics.fnd, 'Paper despatched, physical pending', 'accent-purple')}
+                ${createMetricCard('Under Corrosion', metrics.corrosion, 'Coaches in corrosion shop', 'accent-gold')}
+                ${createMetricCard('Outturn This Month', metrics.outturn, 'Total outturns achieved this month', 'accent-success')}
+            </div>
             </div>
 
             <h2 style="font-size:16px;font-weight:600;color:var(--text-primary);margin:32px 0 16px;">Modules</h2>
@@ -627,6 +631,7 @@ async function loadLivePosition() {
 function renderLivePosition(data) {
     const container = document.getElementById('main-content');
     const coaches = data.coaches || data || [];
+    const suspicious = data.suspicious || [];
 
     // Gather unique values for filters
     const coachTypes = [...new Set(coaches.map(c => c.coach_desc || c.family || '').filter(Boolean))].sort();
@@ -634,14 +639,6 @@ function renderLivePosition(data) {
 
     // Compute metrics
     const totalInside = coaches.length;
-    const uniqueTypes = coachTypes.length;
-    const uniqueDivisions = divisions.length;
-    const longStay = coaches.filter(c => {
-        return c.IN_DAYS !== null && c.IN_DAYS !== undefined && c.IN_DAYS > 120;
-    }).length;
-    const suspicious = coaches.filter(c => {
-        return c.IN_DAYS !== null && c.IN_DAYS !== undefined && c.IN_DAYS > 365;
-    });
 
     let html = '';
 
@@ -656,16 +653,18 @@ function renderLivePosition(data) {
     const icfCount = coaches.filter(c => c.family === 'ICF').length;
     const acLocoCount = coaches.filter(c => c.family === 'LOCO' || c.status === 'AC LOCO').length;
     const demuMemuCount = coaches.filter(c => ['DEMU', 'MEMU', 'EMU'].includes(c.family)).length;
+    const fndCount = coaches.filter(c => c.is_fnd).length;
     const otherCount = coaches.filter(c => !['LHB', 'ICF', 'LOCO', 'DEMU', 'MEMU', 'EMU'].includes(c.family)).length;
 
     // Metrics
-    html += `<div class="metrics-grid anim-slide" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
-        ${createMetricCard('Total inside', totalInside, '🏭', 'accent-blue', 'id="live-metric-total-card"')}
-        ${createMetricCard('LHB Coaches', `${lhbCount} (of ${lhbCount})`, '🚆', 'accent-info clickable-card', 'id="live-metric-lhb-card" onclick="window.filterLiveByFamily(\'LHB\')"')}
-        ${createMetricCard('ICF Coaches', `${icfCount} (of ${icfCount})`, '🚃', 'accent-purple clickable-card', 'id="live-metric-icf-card" onclick="window.filterLiveByFamily(\'ICF\')"')}
-        ${createMetricCard('AC Locomotives', `${acLocoCount} (of ${acLocoCount})`, '⚡', 'accent-danger clickable-card', 'id="live-metric-acloco-card" onclick="window.filterLiveByFamily(\'LOCO\')"')}
-        ${createMetricCard('DEMU/MEMU/EMU', `${demuMemuCount} (of ${demuMemuCount})`, '🚊', 'accent-success clickable-card', 'id="live-metric-demu-card" onclick="window.filterLiveByFamily(\'DEMU/MEMU\')"')}
-        ${createMetricCard('Special & NMG', `${otherCount} (of ${otherCount})`, '💼', 'accent-gold clickable-card', 'id="live-metric-other-card" onclick="window.filterLiveByFamily(\'OTHER\')"')}
+    html += `<div class="metrics-grid anim-slide" style="grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));">
+        ${createMetricCard('Total inside', totalInside, '', 'accent-blue', 'id="live-metric-total-card"')}
+        ${createMetricCard('LHB Coaches', `${lhbCount} (of ${lhbCount})`, '', 'accent-info clickable-card', 'id="live-metric-lhb-card" onclick="window.filterLiveByFamily(\'LHB\')"')}
+        ${createMetricCard('ICF Coaches', `${icfCount} (of ${icfCount})`, '', 'accent-purple clickable-card', 'id="live-metric-icf-card" onclick="window.filterLiveByFamily(\'ICF\')"')}
+        ${createMetricCard('AC Locomotives', `${acLocoCount} (of ${acLocoCount})`, '', 'accent-danger clickable-card', 'id="live-metric-acloco-card" onclick="window.filterLiveByFamily(\'LOCO\')"')}
+        ${createMetricCard('DEMU/MEMU/EMU', `${demuMemuCount} (of ${demuMemuCount})`, '', 'accent-success clickable-card', 'id="live-metric-demu-card" onclick="window.filterLiveByFamily(\'DEMU/MEMU\')"')}
+        ${createMetricCard('FND (Pending Desp)', `${fndCount} (of ${fndCount})`, '', 'accent-pink clickable-card', 'id="live-metric-fnd-card" onclick="window.filterLiveByFND(true)"')}
+        ${createMetricCard('Special & NMG', `${otherCount} (of ${otherCount})`, '', 'accent-gold clickable-card', 'id="live-metric-other-card" onclick="window.filterLiveByFamily(\'OTHER\')"')}
     </div>`;
 
     // Gather unique families
@@ -786,6 +785,9 @@ function renderLivePosition(data) {
     ];
 
     const colorRowFn = (row) => {
+        const s = (row.AERIAL_STATUS || '').toUpperCase();
+        if (s.includes('OUTTURNED')) return 'row-success';
+
         const d = row.IN_DAYS;
         if (d !== null && d !== undefined && d > 120) return 'row-danger';
         if (d !== null && d !== undefined && d > 60) return 'row-warning';
@@ -898,6 +900,10 @@ function applyLiveFilters() {
 
     let filtered = coaches;
 
+    if (window._fndOnlyFilter) {
+        filtered = filtered.filter(c => c.is_fnd);
+    }
+
     if (window._customFamilyFilter) {
         filtered = filtered.filter(c => window._customFamilyFilter(c.family));
     } else if (familyFilter) {
@@ -928,6 +934,7 @@ function applyLiveFilters() {
     const activeIcf = filtered.filter(c => c.family === 'ICF').length;
     const activeLoco = filtered.filter(c => c.family === 'LOCO' || c.status === 'AC LOCO').length;
     const activeDemu = filtered.filter(c => ['DEMU', 'MEMU', 'EMU'].includes(c.family)).length;
+    const activeFnd = filtered.filter(c => c.is_fnd).length;
     const activeOther = filtered.filter(c => !['LHB', 'ICF', 'LOCO', 'DEMU', 'MEMU', 'EMU'].includes(c.family)).length;
 
     const totalEl = document.querySelector('#live-metric-total-card .metric-value');
@@ -944,6 +951,9 @@ function applyLiveFilters() {
 
     const demuEl = document.querySelector('#live-metric-demu-card .metric-value');
     if (demuEl) demuEl.textContent = `${activeDemu} (of ${coaches.filter(c => ['DEMU', 'MEMU', 'EMU'].includes(c.family)).length})`;
+
+    const fndEl = document.querySelector('#live-metric-fnd-card .metric-value');
+    if (fndEl) fndEl.textContent = `${activeFnd} (of ${coaches.filter(c => c.is_fnd).length})`;
 
     const otherEl = document.querySelector('#live-metric-other-card .metric-value');
     if (otherEl) otherEl.textContent = `${activeOther} (of ${coaches.filter(c => !['LHB', 'ICF', 'LOCO', 'DEMU', 'MEMU', 'EMU'].includes(c.family)).length})`;
@@ -1097,6 +1107,7 @@ function applyLiveFilters() {
 }
 
 function clearLiveFilters() {
+    window._fndOnlyFilter = false;
     ['lf-family', 'lf-coachtype', 'lf-division'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
@@ -1320,8 +1331,7 @@ async function searchCoach() {
                             <div class="filter-group" style="min-width:200px;flex:1;">
                                 <label class="filter-label" style="font-size:11px;">VG Status</label>
                                 <select class="filter-input" id="manual-vg-status-${coach.coachno}">
-                                    <option value="" ${!coach.vg_status ? 'selected' : ''}>—</option>
-                                    <option value="Pending" ${coach.vg_status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                    <option value="Pending" ${(!coach.vg_status || coach.vg_status === 'Pending' || coach.vg_status === '—' || coach.vg_status === '-') ? 'selected' : ''}>Pending</option>
                                     <option value="Completed" ${coach.vg_status === 'Completed' ? 'selected' : ''}>Completed</option>
                                 </select>
                             </div>
@@ -1334,8 +1344,7 @@ async function searchCoach() {
                             <div class="filter-group" style="min-width:200px;flex:1;">
                                 <label class="filter-label" style="font-size:11px;">Physical Despatch</label>
                                 <select class="filter-input" id="manual-phys-status-${coach.coachno}">
-                                    <option value="" ${!coach.physical_status ? 'selected' : ''}>—</option>
-                                    <option value="Pending" ${coach.physical_status === 'Pending' ? 'selected' : ''}>Pending</option>
+                                    <option value="Pending" ${(!coach.physical_status || coach.physical_status === 'Pending' || coach.physical_status === '—' || coach.physical_status === '-') ? 'selected' : ''}>Pending</option>
                                     <option value="Despatched" ${coach.physical_status === 'Despatched' ? 'selected' : ''}>Despatched</option>
                                 </select>
                             </div>

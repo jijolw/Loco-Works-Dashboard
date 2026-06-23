@@ -149,7 +149,11 @@ def api_coach_search(coachno):
             decoded["recd_date"] = recd_str
             decoded["recddate"] = recd_str
 
-            desp_str = row.get("desp_date") or row.get("despdate") or d.get("desp_date") or d.get("despdate") or d.get("actualdespdate") or ""
+            actual_desp = d.get("actualdespdate") or ""
+            actual_desp_dt = _parse_date(actual_desp) if actual_desp else None
+            if actual_desp_dt and recd_dt and actual_desp_dt < recd_dt:
+                actual_desp = ""
+            desp_str = row.get("desp_date") or row.get("despdate") or d.get("desp_date") or d.get("despdate") or actual_desp or ""
             decoded["desp_date"] = desp_str
             decoded["despdate"] = desp_str
 
@@ -185,6 +189,24 @@ def api_coach_search(coachno):
             try:
                 from services.db_service import get_manual_coach_update
                 manual_upd = get_manual_coach_update(row_coachno)
+                if manual_upd:
+                    # Check if manual update is stale (i.e. it was entered for a past visit)
+                    mu_date_str = manual_upd.get("physical_date") or manual_upd.get("vg_date") or ""
+                    mu_dt = _parse_date(mu_date_str)
+                    if not mu_dt and manual_upd.get("updated_at"):
+                        try:
+                            iso_date = manual_upd.get("updated_at").split('T')[0]
+                            mu_dt = datetime.strptime(iso_date, "%Y-%m-%d")
+                        except:
+                            pass
+                    
+                    is_mu_stale = False
+                    if mu_dt and recd_dt and mu_dt < recd_dt:
+                        is_mu_stale = True
+                        
+                    if is_mu_stale:
+                        manual_upd = None
+                
                 if manual_upd:
                     decoded["vg_status"] = manual_upd.get("vg_status") or ""
                     decoded["vg_date"] = manual_upd.get("vg_date") or ""
@@ -500,8 +522,13 @@ def api_coach_historical_poh(coachno):
             
             # A. Current/Last ERP visit
             recd_str = d.get("recd_date") or d.get("recddate")
-            desp_str = d.get("desp_date") or d.get("despdate") or d.get("actualdespdate")
-            poh_date_dt = _parse_date(desp_str) if desp_str else _parse_date(recd_str)
+            recd_dt = _parse_date(recd_str)
+            actual_desp = d.get("actualdespdate") or ""
+            actual_desp_dt = _parse_date(actual_desp) if actual_desp else None
+            if actual_desp_dt and recd_dt and actual_desp_dt < recd_dt:
+                actual_desp = ""
+            desp_str = d.get("desp_date") or d.get("despdate") or actual_desp
+            poh_date_dt = _parse_date(desp_str) if desp_str else recd_dt
             poh_date_str = poh_date_dt.strftime("%Y-%m-%d") if poh_date_dt else None
             
             corr_hrs = d.get("finalhrs") or d.get("presurveyhrs") or 0
