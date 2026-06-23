@@ -8,19 +8,27 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #0f172a;
-            --card-bg: #1e293b;
-            --border-color: #334155;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --gold: #ffd700;
-            --blue-normal: #1e3a8a;
-            --blue-border: #3b82f6;
-            --red-danger: #7f1d1d;
-            --red-border: #ef4444;
-            --yellow-done: #eab308;
-            --green-outturned: #15803d;
-            --green-border: #22c55e;
+            --bg-dark: #ffffff;
+            --card-bg: #ffffff;
+            --border-color: #cbd5e1;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --gold: #b45309;
+            --blue-normal: #e0f2fe;
+            --blue-border: #38bdf8;
+            --blue-text: #0369a1;
+            --red-danger: #fee2e2;
+            --red-border: #f87171;
+            --red-text: #991b1b;
+            --yellow-done: #fef9c3;
+            --yellow-border: #fde047;
+            --yellow-text: #854d0e;
+            --green-outturned: #dcfce7;
+            --green-border: #4ade80;
+            --green-text: #14532d;
+            --orange-corr: #ffedd5;
+            --orange-border: #fb923c;
+            --orange-text: #9a3412;
         }
 
         * {
@@ -33,7 +41,7 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-dark);
             color: var(--text-main);
-            padding: 10px;
+            padding: 8px;
             overflow-x: hidden;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -52,17 +60,17 @@
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 500;
         }
         .spinner {
-            border: 4px solid rgba(255,255,255,0.1);
-            width: 40px;
-            height: 40px;
+            border: 3px solid rgba(0,0,0,0.1);
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             border-left-color: var(--blue-border);
             animation: spin 1s linear infinite;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -75,7 +83,7 @@
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
         }
 
         /* Header block */
@@ -84,17 +92,17 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 2px solid var(--border-color);
-            padding-bottom: 6px;
+            padding-bottom: 4px;
         }
         .report-title {
-            font-size: 18px;
+            font-size: 15px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--text-main);
         }
         .report-date {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
             font-weight: 500;
         }
@@ -104,40 +112,40 @@
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            padding: 8px;
+            padding: 6px 8px;
         }
         .section-title {
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.8px;
             color: var(--gold);
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
         .targets-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 11px;
+            font-size: 10px;
         }
         .targets-table th {
             text-align: left;
-            padding: 4px 8px;
-            background: rgba(255,255,255,0.05);
+            padding: 3px 6px;
+            background: #f1f5f9;
             font-weight: 600;
             color: var(--text-muted);
             border-bottom: 1px solid var(--border-color);
         }
         .targets-table td {
-            padding: 4px 8px;
+            padding: 3px 6px;
             border-bottom: 1px dotted var(--border-color);
         }
         .targets-table tr:last-child td {
             border-bottom: none;
             font-weight: 700;
-            background: rgba(255,255,255,0.02);
+            background: #f8fafc;
         }
-        .var-neg { color: #f87171; font-weight: 600; }
-        .var-pos { color: #4ade80; font-weight: 600; }
+        .var-neg { color: #dc2626; font-weight: 600; }
+        .var-pos { color: #16a34a; font-weight: 600; }
 
         /* Floating action buttons */
         .no-print-actions {
@@ -152,27 +160,27 @@
             background: #2563eb;
             color: #ffffff;
             border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 12px;
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 11px;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
             transition: all 0.2s ease;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
         .btn-action:hover {
             background: #1d4ed8;
-            transform: translateY(-2px);
+            transform: translateY(-1px);
         }
         .btn-back {
-            background: #475569;
+            background: #64748b;
         }
         .btn-back:hover {
-            background: #334155;
+            background: #475569;
         }
 
         /* ── Map Grid layout ── */
@@ -180,55 +188,49 @@
             background: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 6px;
-            padding: 8px;
+            padding: 6px 8px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
         }
         
         .shops-grid {
             display: flex;
-            gap: 10px;
-            width: 100%;
-        }
-
-        .left-col, .right-col {
-            flex: 1;
-            display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 6px;
+            width: 100%;
         }
 
         /* Zones & Shops */
         .zone {
             border: 1px solid var(--border-color);
-            background: rgba(15, 23, 42, 0.4);
+            background: #f8fafc;
             border-radius: 6px;
-            padding: 5px;
+            padding: 4px;
         }
         .zone-title {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--text-muted);
-            margin-bottom: 4px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 3px;
+            border-bottom: 1px solid var(--border-color);
             padding-bottom: 2px;
         }
 
         .line-row {
             display: flex;
             align-items: center;
-            gap: 6px;
-            margin-bottom: 4px;
+            gap: 4px;
+            margin-bottom: 3px;
         }
         .line-row:last-child {
             margin-bottom: 0;
         }
         .line-name {
-            width: 75px;
-            font-size: 9px;
+            width: 70px;
+            font-size: 8.5px;
             font-weight: 600;
             color: var(--text-muted);
             overflow: hidden;
@@ -243,26 +245,26 @@
 
         /* Coach Box Card */
         .coach-box {
-            width: 95px;
-            height: 52px;
+            width: 82px;
+            height: 40px;
             border-radius: 4px;
-            padding: 3px 4px;
+            padding: 2px 4px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             position: relative;
-            border: 1px solid rgba(255,255,255,0.1);
+            box-sizing: border-box;
         }
         .empty-box {
-            width: 95px;
-            height: 52px;
+            width: 82px;
+            height: 40px;
             border-radius: 4px;
             border: 1px dashed var(--border-color);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 10px;
-            color: rgba(255,255,255,0.15);
+            font-size: 8px;
+            color: rgba(0,0,0,0.25);
         }
 
         .cb-header {
@@ -271,15 +273,15 @@
             align-items: flex-start;
         }
         .cb-num {
-            font-size: 10px;
+            font-size: 8.5px;
             font-weight: 700;
-            letter-spacing: 0.2px;
+            letter-spacing: 0.1px;
         }
         .c-badge {
-            font-size: 7px;
+            font-size: 6.5px;
             font-weight: 700;
-            padding: 0.5px 2px;
-            border-radius: 2px;
+            padding: 0.5px 1.5px;
+            border-radius: 1.5px;
             text-transform: uppercase;
         }
         .badge-lhb { background: #3b82f6; color: #fff; }
@@ -290,71 +292,70 @@
         .badge-generic { background: #6b7280; color: #fff; }
 
         .cb-desc {
-            font-size: 8px;
-            color: rgba(255,255,255,0.7);
+            font-size: 7px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
-            margin-top: 1px;
-            margin-bottom: 1px;
+            margin-top: 0.5px;
+            margin-bottom: 0.5px;
+            opacity: 0.85;
+            color: inherit;
         }
 
         /* Extra printable fields (Pre-survey hrs and Corrosion dates) */
         .cb-extra {
-            font-size: 7.5px;
+            font-size: 6.5px;
             line-height: 1;
-            font-weight: 500;
-            color: rgba(255,255,255,0.85);
+            font-weight: 600;
+            opacity: 0.9;
             margin-top: 0.5px;
+            color: inherit;
         }
 
-        /* Custom color coding statuses */
+        /* Custom color coding statuses (Light Theme) */
         .s-normal {
             background-color: var(--blue-normal) !important;
-            border-color: var(--blue-border) !important;
-            color: #ffffff !important;
+            border: 1px solid var(--blue-border) !important;
+            color: var(--blue-text) !important;
         }
         .s-danger {
             background-color: var(--red-danger) !important;
             border: 1.5px solid var(--red-border) !important;
-            box-shadow: 0 0 5px rgba(239, 68, 68, 0.4);
-            color: #ffffff !important;
+            box-shadow: 0 0 4px rgba(239, 68, 68, 0.2);
+            color: var(--red-text) !important;
         }
         .s-cdone {
             background-color: var(--yellow-done) !important;
-            border-color: #ca8a04 !important;
-            color: #000000 !important;
-        }
-        .s-cdone .cb-desc, .s-cdone .cb-extra {
-            color: rgba(0,0,0,0.8) !important;
+            border: 1px solid var(--yellow-border) !important;
+            color: var(--yellow-text) !important;
         }
         .s-outturned {
             background-color: var(--green-outturned) !important;
-            border-color: var(--green-border) !important;
-            color: #ffffff !important;
+            border: 1px solid var(--green-border) !important;
+            color: var(--green-text) !important;
         }
         .s-corr {
-            background-color: #ea580c !important; /* Orange for under corrosion */
-            border-color: #f97316 !important;
-            color: #ffffff !important;
+            background-color: var(--orange-corr) !important;
+            border: 1px solid var(--orange-border) !important;
+            color: var(--orange-text) !important;
         }
 
         /* Traverser blocks */
         .traverser-row {
-            height: 14px;
+            height: 10px;
             background: repeating-linear-gradient(
                 -45deg,
-                #334155,
-                #334155 4px,
-                #1e293b 4px,
-                #1e293b 8px
+                #e2e8f0,
+                #e2e8f0 4px,
+                #f1f5f9 4px,
+                #f1f5f9 8px
             );
             border: 1px solid var(--border-color);
             border-radius: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 7px;
+            font-size: 6.5px;
             font-weight: 700;
             color: var(--text-muted);
             letter-spacing: 2px;
@@ -365,7 +366,7 @@
         .flat-row-container {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 3px;
         }
 
         /* ── PRINT MEDIA RULES ── */
@@ -378,7 +379,7 @@
                 background: #ffffff !important;
                 color: #000000 !important;
                 padding: 0 !important;
-                font-size: 9pt;
+                font-size: 8pt;
             }
             .no-print {
                 display: none !important;
@@ -386,86 +387,11 @@
             .report-page {
                 max-width: 100% !important;
                 width: 100% !important;
-                gap: 5px !important;
-            }
-            .report-header {
-                border-bottom-color: #000000 !important;
-            }
-            .report-title {
-                color: #000000 !important;
-                font-size: 15px !important;
-            }
-            .targets-section, .map-section {
-                background: #ffffff !important;
-                border-color: #000000 !important;
-                border-width: 1px !important;
-                padding: 5px !important;
-            }
-            .section-title {
-                color: #000000 !important;
-                font-size: 10px !important;
-                margin-bottom: 4px !important;
-            }
-            .targets-table th {
-                background: #f1f5f9 !important;
-                color: #000000 !important;
-                border-bottom-color: #000000 !important;
-            }
-            .targets-table td {
-                border-bottom-color: #cbd5e1 !important;
-                color: #000000 !important;
-            }
-            .var-neg, .var-pos {
-                color: #000000 !important;
+                gap: 4px !important;
             }
             .zone {
-                border-color: #94a3b8 !important;
                 background: #ffffff !important;
-            }
-            .zone-title {
-                color: #000000 !important;
-                border-bottom-color: #cbd5e1 !important;
-            }
-            .line-name {
-                color: #334155 !important;
-            }
-            /* High contrast color coding for print */
-            .s-normal {
-                background-color: #e0f2fe !important;
-                border-color: #0284c7 !important;
-                color: #0369a1 !important;
-            }
-            .s-danger {
-                background-color: #fee2e2 !important;
-                border-color: #dc2626 !important;
-                color: #991b1b !important;
-            }
-            .s-cdone {
-                background-color: #fef9c3 !important;
-                border-color: #ca8a04 !important;
-                color: #854d0e !important;
-            }
-            .s-outturned {
-                background-color: #dcfce7 !important;
-                border-color: #16a34a !important;
-                color: #14532d !important;
-            }
-            .s-corr {
-                background-color: #ffedd5 !important;
-                border-color: #ea580c !important;
-                color: #9a3412 !important;
-            }
-            .empty-box {
                 border-color: #cbd5e1 !important;
-                color: #cbd5e1 !important;
-            }
-            .traverser-row {
-                background: #f1f5f9 !important;
-                border-color: #cbd5e1 !important;
-                color: #475569 !important;
-            }
-            .cb-desc, .cb-extra {
-                color: inherit !important;
             }
         }
     </style>
@@ -504,7 +430,7 @@
         <section class="map-section">
             <div class="section-title">Carriage Repair Shop Layout Map</div>
             <div class="shops-grid" id="shops-grid-container">
-                <!-- Shops columns generated dynamically -->
+                <!-- Shops layout generated dynamically -->
             </div>
         </section>
     </div>
@@ -711,18 +637,37 @@
         function renderFlat(title, pits, label) {
             let html = `<div class="zone">`;
             html += `<div class="zone-title">${escapeHtml(label || title)}</div>`;
-            html += `<div class="flat-row-container">`;
-            pits.forEach(pit => {
-                const coaches = getCoachesForPit(pit);
-                if (coaches.length) {
-                    html += `<div class="line-row">`;
-                    html += `<div class="line-name">${escapeHtml(pit)}</div>`;
-                    html += `<div class="coach-row" style="flex-wrap:wrap;gap:4px;">`;
-                    coaches.forEach(c => { html += coachBoxHtml(c); });
-                    html += `</div></div>`;
+            
+            if (title === 'YARD') {
+                // Show Yard in linear way at bottom side (single horizontal row of all yard coaches)
+                html += `<div class="coach-row" style="display:flex;flex-wrap:wrap;gap:4px;padding:2px 0;">`;
+                let hasCoaches = false;
+                pits.forEach(pit => {
+                    const coaches = getCoachesForPit(pit);
+                    coaches.forEach(c => {
+                        hasCoaches = true;
+                        html += coachBoxHtml(c);
+                    });
+                });
+                if (!hasCoaches) {
+                    html += `<div style="font-size:8px;color:var(--text-muted);padding:4px;">—</div>`;
                 }
-            });
-            html += `</div></div>`;
+                html += `</div>`;
+            } else {
+                html += `<div class="flat-row-container">`;
+                pits.forEach(pit => {
+                    const coaches = getCoachesForPit(pit);
+                    if (coaches.length) {
+                        html += `<div class="line-row">`;
+                        html += `<div class="line-name">${escapeHtml(pit)}</div>`;
+                        html += `<div class="coach-row" style="flex-wrap:wrap;gap:4px;">`;
+                        coaches.forEach(c => { html += coachBoxHtml(c); });
+                        html += `</div></div>`;
+                    }
+                });
+                html += `</div>`;
+            }
+            html += `</div>`;
             return html;
         }
 
@@ -735,7 +680,7 @@
             const type = node.type;
 
             if (type === 'row') {
-                let html = `<div style="display:flex;gap:10px;width:100%;">`;
+                let html = `<div style="display:flex;gap:6px;width:100%;align-items:stretch;">`;
                 (node.zones || []).forEach((z, idx) => {
                     const colStyle = node.cols && node.cols[idx] ? ` style="flex:${node.cols[idx]}"` : ' style="flex:1"';
                     html += `<div${colStyle}>${renderLayoutNode(z)}</div>`;
@@ -745,7 +690,7 @@
             }
 
             if (type === 'stack') {
-                let html = `<div style="display:flex;flex-direction:column;gap:8px;width:100%;">`;
+                let html = `<div style="display:flex;flex-direction:column;gap:6px;width:100%;">`;
                 (node.zones || []).forEach(z => {
                     html += renderLayoutNode(z);
                 });
@@ -790,15 +735,37 @@
                 // Filter to current calendar month
                 const monthlyTargets = targetsData.filter(t => t.month === currentMonth && t.type === 'monthly');
                 
-                // Filter out stock types with no targets and no actuals
-                const activeTargets = monthlyTargets.filter(t => t.target > 0 || t.actual > 0);
-                
+                // Group targets to: ICF NAC, LHB AC, LHB NAC, TC
+                const groupedTargets = {
+                    "ICF NAC": { target: 0, actual: 0 },
+                    "LHB AC": { target: 0, actual: 0 },
+                    "LHB NAC": { target: 0, actual: 0 },
+                    "TC": { target: 0, actual: 0 }
+                };
+
+                monthlyTargets.forEach(t => {
+                    const fam = t.family.toUpperCase();
+                    if (fam.includes("ICF") && fam.includes("NAC")) {
+                        groupedTargets["ICF NAC"].target += t.target;
+                        groupedTargets["ICF NAC"].actual += t.actual;
+                    } else if (fam.includes("LHB") && fam.includes("AC")) {
+                        groupedTargets["LHB AC"].target += t.target;
+                        groupedTargets["LHB AC"].actual += t.actual;
+                    } else if (fam.includes("LHB") && fam.includes("NAC")) {
+                        groupedTargets["LHB NAC"].target += t.target;
+                        groupedTargets["LHB NAC"].actual += t.actual;
+                    } else if (fam.includes("EMU") || fam.includes("MEMU") || fam.includes("DEMU") || fam.includes("TC") || fam.includes("DTC") || fam.includes("DPC")) {
+                        groupedTargets["TC"].target += t.target;
+                        groupedTargets["TC"].actual += t.actual;
+                    }
+                });
+
                 // Render Targets Table
                 let targetsHtml = `
                     <table class="targets-table">
                         <thead>
                             <tr>
-                                <th>Coach Stock Type (POH Schedule)</th>
+                                <th>Coach Stock Type</th>
                                 <th style="text-align:right;">Target Qty</th>
                                 <th style="text-align:right;">Achieved Qty</th>
                                 <th style="text-align:right;">Variance</th>
@@ -810,43 +777,41 @@
                 
                 let totalTarget = 0;
                 let totalActual = 0;
-                let workingDays = activeTargets.length > 0 ? activeTargets[0].working_days : 0;
+                let workingDays = monthlyTargets.length > 0 ? monthlyTargets[0].working_days : 0;
 
-                if (activeTargets.length > 0) {
-                    activeTargets.forEach(t => {
-                        totalTarget += t.target;
-                        totalActual += t.actual;
-                        const variance = t.actual - t.target;
-                        const varCls = variance < 0 ? 'var-neg' : (variance > 0 ? 'var-pos' : '');
-                        const varStr = variance > 0 ? `+${variance}` : variance;
-                        
-                        targetsHtml += `
-                            <tr>
-                                <td style="font-weight:500;">${escapeHtml(t.family)}</td>
-                                <td style="text-align:right;font-weight:600;">${t.target}</td>
-                                <td style="text-align:right;font-weight:600;">${t.actual}</td>
-                                <td style="text-align:right;${varCls}">${varStr}</td>
-                                <td style="text-align:right;color:var(--text-muted);">${t.working_days}</td>
-                            </tr>
-                        `;
-                    });
-
-                    // Add total row
-                    const totalVariance = totalActual - totalTarget;
-                    const totVarCls = totalVariance < 0 ? 'var-neg' : (totalVariance > 0 ? 'var-pos' : '');
-                    const totVarStr = totalVariance > 0 ? `+${totalVariance}` : totalVariance;
+                const targetKeys = ["ICF NAC", "LHB AC", "LHB NAC", "TC"];
+                targetKeys.forEach(key => {
+                    const t = groupedTargets[key];
+                    totalTarget += t.target;
+                    totalActual += t.actual;
+                    const variance = t.actual - t.target;
+                    const varCls = variance < 0 ? 'var-neg' : (variance > 0 ? 'var-pos' : '');
+                    const varStr = variance > 0 ? `+${variance}` : variance;
+                    
                     targetsHtml += `
-                        <tr style="border-top:1.5px solid var(--border-color);">
-                            <td style="font-weight:700;">TOTAL SHOP OUTTURN</td>
-                            <td style="text-align:right;font-weight:700;color:var(--gold);">${totalTarget}</td>
-                            <td style="text-align:right;font-weight:700;color:#22c55e;">${totalActual}</td>
-                            <td style="text-align:right;${totVarCls}">${totVarStr}</td>
-                            <td style="text-align:right;font-weight:700;">${workingDays}</td>
+                        <tr>
+                            <td style="font-weight:600;">${key}</td>
+                            <td style="text-align:right;font-weight:700;">${t.target}</td>
+                            <td style="text-align:right;font-weight:700;">${t.actual}</td>
+                            <td style="text-align:right;${varCls}">${varStr}</td>
+                            <td style="text-align:right;color:var(--text-muted);">${workingDays}</td>
                         </tr>
                     `;
-                } else {
-                    targetsHtml += `<tr><td colspan="5" style="text-align:center;color:var(--text-muted);">No targets or achievements configured for this month.</td></tr>`;
-                }
+                });
+
+                // Add total row
+                const totalVariance = totalActual - totalTarget;
+                const totVarCls = totalVariance < 0 ? 'var-neg' : (totalVariance > 0 ? 'var-pos' : '');
+                const totVarStr = totalVariance > 0 ? `+${totalVariance}` : totalVariance;
+                targetsHtml += `
+                    <tr style="border-top:1.5px solid var(--border-color);">
+                        <td style="font-weight:700;">TOTAL SHOP OUTTURN</td>
+                        <td style="text-align:right;font-weight:700;color:var(--gold);">${totalTarget}</td>
+                        <td style="text-align:right;font-weight:700;color:#16a34a;">${totalActual}</td>
+                        <td style="text-align:right;${totVarCls}">${totVarStr}</td>
+                        <td style="text-align:right;font-weight:700;">${workingDays}</td>
+                    </tr>
+                `;
                 
                 targetsHtml += `</tbody></table>`;
                 document.getElementById('targets-table-container').innerHTML = targetsHtml;
@@ -863,32 +828,14 @@
                 _aliases = aerialData.pitnum_aliases || {};
                 _twoSlotLines = aerialData.two_slot_lines || [];
 
-                // 3. Render Two Columns Map layout dynamically from topology
+                // 3. Render natural workshop layout structure vertically
                 const layout = aerialData.topology || [];
                 
-                // Split the layout elements into 2 balanced columns:
-                // Column 1 (Left): PAINT, LBR, Incoming, Spring, DEMU wash, DEMU, Stabling
-                // Column 2 (Right): LCB, Central lines, HCB, AC, Despatch, Yard
-                // This corresponds to a clean two-column grid.
-                const midPoint = Math.ceil(layout.length / 2);
-                const leftLayout = layout.slice(0, midPoint);
-                const rightLayout = layout.slice(midPoint);
-
-                let leftColHtml = '';
-                leftLayout.forEach(node => {
-                    leftColHtml += renderLayoutNode(node);
+                let layoutHtml = '';
+                layout.forEach(node => {
+                    layoutHtml += renderLayoutNode(node);
                 });
-
-                let rightColHtml = '';
-                rightLayout.forEach(node => {
-                    rightColHtml += renderLayoutNode(node);
-                });
-
-                const shopsHtml = `
-                    <div class="left-col">${leftColHtml}</div>
-                    <div class="right-col">${rightColHtml}</div>
-                `;
-                document.getElementById('shops-grid-container').innerHTML = shopsHtml;
+                document.getElementById('shops-grid-container').innerHTML = layoutHtml;
 
                 // Hide loading screen
                 document.getElementById('loading').style.display = 'none';
