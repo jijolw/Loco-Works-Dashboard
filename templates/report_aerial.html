@@ -860,12 +860,11 @@
                 const aerialData = await aerialResp.json();
                 
                 _coaches = aerialData.coaches || [];
-                _topology = aerialData.topology || {};
-                _aliases = _topology.PITNUM_ALIASES || {};
-                _twoSlotLines = _topology.TWO_SLOT_LINES || [];
+                _aliases = aerialData.pitnum_aliases || {};
+                _twoSlotLines = aerialData.two_slot_lines || [];
 
                 // 3. Render Two Columns Map layout dynamically from topology
-                const layout = _topology.LAYOUT || [];
+                const layout = aerialData.topology || [];
                 
                 // Split the layout elements into 2 balanced columns:
                 // Column 1 (Left): PAINT, LBR, Incoming, Spring, DEMU wash, DEMU, Stabling
