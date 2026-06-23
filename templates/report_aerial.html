@@ -41,7 +41,7 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background-color: var(--bg-dark);
             color: var(--text-main);
-            padding: 8px;
+            padding: 6px;
             overflow-x: hidden;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -60,17 +60,17 @@
             align-items: center;
             justify-content: center;
             z-index: 9999;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
         }
         .spinner {
             border: 3px solid rgba(0,0,0,0.1);
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             border-left-color: var(--blue-border);
             animation: spin 1s linear infinite;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
@@ -83,7 +83,7 @@
             margin: 0 auto;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
         }
 
         /* Header block */
@@ -92,17 +92,17 @@
             justify-content: space-between;
             align-items: center;
             border-bottom: 2px solid var(--border-color);
-            padding-bottom: 4px;
+            padding-bottom: 3px;
         }
         .report-title {
-            font-size: 15px;
+            font-size: 13px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--text-main);
         }
         .report-date {
-            font-size: 11px;
+            font-size: 10px;
             color: var(--text-muted);
             font-weight: 500;
         }
@@ -111,32 +111,32 @@
         .targets-section {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 6px 8px;
+            border-radius: 5px;
+            padding: 4px 6px;
         }
         .section-title {
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.8px;
+            letter-spacing: 0.5px;
             color: var(--gold);
-            margin-bottom: 4px;
+            margin-bottom: 3px;
         }
         .targets-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 10px;
+            font-size: 9.5px;
         }
         .targets-table th {
             text-align: left;
-            padding: 3px 6px;
+            padding: 2.5px 5px;
             background: #f1f5f9;
             font-weight: 600;
             color: var(--text-muted);
             border-bottom: 1px solid var(--border-color);
         }
         .targets-table td {
-            padding: 3px 6px;
+            padding: 2.5px 5px;
             border-bottom: 1px dotted var(--border-color);
         }
         .targets-table tr:last-child td {
@@ -150,22 +150,22 @@
         /* Floating action buttons */
         .no-print-actions {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            bottom: 15px;
+            right: 15px;
             z-index: 1000;
             display: flex;
-            gap: 10px;
+            gap: 8px;
         }
         .btn-action {
             background: #2563eb;
             color: #ffffff;
             border: none;
-            padding: 6px 12px;
-            border-radius: 16px;
-            font-size: 11px;
+            padding: 5px 10px;
+            border-radius: 14px;
+            font-size: 10px;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
             transition: all 0.2s ease;
             text-decoration: none;
             display: inline-flex;
@@ -187,17 +187,17 @@
         .map-section {
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 6px 8px;
+            border-radius: 5px;
+            padding: 4px 6px;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 2px;
         }
         
         .shops-grid {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
             width: 100%;
         }
 
@@ -205,32 +205,32 @@
         .zone {
             border: 1px solid var(--border-color);
             background: #f8fafc;
-            border-radius: 6px;
-            padding: 4px;
+            border-radius: 5px;
+            padding: 3px;
         }
         .zone-title {
-            font-size: 9px;
+            font-size: 8.5px;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--text-muted);
-            margin-bottom: 3px;
+            margin-bottom: 2px;
             border-bottom: 1px solid var(--border-color);
-            padding-bottom: 2px;
+            padding-bottom: 1px;
         }
 
         .line-row {
             display: flex;
             align-items: center;
             gap: 4px;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
         .line-row:last-child {
             margin-bottom: 0;
         }
         .line-name {
-            width: 70px;
-            font-size: 8.5px;
+            width: 65px;
+            font-size: 8px;
             font-weight: 600;
             color: var(--text-muted);
             overflow: hidden;
@@ -246,9 +246,9 @@
         /* Coach Box Card */
         .coach-box {
             width: 82px;
-            height: 40px;
+            height: 38px;
             border-radius: 4px;
-            padding: 2px 4px;
+            padding: 1.5px 3px;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -257,20 +257,22 @@
         }
         .empty-box {
             width: 82px;
-            height: 40px;
-            border-radius: 4px;
+            height: 16px;
+            border-radius: 2px;
             border: 1px dashed var(--border-color);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 8px;
-            color: rgba(0,0,0,0.25);
+            font-size: 7px;
+            color: rgba(0,0,0,0.15);
+            background-color: #fafafa;
         }
 
         .cb-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
+            line-height: 1;
         }
         .cb-num {
             font-size: 8.5px;
@@ -278,10 +280,10 @@
             letter-spacing: 0.1px;
         }
         .c-badge {
-            font-size: 6.5px;
+            font-size: 6px;
             font-weight: 700;
-            padding: 0.5px 1.5px;
-            border-radius: 1.5px;
+            padding: 0.5px 1px;
+            border-radius: 1px;
             text-transform: uppercase;
         }
         .badge-lhb { background: #3b82f6; color: #fff; }
@@ -302,14 +304,17 @@
             color: inherit;
         }
 
-        /* Extra printable fields (Pre-survey hrs and Corrosion dates) */
+        /* Extra printable fields (Man hours and Corrosion dates) styled in bold dark colors */
         .cb-extra {
             font-size: 6.5px;
-            line-height: 1;
+            line-height: 1.1;
             font-weight: 600;
-            opacity: 0.9;
             margin-top: 0.5px;
-            color: inherit;
+            color: #0f172a !important; /* Dark slate for high contrast */
+        }
+        .cb-hours {
+            color: #000000 !important; /* Bold solid black for man hours */
+            font-weight: 700 !important;
         }
 
         /* Custom color coding statuses (Light Theme) */
@@ -321,7 +326,7 @@
         .s-danger {
             background-color: var(--red-danger) !important;
             border: 1.5px solid var(--red-border) !important;
-            box-shadow: 0 0 4px rgba(239, 68, 68, 0.2);
+            box-shadow: 0 0 3px rgba(239, 68, 68, 0.2);
             color: var(--red-text) !important;
         }
         .s-cdone {
@@ -342,20 +347,20 @@
 
         /* Traverser blocks */
         .traverser-row {
-            height: 10px;
+            height: 8px;
             background: repeating-linear-gradient(
                 -45deg,
                 #e2e8f0,
-                #e2e8f0 4px,
-                #f1f5f9 4px,
-                #f1f5f9 8px
+                #e2e8f0 3px,
+                #f1f5f9 3px,
+                #f1f5f9 6px
             );
             border: 1px solid var(--border-color);
-            border-radius: 4px;
+            border-radius: 3px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 6.5px;
+            font-size: 6px;
             font-weight: 700;
             color: var(--text-muted);
             letter-spacing: 2px;
@@ -366,7 +371,7 @@
         .flat-row-container {
             display: flex;
             flex-direction: column;
-            gap: 3px;
+            gap: 2px;
         }
 
         /* ── PRINT MEDIA RULES ── */
@@ -379,7 +384,9 @@
                 background: #ffffff !important;
                 color: #000000 !important;
                 padding: 0 !important;
-                font-size: 8pt;
+                font-size: 7.5pt;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .no-print {
                 display: none !important;
@@ -387,11 +394,49 @@
             .report-page {
                 max-width: 100% !important;
                 width: 100% !important;
-                gap: 4px !important;
+                gap: 2px !important;
             }
             .zone {
                 background: #ffffff !important;
                 border-color: #cbd5e1 !important;
+                padding: 2px !important;
+            }
+            .empty-box {
+                background-color: #fafafa !important;
+                border-color: #cbd5e1 !important;
+            }
+            
+            /* Explicit color classes for print output / PDF */
+            .s-normal {
+                background-color: #e0f2fe !important;
+                border: 1px solid #38bdf8 !important;
+                color: #0369a1 !important;
+            }
+            .s-danger {
+                background-color: #fee2e2 !important;
+                border: 1.5px solid #f87171 !important;
+                color: #991b1b !important;
+            }
+            .s-cdone {
+                background-color: #fef9c3 !important;
+                border: 1px solid #fde047 !important;
+                color: #854d0e !important;
+            }
+            .s-outturned {
+                background-color: #dcfce7 !important;
+                border: 1px solid #4ade80 !important;
+                color: #14532d !important;
+            }
+            .s-corr {
+                background-color: #ffedd5 !important;
+                border: 1px solid #fb923c !important;
+                color: #9a3412 !important;
+            }
+            .cb-extra {
+                color: #0f172a !important;
+            }
+            .cb-hours {
+                color: #000000 !important;
             }
         }
     </style>
@@ -581,7 +626,7 @@
 
             // Pre-survey hours
             let preHours = coach.presurveyhrs || '';
-            let preHtml = preHours ? `<div class="cb-extra">Pre: ${preHours}h</div>` : '';
+            let preHtml = preHours ? `<div class="cb-extra cb-hours">Pre: ${preHours}h</div>` : '';
 
             // Corrosion Dates
             let corrHtml = '';
@@ -748,12 +793,12 @@
                     if (fam.includes("ICF") && fam.includes("NAC")) {
                         groupedTargets["ICF NAC"].target += t.target;
                         groupedTargets["ICF NAC"].actual += t.actual;
-                    } else if (fam.includes("LHB") && fam.includes("AC")) {
-                        groupedTargets["LHB AC"].target += t.target;
-                        groupedTargets["LHB AC"].actual += t.actual;
-                    } else if (fam.includes("LHB") && fam.includes("NAC")) {
+                    } else if (fam.includes("LHB") && fam.includes("NAC")) { // Check NAC first
                         groupedTargets["LHB NAC"].target += t.target;
                         groupedTargets["LHB NAC"].actual += t.actual;
+                    } else if (fam.includes("LHB") && fam.includes("AC")) { // Check AC next
+                        groupedTargets["LHB AC"].target += t.target;
+                        groupedTargets["LHB AC"].actual += t.actual;
                     } else if (fam.includes("EMU") || fam.includes("MEMU") || fam.includes("DEMU") || fam.includes("TC") || fam.includes("DTC") || fam.includes("DPC")) {
                         groupedTargets["TC"].target += t.target;
                         groupedTargets["TC"].actual += t.actual;
