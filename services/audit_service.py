@@ -220,20 +220,11 @@ def get_audit_data(fy_filter="ALL", family_filter="ALL", type_filter="ALL"):
             
         detail = fetch_single(demandid)
         
-        # FND
-        status_upper = str(c.get("status") or c.get("pohstatus") or "").strip().upper()
-        desp_date = detail.get("desp_date") or detail.get("despdate") or ""
+        # FND / VG Pending List
+        actual_desp = str(detail.get("actualdespdate") or "").strip()
+        has_actual_desp = actual_desp and actual_desp.lower() not in ("none", "null", "nan", "")
         
-        desp_dt = _parse_date(desp_date)
-        is_first_despatch = False
-        
-        # Check if manual override exists in Supabase
-        has_manual_override = ("vg_status" in detail)
-        
-        if status_upper in ("DESPATCHED", "OUTTURN") or (desp_date and desp_date not in ("—", "None", "null", "")):
-            is_first_despatch = True
-        
-        if is_first_despatch:
+        if has_actual_desp:
             vg_status = detail.get("vg_status") or ""
             phys_status = detail.get("physical_status") or ""
             

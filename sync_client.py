@@ -33,24 +33,31 @@ sys.path.remove(current_dir)
 sys.path.insert(0, os.path.abspath(os.path.join(current_dir, "..", "ERP")))
 sys.path.append(current_dir)
 
+# Import services package (from ERP) so we can attach attributes to it
+import services
+
 # 3. Load Supabase db_service directly via importlib to avoid collision with local ERP services
 import importlib.util
 spec = importlib.util.spec_from_file_location(
-    "supabase_db_service",
+    "services.db_service",
     os.path.join(current_dir, "services", "db_service.py")
 )
 supabase_db_service = importlib.util.module_from_spec(spec)
 sys.modules["supabase_db_service"] = supabase_db_service
+sys.modules["services.db_service"] = supabase_db_service
+services.db_service = supabase_db_service
 spec.loader.exec_module(supabase_db_service)
 sync_active_coaches_to_supabase = supabase_db_service.sync_active_coaches_to_supabase
 
 # Load Supabase sync_service directly via importlib to avoid collision with local ERP services
 spec_sync = importlib.util.spec_from_file_location(
-    "supabase_sync_service",
+    "services.sync_service",
     os.path.join(current_dir, "services", "sync_service.py")
 )
 supabase_sync_service = importlib.util.module_from_spec(spec_sync)
 sys.modules["supabase_sync_service"] = supabase_sync_service
+sys.modules["services.sync_service"] = supabase_sync_service
+services.sync_service = supabase_sync_service
 spec_sync.loader.exec_module(supabase_sync_service)
 sync_targets = supabase_sync_service.sync_targets
 from services.live_service import get_live_data, _resolve_division
@@ -294,12 +301,16 @@ def sync_cycle(full_sync=False):
             # Pack make and detail fields into the 'make' column
             make_packed = f"{c.get('make') or ''}||{presurvey}||{final}||{last_poh}||{last_pohdate}||{tfr_date}||{corr_place}||{corr_comp}||{desp_date}||{actualdespdate}||{pohdays}||{remarks}||{noofdays}||{corrosion}"
             
+            recd_str = c.get("recd_date") or c.get("recddate") or ""
+            recd_dt = _parse_date(recd_str)
+            recd_iso = recd_dt.strftime("%Y-%m-%d") if recd_dt else recd_str
+
             payload.append({
                 "coachno": c.get("coachno"),
                 "coach_desc": c.get("coach_desc"),
                 "demandid": c.get("demandid"),
                 "pitnum": c.get("pitnum"),
-                "recd_date": c.get("recd_date"),
+                "recd_date": recd_iso,
                 "in_days": c.get("IN_DAYS"),
                 "status": c.get("status"),
                 "division": c.get("division"),
@@ -422,12 +433,14 @@ def sync_cycle(full_sync=False):
                 
             make_packed = f"{make or ''}||{presurvey}||{final}||{last_poh}||{last_pohdate}||{tfr_date}||{corr_place}||{corr_comp}||{desp_date}||{actualdespdate}||{pohdays}||{remarks}||{noofdays}||{corrosion}"
             
+            recd_iso = recd_dt.strftime("%Y-%m-%d") if recd_dt else recd_str
+
             payload.append({
                 "coachno": coachno,
                 "coach_desc": rec.get("coach_desc") or rec.get("coachdesc") or "",
                 "demandid": demandid_str,
                 "pitnum": "",
-                "recd_date": recd_str,
+                "recd_date": recd_iso,
                 "in_days": None,
                 "status": sync_status,
                 "division": division,
@@ -462,12 +475,16 @@ def sync_cycle(full_sync=False):
                 # Packed AC Loco milestones: starts with 'AC LOCO' header prefix
                 make_packed = f"AC LOCO||{recd_on}||{stripping}||{dewheel}||{wheeling}||{test_trial}||{traffic}||{super_str}||{tm}||{ico_tm}||{tfr}"
 
+                loco_recd_str = l.get("date_recd") or l.get("recd_on") or ""
+                loco_recd_dt = _parse_date(loco_recd_str)
+                loco_recd_iso = loco_recd_dt.strftime("%Y-%m-%d") if loco_recd_dt else loco_recd_str
+
                 payload.append({
                     "coachno": l.get("loco_no"),
                     "coach_desc": l.get("loco_desc") or "WAP7",
                     "demandid": f"LOCO_{l.get('loco_no')}",
                     "pitnum": l.get("pitnum") or "",
-                    "recd_date": l.get("date_recd") or l.get("recd_on") or "",
+                    "recd_date": loco_recd_iso,
                     "in_days": None,
                     "status": "AC LOCO",
                     "division": l.get("shed") or l.get("division") or "",

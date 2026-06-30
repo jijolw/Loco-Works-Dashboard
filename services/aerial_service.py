@@ -162,9 +162,6 @@ def _fetch_ac_locos():
     for r in master:
         if str(r.get("status")).strip().upper() == "AC LOCO":
             tfr_date = str(r.get("tfr") or "").strip()
-            if tfr_date and tfr_date.lower() not in ("none", "null", "nan", ""):
-                # Loco is transferred/despatched!
-                continue
                 
             locos.append({
                 "loco_no": r.get("coachno"),
@@ -248,11 +245,7 @@ def get_aerial_data():
         coach_desc = rec.get("coach_desc", "") or rec.get("coachdesc", "")
         demandid = rec.get("demandid", "")
         
-        # Override ERP pitnum anomaly/mismatch for coach 086442 to place it in LBR Pit 1 Slot 1
-        if coachno == "086442":
-            pitnum = "SY/P2_1"
-        else:
-            pitnum = rec.get("pitnum", "")
+        pitnum = rec.get("pitnum", "")
 
         # ── Parse received date & calculate IN_DAYS
         recd_str = rec.get("recd_date", "") or rec.get("recddate", "")
@@ -267,19 +260,12 @@ def get_aerial_data():
             except Exception as exc:
                 logger.warning("fetch_single(%s) error: %s", demandid, exc)
 
-        # ── Skip physically despatched coaches ────
+        # ── Skip physically/actual despatched coaches completely ────
         actual_desp = str(detail.get("actualdespdate") or "").strip()
+        has_actual_desp = actual_desp and actual_desp.lower() not in ("none", "null", "nan", "")
+        
         desp_date = str(detail.get("desp_date") or detail.get("despdate") or "").strip()
         status_erp = str(rec.get("status") or "").strip().upper()
-        
-        has_actual_desp = False
-        if actual_desp and actual_desp.lower() not in ("none", "null", "nan", ""):
-            act_desp_dt = _parse_date(actual_desp)
-            if act_desp_dt and recd_dt:
-                if act_desp_dt >= recd_dt:
-                    has_actual_desp = True
-            else:
-                has_actual_desp = True
 
         has_desp_date = False
         if desp_date and desp_date.lower() not in ("none", "null", "nan", ""):
@@ -290,20 +276,10 @@ def get_aerial_data():
             else:
                 has_desp_date = True
 
-        is_desp = (
-            has_actual_desp or 
-            (str(detail.get("physical_status") or "").strip() == "Despatched") or
-            (status_erp in ("DESPATCHED", "OUTTURN") and has_desp_date)
-        )
-
-        if is_desp:
-            vg_status = str(detail.get("vg_status") or "").strip()
-            phys_status = str(detail.get("physical_status") or "").strip()
-            if vg_status != "Completed" or phys_status != "Despatched":
-                # Pending manual clearance - DO NOT skip!
-                pass
-            else:
-                continue
+        is_physically_desp = (str(detail.get("physical_status") or "").strip() == "Despatched")
+        
+        if has_actual_desp or is_physically_desp:
+            continue
 
         # ── Fetch year-built info ─────────────────
         yb_info = {}
@@ -363,6 +339,7 @@ def get_aerial_data():
             "despatch_status": google_corr.get("despatch_status", "") if google_corr else "",
             "google_pdc": google_corr.get("pdc", "") if google_corr else "",
             "google_remarks": google_corr.get("remarks", "") if google_corr else "",
+            "plan_date": detail.get("plandate") or detail.get("plan_date") or "",
         }
 
         # Copy other raw fields from detail for print reports

@@ -7,7 +7,7 @@ import os
 import logging
 from datetime import datetime
 
-from services.erp_service import fetch_clean
+from services.erp_service import fetch_clean, _parse_date
 from services.decoders import decode_family
 from services.db_service import (
     delete_all_outturn_targets,

@@ -41,14 +41,25 @@ async function api(endpoint, params) {
  */
 function parseDate(dateStr) {
     if (!dateStr) return null;
-    // DD/MM/YYYY
-    const slashMatch = String(dateStr).match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-    if (slashMatch) {
-        const d = new Date(+slashMatch[3], +slashMatch[2] - 1, +slashMatch[1]);
+    const s = String(dateStr).trim();
+    // YYYY-MM-DD or YYYY/MM/DD
+    const isoMatch = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+    if (isoMatch) {
+        const d = new Date(+isoMatch[1], +isoMatch[2] - 1, +isoMatch[3]);
         return isNaN(d) ? null : d;
     }
-    // ISO or other
-    const d = new Date(dateStr);
+    // DD/MM/YYYY or DD-MM-YYYY or DD/MM/YY or DD-MM-YY
+    const slashMatch = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+    if (slashMatch) {
+        let year = +slashMatch[3];
+        if (year < 100) {
+            year += (year < 50 ? 2000 : 1900);
+        }
+        const d = new Date(year, +slashMatch[2] - 1, +slashMatch[1]);
+        return isNaN(d) ? null : d;
+    }
+    // Fallback (e.g. with time component or other formats)
+    const d = new Date(s);
     return isNaN(d) ? null : d;
 }
 

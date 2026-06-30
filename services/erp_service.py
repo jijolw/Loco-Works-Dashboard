@@ -199,6 +199,7 @@ def _populate_batch_cache():
             remarks = ""
             noofdays = ""
             corrosion = ""
+            plandate = ""
             if "||" in make_raw:
                 parts = make_raw.split("||")
                 make = parts[0]
@@ -215,6 +216,7 @@ def _populate_batch_cache():
                 if len(parts) > 11: remarks = parts[11]
                 if len(parts) > 12: noofdays = parts[12]
                 if len(parts) > 13: corrosion = parts[13]
+                if len(parts) > 14: plandate = parts[14]
                 
             mapped = {
                 "coachno": r.get("coachno"),
@@ -246,7 +248,9 @@ def _populate_batch_cache():
                 "noofdays": noofdays,
                 "corrosion": corrosion,
                 "corr_repair": corrosion,
-                "curheavylow": corrosion
+                "curheavylow": corrosion,
+                "plan_date": plandate,
+                "plandate": plandate
             }
         mapped_records.append(mapped)
         

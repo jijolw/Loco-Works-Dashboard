@@ -50,13 +50,12 @@ PAINT_ORDER = [
 ]
 
 LBR_ORDER = [
-    "SY/WP",
-    "SY/L4",
-    "SY/L3",
-    "SY/L2",
-    "SY/P1",
-    "SY/L1",
-    "SY/P2",
+    "LBR/WP",
+    "LBR/L4",
+    "LBR/L3",
+    "LBR/L2",
+    "LBR/P1",
+    "LBR/L1",
 ]
 
 AUG_ORDER = [
@@ -128,15 +127,15 @@ YARD_PITNUMS = ["OT/YD"]
 # ── Lines that hold two coaches per slot ─────────────
 TWO_SLOT_LINES = {
     "PS/P2", "PS/L2", "PS/L1", "PS/P1",
-    "SY/WP", "SY/P1", "SY/L4", "SY/L3", "SY/L2", "SY/L1",
+    "LBR/WP", "LBR/P1", "LBR/L4", "LBR/L3", "LBR/L2", "LBR/L1",
     "AS/L6", "AS/L5", "AS/P4", "AS/P3", "AS/P2", "AS/L1",
 }
 
 # ── Pit number aliases (display overrides) ───────────
 PITNUM_ALIASES = {
-    "SY/P2_1": "SY/P1",
-    "SY/P2_2": "SY/P1",
-    "SY/P2": "SY/P1",
+    "LBR/P2_1": "LBR/P1",
+    "LBR/P2_2": "LBR/P1",
+    "LBR/P2": "LBR/P1",
     "DM/BL": "DM/B",
 }
 

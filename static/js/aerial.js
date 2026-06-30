@@ -55,13 +55,13 @@ const ZONE_CSS = {
 
 /* ---------- Pit display name overrides ---------- */
 const PIT_DISPLAY_NAMES = {
-    'SY/WP': 'Pit 2',
-    'SY/P1': 'Pit 1',
+    'LBR/WP': 'Pit 2',
+    'LBR/P1': 'Pit 1',
 };
 
 /* ---------- Two-slot custom sub-labels ---------- */
 const TWO_SLOT_LABELS = {
-    'SY/WP': ['WP', 'WP2'],
+    'LBR/WP': ['WP', 'WP2'],
 };
 
 /* ---------- Zone display names ---------- */
@@ -82,7 +82,7 @@ const ZONE_NAMES = {
     'YARD':         'YARD',
     // Abbreviations from topology.py
     'PS':           'PAINT SHOP',
-    'SY':           'SHELL / BODY SHOP',
+    'LBR':          'LBR SHED',
     'AS':           'AUG SHOP',
     'DM':           'DEMU SHOP',
     'OT':           'YARD / OTHER',
@@ -121,7 +121,7 @@ function getCoachesForPit(prefix, coaches, aliases) {
     if (prefix === 'OT/YD') {
         const shopPrefixes = [
             'PS/P2', 'PS/L2', 'PS/L1', 'PS/P1',
-            'SY/WP', 'SY/L4', 'SY/L3', 'SY/L2', 'SY/P1', 'SY/L1', 'SY/P2',
+            'LBR/WP', 'LBR/L4', 'LBR/L3', 'LBR/L2', 'LBR/P1', 'LBR/L1', 'LBR/P2',
             'AS/L6', 'AS/L5', 'AS/P4', 'AS/P3', 'AS/P2', 'AS/L1',
             'DM/L32A', 'DM/L32', 'DM/L31', 'DM/L30', 'DM/L29', 'DM/L28', 'DM/L27', 'DM/C', 'DM/B', 'DM/BL',
             'LCB/L16A', 'LCB/L16', 'LCB/L15', 'LCB/P14', 'LCB/L13', 'LCB/L12', 'LCB/L11', 'LCB/C',
@@ -608,7 +608,7 @@ function buildDetailTable(coaches, filteredCoaches) {
             <div style="display:flex;gap:8px;">
                 <button class="btn btn-secondary btn-sm" onclick="downloadAerialCSV()">📥 Download CSV</button>
                 <a class="btn btn-secondary btn-sm" href="/report/aerial" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;height:32px;box-sizing:border-box;">📊 Monthly Report</a>
-                <a class="btn btn-primary btn-sm" href="/coach/reports/aerialview/print.html" target="_blank" style="text-decoration:none;display:inline-flex;align-items:center;height:32px;box-sizing:border-box;">🖨️ Print Layout</a>
+                <button class="btn btn-primary btn-sm" onclick="openAerialPrintReport()" style="display:inline-flex;align-items:center;height:32px;box-sizing:border-box;border:none;cursor:pointer;">🖨️ Print Layout</button>
             </div>
         </div>
         ${createDataTable(data, columns, {
@@ -715,6 +715,35 @@ function _renderAerialFull(container, coaches, layout, twoSlotLines, aliases, me
 
     // Legend
     html += buildLegend();
+
+    // PDF Report Overrides Card
+    html += `
+    <div class="card card-no-hover" style="padding: 16px; margin: 15px 0; border: 1px dashed var(--accent);">
+        <div style="font-weight: 600; font-size: 14px; color: var(--accent); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+            <span>📝 PDF Report Customization</span>
+            <span style="font-size: 11px; font-weight: normal; color: var(--text-secondary);">(Optional manual overrides for PDF print generation — does not change database)</span>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div class="filter-group" style="margin: 0;">
+                <label class="filter-label" style="color: #A04000; font-weight: 600;">Today's Planned Outturn</label>
+                <input type="text" class="filter-input" id="rep-today-plan" placeholder="e.g. 231204,156448" style="width: 100%;">
+            </div>
+            <div class="filter-group" style="margin: 0;">
+                <label class="filter-label" style="color: #1A4F9C; font-weight: 600;">Tomorrow's Plan</label>
+                <input type="text" class="filter-input" id="rep-tmrw-plan" placeholder="e.g. 156440,231205" style="width: 100%;">
+            </div>
+            <div class="filter-group" style="margin: 0;">
+                <label class="filter-label" style="color: var(--success); font-weight: 600;">Yesterday's Outturn</label>
+                <input type="text" class="filter-input" id="rep-today-out" placeholder="e.g. 156440,156448" style="width: 100%;">
+            </div>
+            <div class="filter-group" style="margin: 0;">
+                <label class="filter-label" style="color: #145A32; font-weight: 600;">Yesterday's WISE Despatch</label>
+                <input type="text" class="filter-input" id="rep-wise-desp" placeholder="e.g. 086440,156448" style="width: 100%;">
+            </div>
+        </div>
+    </div>
+    `;
 
     // Workshop map
     html += `<div class="aerial-container anim-fade" id="aerial-map">`;
@@ -838,3 +867,28 @@ function downloadAerialCSV() {
     }));
     downloadCSV(data, 'aerial_view_coaches.csv');
 }
+
+function openAerialPrintReport() {
+    const todayPlan = document.getElementById('rep-today-plan')?.value || '';
+    const tmrwPlan = document.getElementById('rep-tmrw-plan')?.value || '';
+    const todayOut = document.getElementById('rep-today-out')?.value || '';
+    const wiseDesp = document.getElementById('rep-wise-desp')?.value || '';
+    
+    let url = '/reports/aerialview/print.html';
+    if (window.location.pathname.startsWith('/coach') || window.location.pathname.includes('/cr')) {
+        url = '/coach/reports/aerialview/print.html';
+    }
+    
+    const params = [];
+    if (todayPlan) params.push(`today_plan=${encodeURIComponent(todayPlan)}`);
+    if (tmrwPlan) params.push(`tmrw_plan=${encodeURIComponent(tmrwPlan)}`);
+    if (todayOut) params.push(`today_out=${encodeURIComponent(todayOut)}`);
+    if (wiseDesp) params.push(`wise_desp=${encodeURIComponent(wiseDesp)}`);
+    
+    if (params.length > 0) {
+        url += '?' + params.join('&');
+    }
+    
+    window.open(url, '_blank');
+}
+window.openAerialPrintReport = openAerialPrintReport;

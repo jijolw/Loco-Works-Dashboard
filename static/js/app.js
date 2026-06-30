@@ -367,6 +367,7 @@ const PAGES = {
     outturn:   loadOutturn,
     corrosion: loadCorrosion,
     poh:       loadPohAnalysis,
+    planning:  loadOutturnPlanning,
     'data-tools': loadDataTools,
     analytics: loadAnalytics,
     acloco:    loadAcLoco,
@@ -484,7 +485,7 @@ async function loadDashboard() {
     container.innerHTML = `
         <div class="anim-slide">
             <div class="welcome-banner">
-                <div class="welcome-title">Welcome to LW/PER Workshop Intelligence</div>
+                <div class="welcome-title">Welcome to LW/PER Loco Works Dashboard</div>
                 <div class="welcome-subtitle">Real-time coach tracking, workshop analytics, and operational insights for Loco Workshop, Perambur</div>
             </div>
 
@@ -4230,18 +4231,9 @@ function renderAnalyticsCharts() {
     // Helper to diff dates
     function getDaysDiff(d1Str, d2Str) {
         if (!d1Str || !d2Str) return 0;
-        const parse = (s) => {
-            if (s.includes('-')) return new Date(s);
-            if (s.includes('/')) {
-                const parts = s.split('/');
-                let yr = parseInt(parts[2], 10);
-                if (yr < 100) yr += 2000;
-                return new Date(yr, parts[1] - 1, parts[0]);
-            }
-            return new Date(s);
-        };
-        const d1 = parse(d1Str);
-        const d2 = parse(d2Str);
+        const d1 = parseDate(d1Str);
+        const d2 = parseDate(d2Str);
+        if (!d1 || !d2) return 0;
         const diffTime = Math.abs(d2 - d1);
         return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     }
@@ -4568,18 +4560,8 @@ function renderAnalyticsCharts() {
         function getFinMonthIndex(dateStr) {
             if (!dateStr) return -1;
             try {
-                const parse = (s) => {
-                    if (s.includes('-')) return new Date(s);
-                    if (s.includes('/')) {
-                        const parts = s.split('/');
-                        let yr = parseInt(parts[2], 10);
-                        if (yr < 100) yr += 2000;
-                        return new Date(yr, parts[1] - 1, parts[0]);
-                    }
-                    return new Date(s);
-                };
-                const d = parse(dateStr);
-                if (isNaN(d.getTime())) return -1;
+                const d = parseDate(dateStr);
+                if (!d || isNaN(d.getTime())) return -1;
                 const month = d.getMonth() + 1;
                 return (month - 4 + 12) % 12;
             } catch (e) {
@@ -4838,18 +4820,8 @@ window.showOutturnedCoachesList = async function(yearType, monthName, category, 
         function getFinMonthIndex(dateStr) {
             if (!dateStr) return -1;
             try {
-                const parse = (s) => {
-                    if (s.includes('-')) return new Date(s);
-                    if (s.includes('/')) {
-                        const parts = s.split('/');
-                        let yr = parseInt(parts[2], 10);
-                        if (yr < 100) yr += 2000;
-                        return new Date(yr, parts[1] - 1, parts[0]);
-                    }
-                    return new Date(s);
-                };
-                const d = parse(dateStr);
-                if (isNaN(d.getTime())) return -1;
+                const d = parseDate(dateStr);
+                if (!d || isNaN(d.getTime())) return -1;
                 const month = d.getMonth() + 1;
                 return (month - 4 + 12) % 12;
             } catch (e) {
@@ -5103,20 +5075,13 @@ function renderAcLocoGrid() {
         let daysInside = '—';
         if (l.date_recd || l.recd_on) {
             const recd = l.date_recd || l.recd_on;
-            const parse = (s) => {
-                if (s.includes('-')) return new Date(s);
-                if (s.includes('/')) {
-                    const parts = s.split('/');
-                    const year = parts[2].length === 2 ? '20' + parts[2] : parts[2];
-                    return new Date(year, parts[1] - 1, parts[0]);
-                }
-                return new Date(s);
-            };
             try {
-                const recdDt = parse(recd);
-                const today = new Date();
-                const diffTime = Math.abs(today - recdDt);
-                daysInside = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + ' Days';
+                const recdDt = parseDate(recd);
+                if (recdDt) {
+                    const today = new Date();
+                    const diffTime = Math.abs(today - recdDt);
+                    daysInside = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + ' Days';
+                }
             } catch (err) {
                 daysInside = '—';
             }
@@ -5960,7 +5925,7 @@ function renderActiveAuditTab() {
                                 <th>Division</th>
                                 <th>Recd Date</th>
                                 <th>Paper Outturn</th>
-                                <th>Actual Despatch</th>
+                                <th>WISE Despatch</th>
                                 <th>Status</th>
                                 <th>Pit Location</th>
                             </tr>

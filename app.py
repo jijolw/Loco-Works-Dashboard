@@ -32,13 +32,29 @@ def index():
 
 @app.route("/coach/reports/aerialview/print.html")
 @app.route("/reports/aerialview/print.html")
-def print_aerial():
-    return render_template("print_aerial.html")
-
-
 @app.route("/report/aerial")
-def report_aerial():
-    return render_template("report_aerial.html")
+def serve_aerial_pdf():
+    from services.pdf_service import generate_pdf_bytes
+    from flask import make_response, request
+    try:
+        today_plan = request.args.get("today_plan", "")
+        tmrw_plan = request.args.get("tmrw_plan", "")
+        today_out = request.args.get("today_out", "")
+        wise_desp = request.args.get("wise_desp", "")
+        
+        pdf_data = generate_pdf_bytes(
+            today_plan=today_plan,
+            tmrw_plan=tmrw_plan,
+            today_out=today_out,
+            wise_desp=wise_desp
+        )
+        response = make_response(pdf_data)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = 'inline; filename=aerial_snapshot.pdf'
+        return response
+    except Exception as e:
+        app.logger.exception("Error generating PDF report")
+        return f"Error generating PDF report: {e}", 500
 
 
 # =====================================================
@@ -735,65 +751,92 @@ def api_health():
 
     return jsonify(result)
 
-
-# =====================================================
-# API — Sync Control (Trigger Sync)
-# =====================================================
-
-_sync_lock = threading.Lock()
-_sync_status = {
-    "status": "idle",
-    "mode": None,
-    "started_at": None,
-    "finished_at": None,
-    "error": None,
-    "last_success_at": None
-}
-
-@app.route("/api/sync/status")
-def api_sync_status():
-    """Return the status of the background sync process."""
-    return jsonify(_sync_status)
-
-
-@app.route("/api/sync/run", methods=["POST"])
-def api_sync_run():
-    """Trigger a sync cycle in the background."""
-    global _sync_status
-    data = request.json or {}
-    mode = data.get("mode", "incremental").strip().lower()
-    full_sync = (mode == "full")
-    
-    if _sync_lock.locked():
-        return jsonify({"error": "Sync is already running."}), 409
+@app.route("/api/planning/active")
+def api_planning_active():
+    """Fetch active coaches from Supabase."""
+    try:
+        from services.erp_service import fetch_clean
+        coaches = fetch_clean()
         
-    def run_sync_in_thread():
-        global _sync_status
-        with _sync_lock:
-            _sync_status["status"] = "running"
-            _sync_status["mode"] = mode
-            _sync_status["started_at"] = datetime.now().isoformat()
-            _sync_status["finished_at"] = None
-            _sync_status["error"] = None
-            try:
-                import sys
-                local_dir = os.path.dirname(os.path.abspath(__file__))
-                if local_dir not in sys.path:
-                    sys.path.append(local_dir)
+        active_coaches = []
+        from services.erp_service import _INACTIVE_STATUSES, _is_valid_pitnum
+        
+        for c in coaches:
+            status = str(c.get("status", "")).strip().upper()
+            pit = str(c.get("pitnum", "")).strip().upper()
+            if status in _INACTIVE_STATUSES:
+                continue
+            if not _is_valid_pitnum(pit):
+                continue
                 
-                from sync_client import sync_cycle
-                sync_cycle(full_sync=full_sync)
-                _sync_status["status"] = "success"
-                _sync_status["finished_at"] = datetime.now().isoformat()
-                _sync_status["last_success_at"] = datetime.now().isoformat()
-            except Exception as e:
-                traceback.print_exc()
-                _sync_status["status"] = "failed"
-                _sync_status["finished_at"] = datetime.now().isoformat()
-                _sync_status["error"] = str(e)
-                
-    threading.Thread(target=run_sync_in_thread, daemon=True).start()
-    return jsonify({"success": True, "message": f"Sync started in mode: {mode}"})
+            active_coaches.append({
+                "coachno": str(c.get("coachno", "")).strip(),
+                "coach_desc": c.get("coach_desc") or "",
+                "pitnum": pit,
+                "recd_date": c.get("recd_date") or "",
+                "in_days": c.get("IN_DAYS") or "—",
+                "plan_date": c.get("plan_date") or ""
+            })
+        return jsonify(active_coaches)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/planning/save", methods=["POST"])
+def api_planning_save():
+    """Save manual outturn plan date directly to Supabase."""
+    import requests
+    from config import SUPABASE_URL, SUPABASE_KEY
+    
+    data = request.json or {}
+    coachno = str(data.get("coachno", "")).strip()
+    plan_date = str(data.get("plan_date", "")).strip()
+    
+    if not coachno:
+        return jsonify({"error": "Missing coachno"}), 400
+        
+    headers = {
+        "apikey": SUPABASE_KEY,
+        "Authorization": f"Bearer {SUPABASE_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    try:
+        # 1. Fetch current coach from Supabase to parse its packed make column
+        url = f"{SUPABASE_URL}/erp_active_coaches?coachno=eq.{coachno}"
+        res = requests.get(url, headers=headers)
+        res.raise_for_status()
+        rows = res.json()
+        if not rows:
+            return jsonify({"error": "Coach not found in active list"}), 404
+            
+        coach = rows[0]
+        make_val = coach.get("make") or ""
+        
+        # Split make_val by ||
+        parts = make_val.split("||")
+        while len(parts) < 15:
+            parts.append("")
+            
+        # Update index 14 with new plan_date
+        parts[14] = plan_date
+        new_make = "||".join(parts)
+        
+        # 2. Update make column in Supabase
+        patch_url = f"{SUPABASE_URL}/erp_active_coaches?coachno=eq.{coachno}"
+        patch_res = requests.patch(patch_url, headers=headers, json={"make": new_make})
+        patch_res.raise_for_status()
+        
+        # 3. Clear master cache
+        from services.erp_service import cache_clear
+        cache_clear("clean_master")
+        
+        return jsonify({"success": True})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
 
 
 # =====================================================
@@ -802,7 +845,7 @@ def api_sync_run():
 
 if __name__ == "__main__":
     print("=" * 50)
-    print("  LW/PER Workshop Intelligence System")
+    print("  LW/PER Loco Works Dashboard")
     print(f"  Starting on http://{FLASK_HOST}:{FLASK_PORT}")
     print("=" * 50)
     app.run(

@@ -165,8 +165,6 @@ def get_live_data():
                     is_desp = True
             else:
                 is_desp = True
-        elif status_erp in ("DESPATCHED", "OUTTURN"):
-            is_desp = True
                 
         if is_desp:
             # Keep in live list (for FND) if manual VG / physical is not completed
