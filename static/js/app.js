@@ -6012,6 +6012,240 @@ window.showRankingsExplanation = function(name, type) {
 };
 
 
+async function loadOutturnPlanning() {
+    const container = document.getElementById('main-content');
+    if (!container) return;
+
+    showLoading();
+
+    try {
+        const res = await fetch('/api/planning/active');
+        const coaches = await res.json();
+        
+        hideLoading();
+
+        if (coaches.error) {
+            container.innerHTML = `<div class="error-msg">Error loading active coaches: ${coaches.error}</div>`;
+            return;
+        }
+
+        const today = new Date();
+        const tomorrow = new Date();
+        tomorrow.setDate(today.getDate() + 1);
+
+        const formatDateStr = (d) => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        const formatDisplayStr = (d) => {
+            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            return `${d.getDate()}-${months[d.getMonth()]}-${d.getFullYear()}`;
+        };
+
+        const todayVal = formatDateStr(today);
+        const tomorrowVal = formatDateStr(tomorrow);
+        
+        const todayDisp = formatDisplayStr(today);
+        const tomorrowDisp = formatDisplayStr(tomorrow);
+
+        container.innerHTML = `
+            <div class="anim-slide">
+                <div class="page-header">
+                    <h1 class="page-title">📅 Outturn Planning</h1>
+                    <p class="page-subtitle">Manually plan outturn target dates for coaches currently active inside the workshop.</p>
+                </div>
+
+                <div class="card card-no-hover" style="padding: 20px; margin-top: 20px;">
+                    <div style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                        <input type="text" id="planning-search" placeholder="Search by coach no, description, pit..." class="search-input" style="width: 300px; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary);" onkeyup="filterPlanningTable()">
+                        <span style="font-size: 13px; color: var(--text-secondary); font-weight: 500;">
+                            Total Active Shop Coaches: <strong id="planning-count" style="color: var(--accent);">${coaches.length}</strong>
+                        </span>
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                            <thead>
+                                <tr style="border-bottom: 2px solid var(--border); text-align: left; background: var(--bg-secondary);">
+                                    <th style="padding: 12px 16px;">Coach No</th>
+                                    <th style="padding: 12px 16px;">Description</th>
+                                    <th style="padding: 12px 16px;">Pit Location</th>
+                                    <th style="padding: 12px 16px;">Days Inside</th>
+                                    <th style="padding: 12px 16px; width: 280px;">Plan Outturn Date</th>
+                                    <th style="padding: 12px 16px; width: 120px; text-align: center;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="planning-tbody">
+                                ${coaches.map(c => {
+                                    const val = c.plan_date || '';
+                                    let statusText = 'Unplanned';
+                                    let statusColor = 'var(--text-muted)';
+                                    
+                                    if (val === todayVal) {
+                                        statusText = 'Planned for Today';
+                                        statusColor = 'var(--warning)';
+                                    } else if (val === tomorrowVal) {
+                                        statusText = 'Planned for Tomorrow';
+                                        statusColor = 'var(--success)';
+                                    } else if (val) {
+                                        statusText = 'Planned (' + val + ')';
+                                        statusColor = 'var(--accent)';
+                                    }
+
+                                    return `
+                                        <tr class="planning-row" style="border-bottom: 1px solid var(--border); height: 50px;">
+                                            <td style="padding: 10px 16px; font-weight: 600; color: var(--accent);">${escapeHtml(c.coachno)}</td>
+                                            <td style="padding: 10px 16px;">${escapeHtml(c.coach_desc)}</td>
+                                            <td style="padding: 10px 16px;"><span class="badge badge-outline">${escapeHtml(c.pitnum)}</span></td>
+                                            <td style="padding: 10px 16px;">${escapeHtml(c.in_days || c.IN_DAYS || 0)}</td>
+                                            <td style="padding: 10px 16px;">
+                                                <select onchange="updateCoachPlanDate(this, '${escapeHtml(c.coachno)}')" class="filter-select" style="width: 100%; padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); cursor: pointer;">
+                                                    <option value="" ${val === '' ? 'selected' : ''}>Unplanned</option>
+                                                    <option value="${todayVal}" ${val === todayVal ? 'selected' : ''}>Today's Plan (${todayDisp})</option>
+                                                    <option value="${tomorrowVal}" ${val === tomorrowVal ? 'selected' : ''}>Tomorrow's Plan (${tomorrowDisp})</option>
+                                                    <option value="custom" ${val && val !== todayVal && val !== tomorrowVal ? 'selected' : ''}>Custom Date...</option>
+                                                </select>
+                                                <input type="date" value="${val}" style="display: ${val && val !== todayVal && val !== tomorrowVal ? 'inline-block' : 'none'}; margin-top: 6px; width: 100%; padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary);" onchange="saveCustomPlanDate(this, '${escapeHtml(c.coachno)}')">
+                                            </td>
+                                            <td style="padding: 10px 16px; text-align: center;" id="status-col-${escapeHtml(c.coachno)}">
+                                                <span style="font-weight: 600; font-size: 12px; color: ${statusColor};">${statusText}</span>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    } catch (e) {
+        hideLoading();
+        container.innerHTML = `<div class="error-msg">Error loading active planning tools: ${e.message}</div>`;
+    }
+}
+window.loadOutturnPlanning = loadOutturnPlanning;
+
+function filterPlanningTable() {
+    const q = document.getElementById('planning-search').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('.planning-row');
+    let visibleCount = 0;
+    
+    rows.forEach(r => {
+        const text = r.textContent.toLowerCase();
+        if (text.includes(q)) {
+            r.style.display = '';
+            visibleCount++;
+        } else {
+            r.style.display = 'none';
+        }
+    });
+    
+    const countEl = document.getElementById('planning-count');
+    if (countEl) countEl.textContent = visibleCount;
+}
+window.filterPlanningTable = filterPlanningTable;
+
+async function updateCoachPlanDate(selectEl, coachno) {
+    const customInput = selectEl.nextElementSibling;
+    const statusCol = document.getElementById(`status-col-${coachno}`);
+    let targetDate = selectEl.value;
+
+    if (targetDate === 'custom') {
+        customInput.style.display = 'inline-block';
+        customInput.focus();
+        return;
+    } else {
+        customInput.style.display = 'none';
+    }
+
+    statusCol.innerHTML = `<span style="font-size: 12px; color: var(--text-muted);">Saving...</span>`;
+    
+    try {
+        const res = await fetch('/api/planning/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ coachno, plan_date: targetDate })
+        });
+        const data = await res.json();
+        if (data.success) {
+            let statusText = 'Unplanned';
+            let statusColor = 'var(--text-muted)';
+            
+            const todayVal = new Date().toISOString().split('T')[0];
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const tomorrowVal = tomorrow.toISOString().split('T')[0];
+
+            if (targetDate === todayVal) {
+                statusText = 'Planned for Today';
+                statusColor = 'var(--warning)';
+            } else if (targetDate === tomorrowVal) {
+                statusText = 'Planned for Tomorrow';
+                statusColor = 'var(--success)';
+            } else if (targetDate) {
+                statusText = `Planned (${targetDate})`;
+                statusColor = 'var(--accent)';
+            }
+            
+            statusCol.innerHTML = `<span style="font-weight: 600; font-size: 12px; color: ${statusColor};">✔️ ${statusText}</span>`;
+            setTimeout(() => {
+                const updatedSpan = statusCol.querySelector('span');
+                if (updatedSpan) updatedSpan.textContent = statusText;
+            }, 1500);
+        } else {
+            statusCol.innerHTML = `<span style="font-weight: 600; font-size: 12px; color: var(--danger);">Error</span>`;
+            alert('Failed to save plan: ' + (data.error || 'Unknown error'));
+        }
+    } catch (e) {
+        statusCol.innerHTML = `<span style="font-weight: 600; font-size: 12px; color: var(--danger);">Error</span>`;
+        alert('Network error: ' + e.message);
+    }
+}
+window.updateCoachPlanDate = updateCoachPlanDate;
+
+async function saveCustomPlanDate(inputEl, coachno) {
+    const targetDate = inputEl.value;
+    const selectEl = inputEl.previousElementSibling;
+    const statusCol = document.getElementById(`status-col-${coachno}`);
+
+    if (!targetDate) {
+        selectEl.value = '';
+        updateCoachPlanDate(selectEl, coachno);
+        return;
+    }
+
+    statusCol.innerHTML = `<span style="font-size: 12px; color: var(--text-muted);">Saving...</span>`;
+
+    try {
+        const res = await fetch('/api/planning/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ coachno, plan_date: targetDate })
+        });
+        const data = await res.json();
+        if (data.success) {
+            const statusText = `Planned (${targetDate})`;
+            const statusColor = 'var(--accent)';
+            statusCol.innerHTML = `<span style="font-weight: 600; font-size: 12px; color: ${statusColor};">✔️ ${statusText}</span>`;
+            setTimeout(() => {
+                const updatedSpan = statusCol.querySelector('span');
+                if (updatedSpan) updatedSpan.textContent = statusText;
+            }, 1500);
+        } else {
+            statusCol.innerHTML = `<span style="font-weight: 600; font-size: 12px; color: var(--danger);">Error</span>`;
+            alert('Failed to save plan: ' + (data.error || 'Unknown error'));
+        }
+    } catch (e) {
+        statusCol.innerHTML = `<span style="font-weight: 600; font-size: 12px; color: var(--danger);">Error</span>`;
+        alert('Network error: ' + e.message);
+    }
+}
+window.saveCustomPlanDate = saveCustomPlanDate;
+
+
 /* ============================================================
    INIT ON DOM READY
    ============================================================ */
