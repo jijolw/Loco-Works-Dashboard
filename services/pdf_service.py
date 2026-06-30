@@ -78,6 +78,13 @@ GREY       = "#444444"   # normal process
 BLUE       = "#0066CC"   # tomorrow's plan
 ORANGE     = "#A04000"   # today's plan
 
+def _clean_cno(val):
+    val_str = str(val).strip().upper()
+    digits = "".join([c for c in val_str if c.isdigit()])
+    if len(digits) >= 4:
+        return digits
+    return val_str
+
 BG_OUTTURN      = "#FFD700"   # yellow
 BG_CORR         = "#FFF9C4"   # light yellow
 BG_PLAN         = "#B3D9FF"   # blue
@@ -814,23 +821,43 @@ def build_plan_table(df: pd.DataFrame, total_w, desp_df: pd.DataFrame = None,
                 result.append(cn)
         return result
 
+    def _format_with_desc(cno_list, src_df):
+        res = []
+        for cno in cno_list:
+            clean_c = _clean_cno(cno)
+            if src_df is not None and not src_df.empty and 'coachno' in src_df.columns:
+                matched = src_df[src_df['coachno'].apply(_clean_cno) == clean_c]
+                if not matched.empty:
+                    r = matched.iloc[0]
+                    cn = str(r.get("coachno", "")).strip()
+                    code = str(r.get("coach_desc", "") or "").strip()
+                    if code and code.lower() not in ("nan", "none", ""):
+                        res.append(f"{cn} ({code})")
+                        continue
+            res.append(cno)
+        return res
+
     if m_today_plan:
-        today_plan = [x.strip() for x in m_today_plan.split(",") if x.strip()]
+        raw_list = [x.strip() for x in m_today_plan.split(",") if x.strip()]
+        today_plan = _format_with_desc(raw_list, df)
     else:
         today_plan = _coach_list(df,    "plan_date",     today)
 
     if m_tmrw_plan:
-        tmrw_plan = [x.strip() for x in m_tmrw_plan.split(",") if x.strip()]
+        raw_list = [x.strip() for x in m_tmrw_plan.split(",") if x.strip()]
+        tmrw_plan = _format_with_desc(raw_list, df)
     else:
         tmrw_plan  = _coach_list(df,    "plan_date",     tomorrow)
 
     if m_today_out:
-        today_out = [x.strip() for x in m_today_out.split(",") if x.strip()]
+        raw_list = [x.strip() for x in m_today_out.split(",") if x.strip()]
+        today_out = _format_with_desc(raw_list, _ddf)
     else:
         today_out  = _coach_list(_ddf,  "desp_date",     outturn_refs)
 
     if m_wise_desp:
-        all_desp = [x.strip() for x in m_wise_desp.split(",") if x.strip()]
+        raw_list = [x.strip() for x in m_wise_desp.split(",") if x.strip()]
+        all_desp = _format_with_desc(raw_list, _ddf)
     else:
         all_desp   = _coach_list(_ddf,  "actualdespdate", outturn_refs)
         if not all_desp and "wisecd" in _ddf.columns:
@@ -880,10 +907,10 @@ def build_plan_table(df: pd.DataFrame, total_w, desp_df: pd.DataFrame = None,
 
     rhs_rows = [
         [Paragraph("<b>Category</b>",  smb),  Paragraph("<b>Coach No (Type)</b>", smb)],
-        [Paragraph(f"Today's Plan ({dt_str})",    sm_plan),  Paragraph(_fl(today_plan),  sm_plan_v)],
+        [Paragraph(f"Today's Planned Outturn ({dt_str})",    sm_plan),  Paragraph(_fl(today_plan),  sm_plan_v)],
         [Paragraph(f"Tomorrow's Plan ({tm_str})",  sm_tmrw),  Paragraph(_fl(tmrw_plan),   sm_tmrw_v)],
-        [Paragraph(f"Today's Outturn ({out_str})", sm_out),   Paragraph(_fl(today_out),   sm_out_v)],
-        [Paragraph(f"WISE Despatch ({out_str})", sm_desp),    Paragraph(_fl(all_desp),    sm_desp_v)],
+        [Paragraph(f"Yesterday's Outturn ({out_str})", sm_out),   Paragraph(_fl(today_out),   sm_out_v)],
+        [Paragraph(f"Yesterday's WISE Despatch ({out_str})", sm_desp),    Paragraph(_fl(all_desp),    sm_desp_v)],
     ]
     rw = [total_w * 0.22, total_w * 0.78]
     rhs_tbl = Table(rhs_rows, colWidths=rw)
@@ -957,8 +984,9 @@ def generate_pdf_bytes(today_plan: str = "", tmrw_plan: str = "",
         # Set today's date for manually specified coaches
         manual_today = [x.strip() for x in today_plan.split(",") if x.strip()]
         for cno in manual_today:
+            clean_c = _clean_cno(cno)
             if 'coachno' in df.columns:
-                df.loc[df['coachno'].astype(str).str.strip() == cno, 'plan_date'] = today_dt.strftime('%d-%m-%Y')
+                df.loc[df['coachno'].apply(_clean_cno) == clean_c, 'plan_date'] = today_dt.strftime('%d-%m-%Y')
 
     # 2. Tomorrow's Plan override
     if tmrw_plan:
@@ -968,8 +996,9 @@ def generate_pdf_bytes(today_plan: str = "", tmrw_plan: str = "",
         # Set tomorrow's date for manually specified coaches
         manual_tmrw = [x.strip() for x in tmrw_plan.split(",") if x.strip()]
         for cno in manual_tmrw:
+            clean_c = _clean_cno(cno)
             if 'coachno' in df.columns:
-                df.loc[df['coachno'].astype(str).str.strip() == cno, 'plan_date'] = tomorrow_dt.strftime('%d-%m-%Y')
+                df.loc[df['coachno'].apply(_clean_cno) == clean_c, 'plan_date'] = tomorrow_dt.strftime('%d-%m-%Y')
 
     # 3. Today's Outturn override
     if today_out:
@@ -982,10 +1011,11 @@ def generate_pdf_bytes(today_plan: str = "", tmrw_plan: str = "",
         # Set outturn date (yesterday/today_dt) for manually specified coaches
         manual_out = [x.strip() for x in today_out.split(",") if x.strip()]
         for cno in manual_out:
+            clean_c = _clean_cno(cno)
             if 'coachno' in df.columns:
-                df.loc[df['coachno'].astype(str).str.strip() == cno, 'desp_date'] = outturn_ref.strftime('%d-%m-%Y')
+                df.loc[df['coachno'].apply(_clean_cno) == clean_c, 'desp_date'] = outturn_ref.strftime('%d-%m-%Y')
             if desp_df is not None and not desp_df.empty and 'coachno' in desp_df.columns and 'desp_date' in desp_df.columns:
-                desp_df.loc[desp_df['coachno'].astype(str).str.strip() == cno, 'desp_date'] = outturn_ref.strftime('%d-%m-%Y')
+                desp_df.loc[desp_df['coachno'].apply(_clean_cno) == clean_c, 'desp_date'] = outturn_ref.strftime('%d-%m-%Y')
 
     # 4. WISE Despatch override
     if wise_desp:
@@ -998,8 +1028,9 @@ def generate_pdf_bytes(today_plan: str = "", tmrw_plan: str = "",
         # Set actualdespdate for manually specified coaches
         manual_desp = [x.strip() for x in wise_desp.split(",") if x.strip()]
         for cno in manual_desp:
+            clean_c = _clean_cno(cno)
             if desp_df is not None and not desp_df.empty and 'coachno' in desp_df.columns and 'actualdespdate' in desp_df.columns:
-                desp_df.loc[desp_df['coachno'].astype(str).str.strip() == cno, 'actualdespdate'] = outturn_ref.strftime('%d-%m-%Y')
+                desp_df.loc[desp_df['coachno'].apply(_clean_cno) == clean_c, 'actualdespdate'] = outturn_ref.strftime('%d-%m-%Y')
 
     buffer = io.BytesIO()
     PAGE_WIDTH, PAGE_HEIGHT = A4
