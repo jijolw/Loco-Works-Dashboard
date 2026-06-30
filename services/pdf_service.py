@@ -1014,6 +1014,7 @@ def generate_pdf_bytes(today_plan: str = "", tmrw_plan: str = "",
             clean_c = _clean_cno(cno)
             if 'coachno' in df.columns:
                 df.loc[df['coachno'].apply(_clean_cno) == clean_c, 'desp_date'] = outturn_ref.strftime('%d-%m-%Y')
+                df.loc[df['coachno'].apply(_clean_cno) == clean_c, 'plan_date'] = ""
             if desp_df is not None and not desp_df.empty and 'coachno' in desp_df.columns and 'desp_date' in desp_df.columns:
                 desp_df.loc[desp_df['coachno'].apply(_clean_cno) == clean_c, 'desp_date'] = outturn_ref.strftime('%d-%m-%Y')
 
@@ -1031,6 +1032,8 @@ def generate_pdf_bytes(today_plan: str = "", tmrw_plan: str = "",
             clean_c = _clean_cno(cno)
             if desp_df is not None and not desp_df.empty and 'coachno' in desp_df.columns and 'actualdespdate' in desp_df.columns:
                 desp_df.loc[desp_df['coachno'].apply(_clean_cno) == clean_c, 'actualdespdate'] = outturn_ref.strftime('%d-%m-%Y')
+            if 'coachno' in df.columns:
+                df.loc[df['coachno'].apply(_clean_cno) == clean_c, 'plan_date'] = ""
 
     buffer = io.BytesIO()
     PAGE_WIDTH, PAGE_HEIGHT = A4
