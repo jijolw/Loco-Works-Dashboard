@@ -96,8 +96,8 @@ GRID_COLOR = "#BBBBBB"
 EMPTY_COLOR = "#888888"
 AC_LOCO_TITLE = "AC LOCO BAY"
 # Column headers shared by every pit's body rows
-MINI_TABLE_HEADERS = ("Coach No / Code", "Div / TFR / Corr In", "Days", "D.PDC/C.PDC", "Pre Hrs")
-PRE_ONLY_HEADERS    = ("Coach No / Code", "Pre Hrs")
+MINI_TABLE_HEADERS = ("Coach No / Code", "Div / TFR / Corr In", "Days", "D.PDC/C.PDC", "Hrs")
+PRE_ONLY_HEADERS    = ("Coach No / Code", "Hrs")
 
 # ReportLab styles setup
 styles = getSampleStyleSheet()
@@ -130,7 +130,7 @@ def load_data() -> pd.DataFrame:
             "desp_date": c.get("desp_date", ""),
             "corr_comp": c.get("corr_comp", ""),
             "pdc_date": c.get("pdc_date", ""),
-            "presurveyhrs": c.get("presurveyhrs", ""),
+            "presurveyhrs": c.get("corrosion_hours") if (c.get("corrosion_hours") is not None and str(c.get("corrosion_hours")).strip() not in ("", "None", "nan")) else c.get("presurveyhrs", ""),
             "dvnid": c.get("dvnid", "") or c.get("division", ""),
             "tfr": c.get("tfr_date", "") or c.get("tfr", ""),
             "corr_place": c.get("corr_place", ""),
