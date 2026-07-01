@@ -241,6 +241,12 @@ def fmt_days(val):
     except:
         return str(val)
 
+def _get_ist_today() -> pd.Timestamp:
+    try:
+        return pd.Timestamp.now(tz='Asia/Kolkata').tz_localize(None).normalize()
+    except:
+        return pd.Timestamp.today().normalize()
+
 def _is_tomorrow(val) -> bool:
     try:
         s = str(val).strip()
@@ -249,7 +255,7 @@ def _is_tomorrow(val) -> bool:
         d = pd.to_datetime(s, errors="coerce", dayfirst=True)
         if pd.isna(d):
             return False
-        tomorrow = pd.Timestamp.today().normalize() + pd.Timedelta(days=1)
+        tomorrow = _get_ist_today() + pd.Timedelta(days=1)
         return d.normalize() == tomorrow
     except:
         return False
@@ -262,29 +268,31 @@ def _is_today(val) -> bool:
         d = pd.to_datetime(s, errors="coerce", dayfirst=True)
         if pd.isna(d):
             return False
-        return d.normalize() == pd.Timestamp.today().normalize()
+        return d.normalize() == _get_ist_today()
     except:
         return False
 
 def _last_working_day() -> pd.Timestamp:
-    yesterday = pd.Timestamp.today().normalize() - pd.Timedelta(days=1)
+    yesterday = _get_ist_today() - pd.Timedelta(days=1)
     if yesterday.weekday() == 6:  # Sunday -> back to Saturday
         yesterday -= pd.Timedelta(days=1)
     return yesterday
 
 def coach_style(row) -> tuple:
     desp      = str(row.get("desp_date",  "")).strip()
+    act_desp  = str(row.get("actualdespdate", "")).strip()
     corr_comp = str(row.get("corr_comp",  "")).strip()
     plan_date = row.get("plan_date", "")
     _blank    = ("", "nan", "None")
 
-    if desp and desp not in _blank:
-        try:
-            d = pd.to_datetime(desp, errors="coerce", dayfirst=True)
-            if not pd.isna(d):
-                return GREEN, BG_OUTTURN
-        except:
-            pass
+    for d_str in (desp, act_desp):
+        if d_str and d_str not in _blank:
+            try:
+                d = pd.to_datetime(d_str, errors="coerce", dayfirst=True)
+                if not pd.isna(d):
+                    return GREEN, BG_OUTTURN
+            except:
+                pass
 
     if corr_comp and corr_comp not in _blank:
         if _is_today(plan_date):
@@ -1039,6 +1047,8 @@ def generate_pdf_bytes(today_plan: str = "", tmrw_plan: str = "",
                 desp_df.loc[desp_df['coachno'].apply(_clean_cno) == clean_c, 'actualdespdate'] = outturn_ref.strftime('%d-%m-%Y')
             if 'coachno' in df.columns:
                 df.loc[df['coachno'].apply(_clean_cno) == clean_c, 'plan_date'] = ""
+                df.loc[df['coachno'].apply(_clean_cno) == clean_c, 'actualdespdate'] = outturn_ref.strftime('%d-%m-%Y')
+                df.loc[df['coachno'].apply(_clean_cno) == clean_c, 'desp_date'] = outturn_ref.strftime('%d-%m-%Y')
 
     buffer = io.BytesIO()
     PAGE_WIDTH, PAGE_HEIGHT = A4

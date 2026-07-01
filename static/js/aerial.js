@@ -830,6 +830,9 @@ function applyAerialFilters() {
         if (searchEl) {
             searchEl.addEventListener('input', debounce(() => applyAerialFilters(), 250));
         }
+        if (typeof initCoachAutocomplete === 'function') {
+            initCoachAutocomplete(coaches);
+        }
     }, 30);
 }
 
@@ -892,3 +895,113 @@ function openAerialPrintReport() {
     window.open(url, '_blank');
 }
 window.openAerialPrintReport = openAerialPrintReport;
+
+function initCoachAutocomplete(coaches) {
+    if (!coaches || coaches.length === 0) return;
+    
+    // Inject Autocomplete CSS dynamically if not present
+    if (!document.getElementById('autocomplete-styles')) {
+        const style = document.createElement('style');
+        style.id = 'autocomplete-styles';
+        style.textContent = `
+            .autocomplete-dropdown {
+                position: absolute;
+                background: var(--bg-card, #ffffff);
+                border: 1px solid var(--border, #cccccc);
+                border-radius: 6px;
+                max-height: 160px;
+                overflow-y: auto;
+                z-index: 10000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            }
+            .autocomplete-item {
+                padding: 8px 12px;
+                cursor: pointer;
+                font-size: 12px;
+                color: var(--text, #333333);
+                border-bottom: 1px solid var(--border-light, #eeeeee);
+                transition: background 0.2s, color 0.2s;
+            }
+            .autocomplete-item:hover {
+                background: var(--accent, #0066CC);
+                color: #ffffff;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    const coachNos = [...new Set(coaches.map(c => String(c.coachno || c.coach_num || '').trim()).filter(Boolean))];
+    const inputs = ['rep-today-plan', 'rep-tmrw-plan', 'rep-today-out', 'rep-wise-desp'];
+    
+    inputs.forEach(id => {
+        const input = document.getElementById(id);
+        if (!input) return;
+        
+        // Disable default browser autocomplete
+        input.setAttribute('autocomplete', 'off');
+        
+        let dropdown = null;
+        
+        function removeDropdown() {
+            if (dropdown) {
+                dropdown.remove();
+                dropdown = null;
+            }
+        }
+        
+        function showSuggestions() {
+            removeDropdown();
+            
+            const value = input.value;
+            const lastCommaIdx = value.lastIndexOf(',');
+            const currentToken = (lastCommaIdx === -1 ? value : value.substring(lastCommaIdx + 1)).trim();
+            
+            if (currentToken.length === 0) return;
+            
+            // Filter coaches matching the current token and not already in input
+            const matches = coachNos.filter(no => no.includes(currentToken) && !value.includes(no));
+            if (matches.length === 0) return;
+            
+            dropdown = document.createElement('div');
+            dropdown.className = 'autocomplete-dropdown';
+            
+            // Position suggestions dropdown relative to input
+            const rect = input.getBoundingClientRect();
+            dropdown.style.left = \`\${rect.left + window.scrollX}px\`;
+            dropdown.style.top = \`\${rect.bottom + window.scrollY}px\`;
+            dropdown.style.width = \`\${rect.width}px\`;
+            
+            matches.forEach(match => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item';
+                item.textContent = match;
+                
+                item.addEventListener('mousedown', (e) => {
+                    // Prevent input blur before click registers
+                    e.preventDefault();
+                    
+                    let newValue = lastCommaIdx === -1 ? '' : value.substring(0, lastCommaIdx + 1);
+                    if (newValue && !newValue.endsWith(' ')) {
+                        newValue += ' ';
+                    }
+                    newValue += match + ', ';
+                    input.value = newValue;
+                    
+                    removeDropdown();
+                    input.focus();
+                });
+                dropdown.appendChild(item);
+            });
+            
+            document.body.appendChild(dropdown);
+        }
+        
+        input.addEventListener('focus', showSuggestions);
+        input.addEventListener('input', showSuggestions);
+        input.addEventListener('blur', () => {
+            // Delay removal slightly so mousedown has time to trigger click selection
+            setTimeout(removeDropdown, 150);
+        });
+    });
+}
+
