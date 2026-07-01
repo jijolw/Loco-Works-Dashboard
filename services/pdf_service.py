@@ -245,11 +245,21 @@ def format_stage_status(val) -> str:
     if not val or str(val).strip() in ("", "nan", "None", "—"):
         return '<font color="#A04000"><b>Pending</b></font>'
     s = str(val).strip().lower()
-    if s in ("pending", "no", "false", "null", "0"):
-        return '<font color="#A04000"><b>Pending</b></font>'
-    if s in ("completed", "complete", "done", "yes", "y", "comp"):
-        return '<font color="#1A6B2F"><b>Completed</b></font>'
-    return f'<font color="#1A6B2F"><b>{str(val).strip()}</b></font>'
+    
+    is_completed = False
+    if s in ("completed", "complete", "done", "yes", "y", "comp", "fnd"):
+        is_completed = True
+    elif any(c.isdigit() for c in s):  # Contains a date like 25/06 or 25-06
+        is_completed = True
+        
+    if is_completed:
+        display_val = str(val).strip() if any(c.isdigit() for c in s) else "Completed"
+        return f'<font color="#1A6B2F"><b>{display_val}</b></font>'
+    else:
+        display_val = str(val).strip()
+        if display_val.upper() in ("NA", "NULL"):
+            display_val = "Pending"
+        return f'<font color="#A04000"><b>{display_val}</b></font>'
 
 def _get_ist_today() -> pd.Timestamp:
     try:
