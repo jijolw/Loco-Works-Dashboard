@@ -793,7 +793,12 @@ def build_plan_table(df: pd.DataFrame, total_w, desp_df: pd.DataFrame = None,
         outturn_refs.append(thursday)
 
     # Source df for outturn/despatch rows (includes no-pitnum coaches)
-    _ddf = desp_df if (desp_df is not None and not desp_df.empty) else df
+    dfs_to_concat = []
+    if df is not None and not df.empty:
+        dfs_to_concat.append(df)
+    if desp_df is not None and not desp_df.empty:
+        dfs_to_concat.append(desp_df)
+    _ddf = pd.concat(dfs_to_concat, ignore_index=True) if dfs_to_concat else pd.DataFrame()
 
     def _parse(v):
         if not v or str(v).strip() in ("", "nan", "None"):
