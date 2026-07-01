@@ -81,7 +81,7 @@ def sync_corrosion_from_sheet(gsheet):
                 
                 lowering_idx = -1
                 for idx, h in enumerate(headers):
-                    if h in ("lowering", "bogie wheeling"):
+                    if "lowering" in h or "bogie wheeling" in h:
                         lowering_idx = idx
                         break
                 
@@ -121,15 +121,31 @@ def sync_corrosion_from_sheet(gsheet):
                         if not c_no or c_no.lower() in ("coach no", "sl no", "slno", ""):
                             continue
                         
-                        corr_in = str(row[corr_in_idx]).strip() if corr_in_idx != -1 and len(row) > corr_in_idx else ""
-                        corr_stat = str(row[corr_idx]).strip() if corr_idx != -1 and len(row) > corr_idx else ""
-                        bio_tank = str(row[bio_tank_idx]).strip() if bio_tank_idx != -1 and len(row) > bio_tank_idx else ""
-                        lowering = str(row[lowering_idx]).strip() if lowering_idx != -1 and len(row) > lowering_idx else ""
-                        furn = str(row[furn_idx]).strip() if furn_idx != -1 and len(row) > furn_idx else ""
-                        desp_stat = str(row[desp_status_idx]).strip() if desp_status_idx != -1 and len(row) > desp_status_idx else ""
-                        pdc = str(row[pdc_idx]).strip() if pdc_idx != -1 and len(row) > pdc_idx else ""
-                        desp_date = str(row[desp_date_idx]).strip() if desp_date_idx != -1 and len(row) > desp_date_idx else ""
-                        rem = str(row[remarks_idx]).strip() if remarks_idx != -1 and len(row) > remarks_idx else ""
+                        if tab_name == "DEMU":
+                            done_count = 0
+                            # Done cells are in columns 6 to 29 (day 1 to 24)
+                            for cell_val in row[6:30]:
+                                if str(cell_val).strip().lower() == "done":
+                                    done_count += 1
+                            corr_in = ""
+                            corr_stat = "Completed" if done_count >= 1 else "Pending"
+                            bio_tank = "Completed" if done_count >= 10 else "Pending"
+                            lowering = "Completed" if done_count >= 8 else "Pending"
+                            furn = "Completed" if done_count >= 18 else "Pending"
+                            desp_stat = "Completed" if done_count >= 24 else "Pending"
+                            pdc = ""
+                            desp_date = str(row[5]).strip() if len(row) > 5 else ""
+                            rem = str(row[30]).strip() if len(row) > 30 else ""
+                        else:
+                            corr_in = str(row[corr_in_idx]).strip() if corr_in_idx != -1 and len(row) > corr_in_idx else ""
+                            corr_stat = str(row[corr_idx]).strip() if corr_idx != -1 and len(row) > corr_idx else ""
+                            bio_tank = str(row[bio_tank_idx]).strip() if bio_tank_idx != -1 and len(row) > bio_tank_idx else ""
+                            lowering = str(row[lowering_idx]).strip() if lowering_idx != -1 and len(row) > lowering_idx else ""
+                            furn = str(row[furn_idx]).strip() if furn_idx != -1 and len(row) > furn_idx else ""
+                            desp_stat = str(row[desp_status_idx]).strip() if desp_status_idx != -1 and len(row) > desp_status_idx else ""
+                            pdc = str(row[pdc_idx]).strip() if pdc_idx != -1 and len(row) > pdc_idx else ""
+                            desp_date = str(row[desp_date_idx]).strip() if desp_date_idx != -1 and len(row) > desp_date_idx else ""
+                            rem = str(row[remarks_idx]).strip() if remarks_idx != -1 and len(row) > remarks_idx else ""
                         
                         payload.append({
                             "coachno": c_no,
