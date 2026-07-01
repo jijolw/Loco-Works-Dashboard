@@ -967,9 +967,9 @@ function initCoachAutocomplete(coaches) {
             
             // Position suggestions dropdown relative to input
             const rect = input.getBoundingClientRect();
-            dropdown.style.left = \`\${rect.left + window.scrollX}px\`;
-            dropdown.style.top = \`\${rect.bottom + window.scrollY}px\`;
-            dropdown.style.width = \`\${rect.width}px\`;
+            dropdown.style.left = `${rect.left + window.scrollX}px`;
+            dropdown.style.top = `${rect.bottom + window.scrollY}px`;
+            dropdown.style.width = `${rect.width}px`;
             
             matches.forEach(match => {
                 const item = document.createElement('div');
