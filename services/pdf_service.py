@@ -241,6 +241,16 @@ def fmt_days(val):
     except:
         return str(val)
 
+def format_stage_status(val) -> str:
+    if not val or str(val).strip() in ("", "nan", "None", "—"):
+        return '<font color="#A04000"><b>Pending</b></font>'
+    s = str(val).strip().lower()
+    if s in ("pending", "no", "false", "null", "0"):
+        return '<font color="#A04000"><b>Pending</b></font>'
+    if s in ("completed", "complete", "done", "yes", "y", "comp"):
+        return '<font color="#1A6B2F"><b>Completed</b></font>'
+    return f'<font color="#1A6B2F"><b>{str(val).strip()}</b></font>'
+
 def _get_ist_today() -> pd.Timestamp:
     try:
         return pd.Timestamp.now(tz='Asia/Kolkata').tz_localize(None).normalize()
@@ -1244,9 +1254,9 @@ def generate_pdf_bytes(today_plan: str = "", tmrw_plan: str = "",
         days = str(c.get("caldays", "—"))
         recd = fmt_date(c.get("recd_date"))
         corr_comp = fmt_date(c.get("corr_comp"))
-        lowering = c.get("lowering_status", "—") or "—"
-        furnishing = c.get("furnishing_status", "—") or "—"
-        despatch = c.get("despatch_status", "—") or "—"
+        lowering = format_stage_status(c.get("lowering_status"))
+        furnishing = format_stage_status(c.get("furnishing_status"))
+        despatch = format_stage_status(c.get("despatch_status"))
         remarks = c.get("google_remarks", "") or "—"
         
         row_cells = [
