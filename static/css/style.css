@@ -2004,3 +2004,11 @@ a:hover {
     background: #d35400 !important; /* Orange */
 }
 
+/* Ensure incoming and despatch line zone-titles and empty-boxes are visible in dark mode */
+.incoming .zone-title, .incoming .empty-box {
+    color: #047857 !important;
+}
+.desp .zone-title, .desp .empty-box {
+    color: #b45309 !important;
+}
+

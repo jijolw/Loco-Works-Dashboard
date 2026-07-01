@@ -668,6 +668,9 @@ function renderAerialView(data) {
         if (searchEl) {
             searchEl.addEventListener('input', debounce(() => applyAerialFilters(), 250));
         }
+        if (typeof initCoachAutocomplete === 'function') {
+            initCoachAutocomplete(coaches);
+        }
     }, 50);
 }
 
