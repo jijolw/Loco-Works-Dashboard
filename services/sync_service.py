@@ -162,8 +162,15 @@ def sync_corrosion_from_sheet(gsheet):
                         })
                 
                 if payload:
-                    upsert_google_corrosion_bulk(payload)
-                    logger.info("Synced %s rows: %d", tab_name, len(payload))
+                    # De-duplicate payload in memory to prevent Supabase 500 error on duplicate keys
+                    unique_payload = {}
+                    for item in payload:
+                        cno = item["coachno"]
+                        unique_payload[cno] = item
+                    
+                    deduped_payload = list(unique_payload.values())
+                    upsert_google_corrosion_bulk(deduped_payload)
+                    logger.info("Synced %s rows: %d (de-duplicated from %d)", tab_name, len(deduped_payload), len(payload))
         except Exception as e:
             logger.error("Error syncing worksheet %s: %s", tab_name, e)
 
