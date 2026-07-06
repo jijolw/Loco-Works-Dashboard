@@ -24,155 +24,258 @@ logger = logging.getLogger(__name__)
 from config import GOOGLE_SHEET_KEY as SHEET_KEY, GOOGLE_CREDENTIALS_PATH as CREDENTIALS_PATH
 
 
-def sync_corrosion_from_sheet(gsheet):
+def sync_corrosion_from_sheet(old_gsheet):
     """
-    Sync corrosion and stage data from LHB, ICF NAC, and MEMU/EMU TC worksheets.
+    Sync corrosion and stage data from the NEW public progress tracker Google Sheet.
+    Also handles auto-populating new active coaches from ERP, archiving despatched coaches,
+    and pushing to Supabase (online).
     """
-    logger.info("Syncing corrosion and stages data from Google Sheet worksheets...")
+    logger.info("Starting new Google Sheet Progress Tracker Sync...")
     
-    # 1. Clear old records in Supabase
+    import json
+    import gspread
+    from google.oauth2.service_account import Credentials
+    from services.live_service import get_live_data
+    from services.erp_service import fetch_master
+    from services.decoders import decode_division, decode_repair, decode_family
+    
+    # 1. Connect to the new tracker spreadsheet
+    TRACKER_SHEET_KEY = "1mtde30SYHvSMEmk9OVUWdVX-wDBZEMXwJki0nTXyAU8"
     try:
-        delete_all_google_corrosion()
+        scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+        creds = Credentials.from_service_account_file(CREDENTIALS_PATH, scopes=scope)
+        client = gspread.authorize(creds)
+        tracker_sheet = client.open_by_key(TRACKER_SHEET_KEY)
     except Exception as e:
-        logger.error(f"Error clearing google_corrosion table: {e}")
+        logger.error(f"Failed to open new tracker spreadsheet {TRACKER_SHEET_KEY}: {e}")
+        return
         
-    tabs = [
-        {"name": "LHB", "header_row": 0},
-        {"name": "ICF NAC", "header_row": 1},
-        {"name": "MEMU/EMU TC", "header_row": 0},
-        {"name": "NMGHS CONV", "header_row": 1},
-        {"name": "NMG POH", "header_row": 1},
-        {"name": "DEMU", "header_row": 0}
+    try:
+        ws_active = tracker_sheet.worksheet("Active Coaches")
+        ws_desp = tracker_sheet.worksheet("Despatched Coaches")
+    except Exception as e:
+        logger.error(f"Failed to load worksheets: {e}")
+        return
+
+    # 2. Read active floor coaches from ERP to auto-populate
+    try:
+        live_data = get_live_data()
+        erp_active = live_data.get("coaches", [])
+        logger.info(f"Loaded {len(erp_active)} live active coaches from local ERP.")
+    except Exception as e:
+        logger.error(f"Failed to fetch live active coaches from ERP: {e}")
+        erp_active = []
+        
+    try:
+        erp_master = fetch_master()
+        erp_master_map = {str(r.get("coachno")).strip(): r for r in erp_master if r.get("coachno")}
+    except Exception as e:
+        logger.error(f"Failed to fetch ERP master records: {e}")
+        erp_master_map = {}
+
+    # 3. Read current rows from Google Sheet
+    try:
+        rows_active = ws_active.get_all_values()
+        rows_desp = ws_desp.get_all_values()
+    except Exception as e:
+        logger.error(f"Failed to read cells from worksheets: {e}")
+        return
+
+    headers_new = [
+        "Coach No", "Coach Code", "Division", "Type of Repair", "Type",
+        "Corrosion", "Bio Toilet", "Carpentry", "Trimming", "Air Brake",
+        "Under Frame", "Train Lighting", "Water Service", "Lowering",
+        "Painting", "Final Cleaning", "Despatch"
     ]
+
+    # Parse active coaches currently in the sheet
+    active_coach_rows = []
+    active_coachnos = set()
+    if len(rows_active) > 0:
+        active_coach_rows = rows_active[1:]
+        for r in active_coach_rows:
+            if len(r) > 0 and r[0].strip():
+                active_coachnos.add(r[0].strip().lower())
+                
+    # Parse despatched coaches in the sheet
+    desp_coachnos = set()
+    if len(rows_desp) > 0:
+        for r in rows_desp[1:]:
+            if len(r) > 0 and r[0].strip():
+                desp_coachnos.add(r[0].strip().lower())
+
+    # 4. Auto-populate missing active coaches
+    sheet_modified = False
+    new_rows_added = 0
     
-    for tab in tabs:
-        tab_name = tab["name"]
-        header_row_idx = tab["header_row"]
+    for c in erp_active:
+        cno = str(c.get("coachno", "")).strip()
+        if not cno:
+            continue
+            
+        cno_lower = cno.lower()
+        # Only add if not already in active or despatched sheet
+        if cno_lower not in active_coachnos and cno_lower not in desp_coachnos:
+            # Check if recently despatched in ERP
+            master_rec = erp_master_map.get(cno) or {}
+            erp_status = str(master_rec.get("status") or "").strip().upper()
+            act_desp = master_rec.get("actualdespdate") or master_rec.get("desp_date")
+            
+            if erp_status in ("DESPATCHED", "OUTTURN") or (act_desp and str(act_desp).strip().lower() not in ("none", "null", "nan", "")):
+                continue # Skip already despatched
+                
+            # Get metadata
+            coach_code = c.get("coach_desc") or c.get("coachdesc") or master_rec.get("coach_desc") or ""
+            division = decode_division(c.get("division") or master_rec.get("dvnid"))
+            repair_type = decode_repair(c.get("repair_type") or master_rec.get("repair_type") or master_rec.get("repairid"))
+            type_family = decode_family(coach_code)
+            
+            new_row = [cno, coach_code, division, repair_type, type_family] + [""] * 12
+            active_coach_rows.append(new_row)
+            active_coachnos.add(cno_lower)
+            new_rows_added += 1
+            sheet_modified = True
+
+    if new_rows_added > 0:
+        logger.info(f"Auto-populated {new_rows_added} new active coaches from ERP.")
+
+    # 5. Archive despatched coaches
+    despatched_to_move = []
+    remaining_active_rows = []
+    
+    for row in active_coach_rows:
+        # Pad row to 17 columns if somehow shorter
+        if len(row) < 17:
+            row = row + [""] * (17 - len(row))
+            
+        desp_val = str(row[16]).strip()
+        # If Despatch column is not empty, move to archived
+        if desp_val:
+            despatched_to_move.append(row)
+            sheet_modified = True
+        else:
+            remaining_active_rows.append(row)
+
+    if despatched_to_move:
+        logger.info(f"Moving {len(despatched_to_move)} despatched coaches to archive worksheet.")
         try:
-            ws = gsheet.worksheet(tab_name)
-            rows = ws.get_all_values()
-            if len(rows) > header_row_idx:
-                # Map headers to lower case
-                headers = [h.strip().lower() for h in rows[header_row_idx]]
-                
-                c_idx = -1
-                for idx, h in enumerate(headers):
-                    if h in ("coach no", "rs no", "rs. no"):
-                        c_idx = idx
-                        break
-                        
-                if c_idx == -1:
-                    logger.warning("Worksheet %s missing coach number column (coach no or rs no). Skipping.", tab_name)
-                    continue
-                    
-                corr_in_idx = -1
-                for idx, h in enumerate(headers):
-                    if h in ("corr in date", "corrosion in date"):
-                        corr_in_idx = idx
-                        break
-                        
-                corr_idx = -1
-                for idx, h in enumerate(headers):
-                    if h in ("corrosion", "cr corrosion"):
-                        corr_idx = idx
-                        break
-                        
-                bio_tank_idx = headers.index("bio tank loaded") if "bio tank loaded" in headers else -1
-                
-                lowering_idx = -1
-                for idx, h in enumerate(headers):
-                    if "lowering" in h or "bogie wheeling" in h:
-                        lowering_idx = idx
-                        break
-                
-                # Furnishing column
-                furn_idx = -1
-                for idx, h in enumerate(headers):
-                    if h.startswith("furnishing"):
-                        furn_idx = idx
-                        break
-                        
-                # Despatch status column
-                desp_status_idx = -1
-                for idx, h in enumerate(headers):
-                    if h.startswith("despatch"):
-                        desp_status_idx = idx
-                        break
-                        
-                # PDC column
-                pdc_idx = -1
-                for idx, h in enumerate(headers):
-                    if "pdc" in h:
-                        pdc_idx = idx
-                        break
-                        
-                desp_date_idx = -1
-                for idx, h in enumerate(headers):
-                    if "desp date" in h or "despatch date" in h or h == "tfr on":
-                        desp_date_idx = idx
-                        break
-                        
-                remarks_idx = headers.index("remarks") if "remarks" in headers else -1
-                
-                payload = []
-                for row in rows[header_row_idx+1:]:
-                    if len(row) > c_idx:
-                        c_no = str(row[c_idx]).strip()
-                        if not c_no or c_no.lower() in ("coach no", "sl no", "slno", ""):
-                            continue
-                        
-                        if tab_name == "DEMU":
-                            done_count = 0
-                            # Done cells are in columns 6 to 29 (day 1 to 24)
-                            for cell_val in row[6:30]:
-                                if str(cell_val).strip().lower() == "done":
-                                    done_count += 1
-                            corr_in = ""
-                            corr_stat = "Completed" if done_count >= 1 else "Pending"
-                            bio_tank = "Completed" if done_count >= 10 else "Pending"
-                            lowering = "Completed" if done_count >= 8 else "Pending"
-                            furn = "Completed" if done_count >= 18 else "Pending"
-                            desp_stat = "Completed" if done_count >= 24 else "Pending"
-                            pdc = ""
-                            desp_date = str(row[5]).strip() if len(row) > 5 else ""
-                            rem = str(row[30]).strip() if len(row) > 30 else ""
-                        else:
-                            corr_in = str(row[corr_in_idx]).strip() if corr_in_idx != -1 and len(row) > corr_in_idx else ""
-                            corr_stat = str(row[corr_idx]).strip() if corr_idx != -1 and len(row) > corr_idx else ""
-                            bio_tank = str(row[bio_tank_idx]).strip() if bio_tank_idx != -1 and len(row) > bio_tank_idx else ""
-                            lowering = str(row[lowering_idx]).strip() if lowering_idx != -1 and len(row) > lowering_idx else ""
-                            furn = str(row[furn_idx]).strip() if furn_idx != -1 and len(row) > furn_idx else ""
-                            desp_stat = str(row[desp_status_idx]).strip() if desp_status_idx != -1 and len(row) > desp_status_idx else ""
-                            pdc = str(row[pdc_idx]).strip() if pdc_idx != -1 and len(row) > pdc_idx else ""
-                            desp_date = str(row[desp_date_idx]).strip() if desp_date_idx != -1 and len(row) > desp_date_idx else ""
-                            rem = str(row[remarks_idx]).strip() if remarks_idx != -1 and len(row) > remarks_idx else ""
-                        
-                        payload.append({
-                            "coachno": c_no,
-                            "corr_in_date": corr_in,
-                            "corrosion_status": corr_stat,
-                            "bio_tank_status": bio_tank,
-                            "lowering_status": lowering,
-                            "furnishing_status": furn,
-                            "despatch_status": desp_stat,
-                            "pdc": pdc,
-                            "desp_date": desp_date,
-                            "remarks": rem,
-                            "source_tab": tab_name
-                        })
-                
-                if payload:
-                    # De-duplicate payload in memory to prevent Supabase 500 error on duplicate keys
-                    unique_payload = {}
-                    for item in payload:
-                        cno = item["coachno"]
-                        unique_payload[cno] = item
-                    
-                    deduped_payload = list(unique_payload.values())
-                    upsert_google_corrosion_bulk(deduped_payload)
-                    logger.info("Synced %s rows: %d (de-duplicated from %d)", tab_name, len(deduped_payload), len(payload))
+            ws_desp.append_rows(despatched_to_move)
         except Exception as e:
-            logger.error("Error syncing worksheet %s: %s", tab_name, e)
+            logger.error(f"Failed to append to Despatched Coaches worksheet: {e}")
+
+    # 6. Save back active sheet if changed
+    if sheet_modified:
+        try:
+            ws_active.clear()
+            ws_active.append_row(headers_new)
+            if remaining_active_rows:
+                ws_active.append_rows(remaining_active_rows)
+            logger.info("Updated Active Coaches worksheet.")
+        except Exception as e:
+            logger.error(f"Failed to update Active Coaches worksheet: {e}")
+
+    # 7. Prepare database payload from remaining active and recent despatched coaches
+    db_payload = []
+    
+    def process_rows_for_db(rows_list, is_despatched_list=False):
+        for r in rows_list:
+            if len(r) < 17:
+                r = r + [""] * (17 - len(r))
+                
+            cno = str(r[0]).strip()
+            if not cno:
+                continue
+                
+            corr_val = str(r[5]).strip()
+            bio_val = str(r[6]).strip()
+            low_val = str(r[13]).strip()
+            desp_val = str(r[16]).strip()
+            
+            # Map statuses
+            corr_status = "Completed" if corr_val else "Pending"
+            low_status = "Completed" if low_val else "Pending"
+            desp_status = "Completed" if desp_val or is_despatched_list else "Pending"
+            
+            # Count completed furnishing sub-sections
+            completed_furn = 0
+            for idx in [7, 8, 9, 10, 11, 12, 14, 15]:
+                if str(r[idx]).strip():
+                    completed_furn += 1
+                    
+            if completed_furn == 8:
+                furn_status = "Completed"
+            elif completed_furn > 0:
+                furn_status = "Under progress"
+            else:
+                furn_status = "Yet to be taken"
+                
+            # Serialize granular dates into remarks JSON
+            section_data = {
+                "corrosion": corr_val,
+                "bio_toilet": bio_val,
+                "carpentry": str(r[7]).strip(),
+                "trimming": str(r[8]).strip(),
+                "air_brake": str(r[9]).strip(),
+                "under_frame": str(r[10]).strip(),
+                "train_lighting": str(r[11]).strip(),
+                "water_service": str(r[12]).strip(),
+                "lowering": low_val,
+                "painting": str(r[14]).strip(),
+                "final_cleaning": str(r[15]).strip(),
+                "despatch": desp_val
+            }
+            remarks_json = json.dumps(section_data)
+            
+            db_payload.append({
+                "coachno": cno,
+                "corr_in_date": corr_val,
+                "corrosion_status": corr_status,
+                "bio_tank_status": bio_val,
+                "lowering_status": low_status,
+                "furnishing_status": furn_status,
+                "despatch_status": desp_status,
+                "pdc": "",
+                "desp_date": desp_val,
+                "remarks": remarks_json,
+                "source_tab": str(r[4]).strip()
+            })
+
+    # Process remaining active rows
+    process_rows_for_db(remaining_active_rows, is_despatched_list=False)
+    
+    # Process the last 50 archived rows to update their DB status to despatched
+    recent_desp_rows = rows_desp[1:][-50:] if len(rows_desp) > 1 else []
+    process_rows_for_db(recent_desp_rows, is_despatched_list=True)
+
+    # 8. Clear and upsert to database (online)
+    if db_payload:
+        unique_payload = {}
+        for item in db_payload:
+            unique_payload[item["coachno"]] = item
+        deduped = list(unique_payload.values())
+        
+        # A. Clear old corrosion records to prevent outdated list buildup
+        try:
+            delete_all_google_corrosion()
+        except Exception as e:
+            logger.error(f"Error clearing google_corrosion table: {e}")
+            
+        # B. Upsert online (Supabase)
+        try:
+            upsert_google_corrosion_bulk(deduped)
+            logger.info(f"Upserted {len(deduped)} rows to Supabase.")
+        except Exception as e:
+            logger.error(f"Failed to upsert to Supabase: {e}")
+            
+        # C. Save offline (SQLite) - optional / mock if imported
+        try:
+            from services.db_service import save_google_corrosion_local
+            save_google_corrosion_local(deduped)
+            logger.info(f"Saved {len(deduped)} rows to local SQLite.")
+        except ImportError:
+            pass
+        except Exception as e:
+            logger.error(f"Failed to save to local SQLite: {e}")
 
 def sync_targets(full_sync=False):
     """
