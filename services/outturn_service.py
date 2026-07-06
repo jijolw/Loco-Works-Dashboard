@@ -131,8 +131,11 @@ def get_outturn_data(start_date_str=None, end_date_str=None):
                     from services.db_service import get_google_corrosion
                     g_corr = get_google_corrosion(coachno)
                     if g_corr:
-                        desp_str = g_corr.get("desp_date") or ""
-                        desp_dt = _parse_date(desp_str)
+                        # Only fallback if the despatch status is actually completed/despatched/FND
+                        g_status = str(g_corr.get("despatch_status") or "").strip().lower()
+                        if any(x in g_status for x in ["desp", "comp", "done", "yes", "fnd"]):
+                            desp_str = g_corr.get("desp_date") or ""
+                            desp_dt = _parse_date(desp_str)
                 except Exception:
                     pass
                     
