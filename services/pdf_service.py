@@ -261,6 +261,45 @@ def format_stage_status(val) -> str:
             display_val = "Pending"
         return f'<font color="#A04000"><b>{display_val}</b></font>'
 
+def format_remarks(remarks_val) -> str:
+    if not remarks_val or str(remarks_val).strip() in ("", "nan", "None", "—"):
+        return "—"
+    s_val = str(remarks_val).strip()
+    if s_val.startswith("{"):
+        try:
+            import json
+            data = json.loads(s_val)
+            section_names = {
+                "bio_toilet": "Bio Toilet",
+                "carpentry": "Carpentry",
+                "trimming": "Trimming",
+                "air_brake": "Air Brake",
+                "under_frame": "Under Frame",
+                "train_lighting": "Train Lighting",
+                "water_service": "Water Service",
+                "painting": "Painting",
+                "final_cleaning": "Final Cleaning"
+            }
+            completed = []
+            pending = []
+            for key, label in section_names.items():
+                val = str(data.get(key, "")).strip().lower()
+                if val and val not in ("pending", "yet to be taken", "na", "under progress", ""):
+                    completed.append(label)
+                else:
+                    pending.append(label)
+            res = ""
+            if pending:
+                res += f'<font color="#A04000"><b>Pending:</b> {", ".join(pending)}</font>'
+            if completed:
+                if res:
+                    res += "<br/>"
+                res += f'<font color="#1A6B2F"><b>Done:</b> {", ".join(completed)}</font>'
+            return res if res else "—"
+        except:
+            pass
+    return s_val
+
 def _get_ist_today() -> pd.Timestamp:
     try:
         return pd.Timestamp.now(tz='Asia/Kolkata').tz_localize(None).normalize()
@@ -1267,7 +1306,7 @@ def generate_pdf_bytes(today_plan: str = "", tmrw_plan: str = "",
         lowering = format_stage_status(c.get("lowering_status"))
         furnishing = format_stage_status(c.get("furnishing_status"))
         despatch = format_stage_status(c.get("despatch_status"))
-        remarks = c.get("google_remarks", "") or "—"
+        remarks = format_remarks(c.get("google_remarks", "") or c.get("remarks", ""))
         
         row_cells = [
             Paragraph(f"<b>{coachno}</b> <font size='6.5' color='#555555'>{code}</font>", tiny_style),
