@@ -36,7 +36,7 @@ def sync_corrosion_from_sheet(old_gsheet):
     import gspread
     from google.oauth2.service_account import Credentials
     from services.live_service import get_live_data
-    from services.erp_service import fetch_master, _parse_date
+    from services.erp_service import fetch_master, fetch_single, _parse_date
     from services.decoders import decode_division, decode_repair, decode_family
     
     # 1. Connect to the new tracker spreadsheet
@@ -139,7 +139,7 @@ def sync_corrosion_from_sheet(old_gsheet):
     if new_rows_added > 0:
         logger.info(f"Auto-populated {new_rows_added} new active coaches from ERP.")
 
-    # 5. Archive despatched coaches & auto-fill corrosion dates from ERP
+    # 5. Archive despatched coaches & auto-fill dates from ERP
     despatched_to_move = []
     remaining_active_rows = []
     
@@ -149,15 +149,35 @@ def sync_corrosion_from_sheet(old_gsheet):
             row = row + [""] * (17 - len(row))
             
         cno = str(row[0]).strip()
-        # Auto-fill corrosion completion date from ERP if empty in sheet
-        if not str(row[5]).strip() and cno:
-            master_rec = erp_master_map.get(cno) or {}
-            erp_corr_comp = master_rec.get("corr_comp") or master_rec.get("corrosion")
-            if erp_corr_comp and str(erp_corr_comp).strip().lower() not in ("none", "null", "nan", "", "0"):
-                dt = _parse_date(erp_corr_comp)
-                if dt:
-                    row[5] = dt.strftime("%d/%m/%Y")
-                    sheet_modified = True
+        if cno:
+            master_rec = erp_master_map.get(cno)
+            if master_rec:
+                demandid = master_rec.get("demandid")
+                if demandid:
+                    try:
+                        # Fetch single detail record which contains actualdespdate, desp_date, and corr_comp
+                        detail = fetch_single(demandid)
+                    except Exception as e:
+                        logger.error(f"Failed to fetch ERP detail for coach {cno}: {e}")
+                        detail = {}
+                        
+                    # A. Auto-fill corrosion completion date if empty in sheet
+                    if not str(row[5]).strip():
+                        erp_corr_comp = detail.get("corr_comp") or detail.get("corrosion") or master_rec.get("corr_comp") or master_rec.get("corrosion")
+                        if erp_corr_comp and str(erp_corr_comp).strip().lower() not in ("none", "null", "nan", "", "0"):
+                            dt = _parse_date(erp_corr_comp)
+                            if dt:
+                                row[5] = dt.strftime("%d/%m/%Y")
+                                sheet_modified = True
+                                
+                    # B. Auto-fill despatch date if empty in sheet
+                    if not str(row[16]).strip():
+                        erp_desp = detail.get("actualdespdate") or detail.get("desp_date")
+                        if erp_desp and str(erp_desp).strip().lower() not in ("none", "null", "nan", "", "0"):
+                            dt = _parse_date(erp_desp)
+                            if dt:
+                                row[16] = dt.strftime("%d/%m/%Y")
+                                sheet_modified = True
             
         desp_val = str(row[16]).strip()
         # If Despatch column is not empty, move to archived
