@@ -125,7 +125,8 @@ def get_report_category(code, family):
     elif family_upper == "LHB":
         if code_upper == "LWSCN": return "LWSCN"
         if code_upper in ("LWS", "LS5", "LS"): return "LWS"
-        if code_upper in ("LWACCN", "LWACCW", "LWCBAC"): return "LWACCN"
+        if code_upper == "LWACCW": return "LWACCW"
+        if code_upper in ("LWACCN", "LWCBAC"): return "LWACCN"
     elif family_upper == "EMU":
         if code_upper == "EMU MC": return "EMU MC"
         if code_upper == "EMU TC": return "EMU TC"
@@ -174,7 +175,7 @@ def get_type_wise_holding_report_data(month_name, year_val):
 
     # Define predefined list of categories in the specified order
     ordered_cats = [
-        "CN", "GS", "CZ", "SLR", "LWSCN", "LWS", "LWACCN",
+        "CN", "GS", "CZ", "SLR", "LWSCN", "LWS", "LWACCN", "LWACCW",
         "EMU MC", "EMU TC", "MEMU MC", "MEMU TC",
         "DPC", "DEMU TC", "TW4W", "TW8W", "NMG", "ART", "OR"
     ]
