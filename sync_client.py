@@ -4,6 +4,33 @@
 # Run this on the workshop machine to keep data fresh online
 # =====================================================
 
+# Bypassing Intranet DNS Caching (DoH resolver)
+try:
+    import socket
+    import urllib.request
+    import json
+    # Try resolving locally first
+    socket.gethostbyname('ykksfdiyczolhqnduwkh.supabase.co')
+except Exception:
+    try:
+        url = 'https://cloudflare-dns.com/dns-query?name=ykksfdiyczolhqnduwkh.supabase.co&type=A'
+        req = urllib.request.Request(url, headers={'Accept': 'application/dns-json'})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read().decode())
+            answers = data.get("Answer", [])
+            ips = [ans["data"] for ans in answers if ans.get("type") == 1]
+            if ips:
+                target_ip = ips[0]
+                _original_getaddrinfo = socket.getaddrinfo
+                def custom_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+                    if host == 'ykksfdiyczolhqnduwkh.supabase.co':
+                        return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', (target_ip, port))]
+                    return _original_getaddrinfo(host, port, family, type, proto, flags)
+                socket.getaddrinfo = custom_getaddrinfo
+                print(f"Intranet DNS fallback: resolved ykksfdiyczolhqnduwkh.supabase.co to {target_ip} via Cloudflare DoH")
+    except Exception:
+        pass
+
 import time
 import logging
 import sys
