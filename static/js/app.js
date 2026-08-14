@@ -6654,7 +6654,7 @@ window.viewFndReport = async function() {
                     </thead>
                     <tbody>
                         <tr style="border-bottom: 1px solid var(--border);">
-                            <td style="padding: 10px 8px;"><strong>Actual Despatches (Physical)</strong></td>
+                            <td style="padding: 10px 8px;"><strong>Physical Despatches</strong></td>
                             <td style="text-align: center; padding: 10px 8px;">${actC.icf}</td>
                             <td style="text-align: center; padding: 10px 8px;">${actC.lhb}</td>
                             <td style="text-align: center; padding: 10px 8px;">${actC.other}</td>
@@ -6685,7 +6685,7 @@ window.viewFndReport = async function() {
                             <th style="text-align: left; padding: 10px 8px;">Coach No</th>
                             <th style="text-align: left; padding: 10px 8px;">Family</th>
                             <th style="text-align: left; padding: 10px 8px;">Description</th>
-                            <th style="text-align: left; padding: 10px 8px;">Actual Despatch Date</th>
+                            <th style="text-align: left; padding: 10px 8px;">Physical Despatch Date</th>
                             <th style="text-align: left; padding: 10px 8px;">Classification</th>
                         </tr>
                     </thead>
@@ -6742,7 +6742,7 @@ window.viewFndReport = async function() {
                         <td style="padding: 10px 8px;">${escapeHtml(c.desp_date)}</td>
                         <td style="padding: 10px 8px;">
                             <span class="badge" style="background: ${isFnd ? '#FDEDEC' : '#D6EAF8'}; color: ${isFnd ? '#78281F' : '#1B4F72'}; border: 1px solid ${isFnd ? '#FADBD8' : '#AED6F1'};">
-                                ${isFnd ? 'FND (Paper Outturn)' : 'Actual Despatch'}
+                                ${isFnd ? 'FND (Paper Outturn)' : 'Physical Despatch'}
                             </span>
                         </td>
                     </tr>
@@ -6905,7 +6905,7 @@ window.viewTypeWiseReport = async function() {
                     <td style="padding: 10px 8px; font-weight: 500; color: var(--text-primary); text-align: left;">${row.coach_type}</td>
                     <td style="padding: 10px 8px; text-align: center; color: var(--text-primary);">${row.target}</td>
                     <td style="padding: 10px 8px; text-align: center;">
-                        <a href="javascript:void(0)" onclick="showTypeWiseCoachesModal('${row.coach_type}', 'Actual Despatch', '${escapedPhysCoaches}')" style="text-decoration: underline; color: var(--accent); font-weight: 600;">
+                        <a href="javascript:void(0)" onclick="showTypeWiseCoachesModal('${row.coach_type}', 'Physical Despatch', '${escapedPhysCoaches}')" style="text-decoration: underline; color: var(--accent); font-weight: 600;">
                             ${row.physical_despatch || 0}
                         </a>
                     </td>
@@ -6954,7 +6954,7 @@ window.viewTypeWiseReport = async function() {
                         <tr style="border-bottom: 2px solid var(--border); background: var(--bg-body);">
                             <th style="text-align: left; padding: 10px 8px;">Coach Type</th>
                             <th style="text-align: center; padding: 10px 8px;">Target</th>
-                            <th style="text-align: center; padding: 10px 8px;">Actual Despatch</th>
+                            <th style="text-align: center; padding: 10px 8px;">Physical Despatch</th>
                             <th style="text-align: center; padding: 10px 8px;">FND</th>
                             <th style="text-align: center; padding: 10px 8px;">Holding in work area</th>
                             <th style="text-align: center; padding: 10px 8px;">Holding at Yard</th>
