@@ -6905,7 +6905,7 @@ window.viewTypeWiseReport = async function() {
                     <td style="padding: 10px 8px; font-weight: 500; color: var(--text-primary); text-align: left;">${row.coach_type}</td>
                     <td style="padding: 10px 8px; text-align: center; color: var(--text-primary);">${row.target}</td>
                     <td style="padding: 10px 8px; text-align: center;">
-                        <a href="javascript:void(0)" onclick="showTypeWiseCoachesModal('${row.coach_type}', 'Physical Despatch', '${escapedPhysCoaches}')" style="text-decoration: underline; color: var(--accent); font-weight: 600;">
+                        <a href="javascript:void(0)" onclick="showTypeWiseCoachesModal('${row.coach_type}', 'Actual Despatch', '${escapedPhysCoaches}')" style="text-decoration: underline; color: var(--accent); font-weight: 600;">
                             ${row.physical_despatch || 0}
                         </a>
                     </td>
@@ -6954,7 +6954,7 @@ window.viewTypeWiseReport = async function() {
                         <tr style="border-bottom: 2px solid var(--border); background: var(--bg-body);">
                             <th style="text-align: left; padding: 10px 8px;">Coach Type</th>
                             <th style="text-align: center; padding: 10px 8px;">Target</th>
-                            <th style="text-align: center; padding: 10px 8px;">Physical Despatch</th>
+                            <th style="text-align: center; padding: 10px 8px;">Actual Despatch</th>
                             <th style="text-align: center; padding: 10px 8px;">FND</th>
                             <th style="text-align: center; padding: 10px 8px;">Holding in work area</th>
                             <th style="text-align: center; padding: 10px 8px;">Holding at Yard</th>
