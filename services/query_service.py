@@ -2,7 +2,7 @@ import os
 import sys
 import re
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 
 # Add parent path for imports if needed
@@ -284,12 +284,29 @@ def map_targets_to_categories(targets_list):
 # Domain Tools (Supabase REST Driven)
 # ---------------------------------------------------------
 
-def tool_get_corrosion_summary(month: str = "July", year: int = 2026, coach_type: str = "") -> dict:
+def tool_get_corrosion_summary(month: str = "July", year: int = 2026, coach_type: str = "", start_date: datetime = None, end_date: datetime = None, date_label: str = None) -> dict:
     """
-    Get corrosion completion status and coach lists for the specified month/year from Supabase.
+    Get corrosion completion status and coach lists for the specified month/year or date range from Supabase.
     Optionally filter by coach_type (e.g. 'CN', 'GS', 'LWSCN', 'LWS').
     """
-    coaches = fetch_relevant_coaches_from_supabase(month, year)
+    month_names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    
+    if start_date and end_date:
+        m1 = month_names[start_date.month - 1]
+        y1 = start_date.year
+        coaches = fetch_relevant_coaches_from_supabase(m1, y1)
+        if start_date.month != end_date.month or start_date.year != end_date.year:
+            m2 = month_names[end_date.month - 1]
+            y2 = end_date.year
+            coaches2 = fetch_relevant_coaches_from_supabase(m2, y2)
+            seen = {c["demandid"] for c in coaches if c.get("demandid")}
+            for c in coaches2:
+                did = c.get("demandid")
+                if did and did not in seen:
+                    coaches.append(c)
+                    seen.add(did)
+    else:
+        coaches = fetch_relevant_coaches_from_supabase(month, year)
     
     months_map = {
         "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
@@ -317,13 +334,21 @@ def tool_get_corrosion_summary(month: str = "July", year: int = 2026, coach_type
         corr_comp = parts[7] if len(parts) > 7 else ""
         
         dt = _parse_date_local(corr_comp)
-        if dt and dt.month == m_idx and dt.year == int(year):
-            total_corr += 1
-            all_corr_coaches.append(c.get("coachno"))
-            
-            if cat not in category_map:
-                category_map[cat] = []
-            category_map[cat].append(c.get("coachno"))
+        if dt:
+            is_match = False
+            if start_date and end_date:
+                if start_date <= dt <= end_date:
+                    is_match = True
+            elif dt.month == m_idx and dt.year == int(year):
+                is_match = True
+                
+            if is_match:
+                total_corr += 1
+                all_corr_coaches.append(c.get("coachno"))
+                
+                if cat not in category_map:
+                    category_map[cat] = []
+                category_map[cat].append(c.get("coachno"))
             
     breakdown = []
     for cat, cnos in category_map.items():
@@ -334,12 +359,13 @@ def tool_get_corrosion_summary(month: str = "July", year: int = 2026, coach_type
         })
         
     filter_label = f" ({coach_type.upper()})" if coach_type else ""
+    label = date_label or f"in {month} {year}"
     return {
-        "title": f"Corrosion Completed in {month} {year}{filter_label}",
+        "title": f"Corrosion Completed {label}{filter_label}",
         "total_count": total_corr,
         "coaches": sorted(list(set(all_corr_coaches))),
         "breakdown": breakdown,
-        "answer_summary": f"A total of {total_corr} coach(es){filter_label} have completed corrosion in {month} {year} (verified from Supabase)."
+        "answer_summary": f"A total of {total_corr} coach(es){filter_label} have completed corrosion {label} (verified from Supabase)."
     }
 
 
@@ -557,12 +583,30 @@ def tool_get_type_wise_holdings(month: str = "July", year: int = 2026) -> dict:
     }
 
 
-def tool_get_monthly_performance(month: str = "July", year: int = 2026) -> dict:
+def tool_get_monthly_performance(month: str = "July", year: int = 2026, start_date: datetime = None, end_date: datetime = None, date_label: str = None) -> dict:
     """
     Get workshop monthly outturn target vs physical despatch performance from Supabase.
     """
-    coaches = fetch_relevant_coaches_from_supabase(month, year)
-    targets_list = fetch_supabase_targets_for_month(month, year)
+    month_names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+    
+    if start_date and end_date:
+        m1 = month_names[start_date.month - 1]
+        y1 = start_date.year
+        coaches = fetch_relevant_coaches_from_supabase(m1, y1)
+        if start_date.month != end_date.month or start_date.year != end_date.year:
+            m2 = month_names[end_date.month - 1]
+            y2 = end_date.year
+            coaches2 = fetch_relevant_coaches_from_supabase(m2, y2)
+            seen = {c["demandid"] for c in coaches if c.get("demandid")}
+            for c in coaches2:
+                did = c.get("demandid")
+                if did and did not in seen:
+                    coaches.append(c)
+                    seen.add(did)
+        targets_list = fetch_supabase_targets_for_month(m1, y1)
+    else:
+        coaches = fetch_relevant_coaches_from_supabase(month, year)
+        targets_list = fetch_supabase_targets_for_month(month, year)
     
     months_map = {
         "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
@@ -584,21 +628,30 @@ def tool_get_monthly_performance(month: str = "July", year: int = 2026) -> dict:
         final_desp = actualdespdate or desp_date
         dt_desp = _parse_date_local(final_desp)
         
-        if dt_desp and dt_desp.month == m_idx and dt_desp.year == int(year):
-            coach_desc = c.get("coach_desc") or ""
-            family = decode_family(coach_desc)
-            if family != "LOCO":
-                tot_despatch += 1
-                outturn_coaches.append(c.get("coachno"))
+        if dt_desp:
+            is_match = False
+            if start_date and end_date:
+                if start_date <= dt_desp <= end_date:
+                    is_match = True
+            elif dt_desp.month == m_idx and dt_desp.year == int(year):
+                is_match = True
                 
+            if is_match:
+                coach_desc = c.get("coach_desc") or ""
+                family = decode_family(coach_desc)
+                if family != "LOCO":
+                    tot_despatch += 1
+                    outturn_coaches.append(c.get("coachno"))
+                
+    label = date_label or f"in {month} {year}"
     return {
-        "title": f"Workshop Performance Report ({month} {year})",
+        "title": f"Workshop Performance Report ({label})",
         "target": tot_target,
         "physical_despatch": tot_despatch,
         "fnd": 0,
         "coaches": sorted(list(set(outturn_coaches))),
         "answer_summary": (
-            f"In {month} {year}, workshop physical despatches stand at {tot_despatch} "
+            f"During {label}, workshop physical despatches stand at {tot_despatch} "
             f"coaches against a total target of {tot_target} (verified from Supabase)."
         )
     }
@@ -607,6 +660,99 @@ def tool_get_monthly_performance(month: str = "July", year: int = 2026) -> dict:
 # ---------------------------------------------------------
 # Query Processing Engine
 # ---------------------------------------------------------
+
+def parse_query_date_range(query_text, default_month="July", default_year=2026):
+    """
+    Parse temporal expressions from query_text and return (start_date, end_date, label).
+    If no temporal expression is found, defaults to the specified month/year.
+    """
+    q_lower = query_text.lower()
+    now = datetime.now()  # System date (August 14, 2026 as per workspace metadata)
+    
+    # 1. Today
+    if "today" in q_lower:
+        start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+        return start, end, "today"
+        
+    # 2. Yesterday
+    if "yesterday" in q_lower:
+        yest = now - timedelta(days=1)
+        start = yest.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = yest.replace(hour=23, minute=59, second=59, microsecond=999999)
+        return start, end, "yesterday"
+        
+    # 3. This week / current week
+    if "this week" in q_lower or "current week" in q_lower:
+        start = now - timedelta(days=now.weekday())
+        start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = start + timedelta(days=6)
+        end = end.replace(hour=23, minute=59, second=59, microsecond=999999)
+        return start, end, "this week"
+        
+    # 4. Last week / previous week
+    if "last week" in q_lower or "previous week" in q_lower:
+        start_this_week = now - timedelta(days=now.weekday())
+        start = start_this_week - timedelta(days=7)
+        start = start.replace(hour=0, minute=0, second=0, microsecond=0)
+        end = start + timedelta(days=6)
+        end = end.replace(hour=23, minute=59, second=59, microsecond=999999)
+        return start, end, "last week"
+        
+    # 5. This month / current month
+    if "this month" in q_lower or "current month" in q_lower:
+        start = datetime(now.year, now.month, 1)
+        if now.month == 12:
+            end = datetime(now.year + 1, 1, 1) - timedelta(seconds=1)
+        else:
+            end = datetime(now.year, now.month + 1, 1) - timedelta(seconds=1)
+        return start, end, "this month"
+        
+    # 6. Last month / previous month
+    if "last month" in q_lower or "previous month" in q_lower:
+        first_this = datetime(now.year, now.month, 1)
+        end = first_this - timedelta(seconds=1)
+        start = datetime(end.year, end.month, 1)
+        return start, end, "last month"
+
+    # 7. Explicit months
+    months_map = {
+        "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
+        "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12,
+        "jan": 1, "feb": 2, "mar": 3, "apr": 4, "jun": 6, "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12
+    }
+    
+    matched_month = None
+    for m_name, m_idx in months_map.items():
+        if re.search(r'\b' + re.escape(m_name) + r'\b', q_lower):
+            matched_month = m_idx
+            break
+            
+    year_match = re.search(r'\b(202\d)\b', q_lower)
+    q_year = int(year_match.group(1)) if year_match else now.year
+    
+    if matched_month:
+        start = datetime(q_year, matched_month, 1)
+        if matched_month == 12:
+            end = datetime(q_year + 1, 1, 1) - timedelta(seconds=1)
+        else:
+            end = datetime(q_year, matched_month + 1, 1) - timedelta(seconds=1)
+        month_names = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+        return start, end, f"in {month_names[matched_month-1]} {q_year}"
+        
+    # Fallback to defaults
+    months_map_full = {
+        "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
+        "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12
+    }
+    m_idx = months_map_full.get(str(default_month).lower(), 7)
+    start = datetime(int(default_year), m_idx, 1)
+    if m_idx == 12:
+        end = datetime(int(default_year) + 1, 1, 1) - timedelta(seconds=1)
+    else:
+        end = datetime(int(default_year), m_idx + 1, 1) - timedelta(seconds=1)
+    return start, end, f"in {default_month} {default_year}"
+
 
 class QueryEngine:
     def __init__(self, api_key=None):
@@ -627,33 +773,34 @@ class QueryEngine:
                 "data": {}
             }
             
+        start_date, end_date, date_label = parse_query_date_range(query_text, month, year)
+        
         # Try LLM Execution if API key is present
         if self.api_key and HAS_GENAI:
             try:
-                return self._process_with_llm(query_text, month, year)
+                return self._process_with_llm(query_text, month, year, start_date, end_date, date_label)
             except Exception as e:
                 print(f"LLM Query execution error: {e}, falling back to pattern parser.")
                 
         # Fallback to Intent Pattern Parser
-        return self._process_with_intent_parser(query_text, month, year)
+        return self._process_with_intent_parser(query_text, month, year, start_date, end_date, date_label)
         
-    def _process_with_intent_parser(self, query_text, month, year):
+    def _process_with_intent_parser(self, query_text, month, year, start_date=None, end_date=None, date_label=None):
         q_lower = query_text.lower()
         
         # Detect coach types in query
         coach_types = ["CN", "GS", "CZ", "SLR", "LWSCN", "LWS", "LWACCN", "EMU MC", "EMU TC", "MEMU MC", "MEMU TC", "DPC", "DEMU TC", "TW4W", "TW8W", "NMG", "ART", "OR"]
         matched_type = None
         
-        # Match longer coach types first
         for ct in sorted(coach_types, key=lambda x: len(x), reverse=True):
             pattern = r'\b' + re.escape(ct.lower()) + r'\b'
             if re.search(pattern, q_lower):
                 matched_type = ct
                 break
 
-        # 1. Corrosion Queries ("corrosion", "corr", "released", "completed")
+        # 1. Corrosion Queries
         if any(w in q_lower for w in ["corrosion", "corr", "rust"]):
-            res = tool_get_corrosion_summary(month, year, coach_type=matched_type)
+            res = tool_get_corrosion_summary(month, year, coach_type=matched_type, start_date=start_date, end_date=end_date, date_label=date_label)
             return {
                 "query": query_text,
                 "answer": res["answer_summary"],
@@ -661,8 +808,8 @@ class QueryEngine:
                 "data": res
             }
 
-        # 2. Coaches at Hand / Availability / Stock Queries ("at hand", "available", "holding", "in shop", "in yard", "under attention", "floor")
-        if any(w in q_lower for w in ["at hand", "available", "holding", "stock", "in shop", "in yard", "under attention", "on floor", "present"]):
+        # 2. Coaches at Hand / Availability / Stock Queries
+        if any(w in q_lower for w in ["at hand", "available", "holding", "stock", "in shop", "in yard", "under attention", "floor", "present"]):
             res = tool_get_coaches_at_hand(coach_type=matched_type)
             return {
                 "query": query_text,
@@ -671,9 +818,9 @@ class QueryEngine:
                 "data": res
             }
 
-        # 3. Monthly Outturns / Performance ("outturn", "outturned", "despatch", "despatched", "performance", "target")
+        # 3. Monthly Outturns / Performance
         if any(w in q_lower for w in ["outturn", "despatch", "target", "produced"]):
-            res = tool_get_monthly_performance(month, year)
+            res = tool_get_monthly_performance(month, year, start_date=start_date, end_date=end_date, date_label=date_label)
             return {
                 "query": query_text,
                 "answer": res["answer_summary"],
@@ -690,7 +837,7 @@ class QueryEngine:
             "data": res
         }
 
-    def _process_with_llm(self, query_text, month, year):
+    def _process_with_llm(self, query_text, month, year, start_date=None, end_date=None, date_label=None):
         client = genai.Client(api_key=self.api_key)
         
         system_instruction = (
@@ -728,7 +875,12 @@ class QueryEngine:
             func_args = dict(fc.args) if fc.args else {}
             
             if func_name in tools_map:
-                res_data = tools_map[func_name](**func_args)
+                kwargs = dict(func_args)
+                if func_name in ("tool_get_corrosion_summary", "get_corrosion_summary", "tool_get_monthly_performance", "get_monthly_performance"):
+                    kwargs["start_date"] = start_date
+                    kwargs["end_date"] = end_date
+                    kwargs["date_label"] = date_label
+                res_data = tools_map[func_name](**kwargs)
                 return {
                     "query": query_text,
                     "answer": res_data.get("answer_summary", "Query processed."),
@@ -741,6 +893,6 @@ class QueryEngine:
         except Exception:
             answer_text = "Query executed via AI tools."
             
-        structured = self._process_with_intent_parser(query_text, month, year)
+        structured = self._process_with_intent_parser(query_text, month, year, start_date, end_date, date_label)
         structured["answer"] = answer_text
         return structured

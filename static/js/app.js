@@ -7078,10 +7078,15 @@ window.submitAiQuery = async function() {
     `;
 
     try {
+        const monthSelect = document.getElementById('report-type-month');
+        const yearSelect = document.getElementById('report-type-year');
+        const activeMonth = monthSelect ? monthSelect.value : 'July';
+        const activeYear = yearSelect ? parseInt(yearSelect.value) : 2026;
+
         const res = await fetch('/api/query', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query: query, month: 'July', year: 2026 })
+            body: JSON.stringify({ query: query, month: activeMonth, year: activeYear })
         });
         const data = await res.json();
 
