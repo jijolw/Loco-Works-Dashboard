@@ -63,6 +63,16 @@ WORKSHOP_MAP = {
 # UPDATED — user-confirmed 2026-05-30
 FAMILY_MAP = {
     # ICF family
+    "WGSCN":   "ICF",
+    "WGACCN":  "ICF",
+    "WGACCW":  "ICF",
+    "WGS":     "ICF",
+    "WGSCZ":   "ICF",
+    "WGCB":    "ICF",
+    "WGSCZJ":  "ICF",
+    "WGCN":    "ICF",
+    "WGCZRJ":  "ICF",
+    "WGSLR":   "ICF",
     "CN":      "ICF",
     "GS":      "ICF",
     "CZ":      "ICF",
@@ -133,8 +143,8 @@ FAMILY_MAP = {
     "SPART":   "SPECIAL",
     "SPIC":    "SPECIAL",
     "ARTConv": "SPECIAL",
-    "VPH":     "SPECIAL",
-    "VPU":     "SPECIAL",
+    "VPH":     "ICF",
+    "VPU":     "ICF",
 
     # LOCO family
     "WAP4":    "LOCO",
@@ -191,7 +201,7 @@ def decode_workshop(code):
     return WORKSHOP_MAP.get(str(code).strip(), str(code).strip())
 
 
-def decode_family(coach_desc):
+def decode_family(coach_desc, repair_type=None):
     """
     Determine coach family from the coach description string.
     Uses longest-prefix-first matching against FAMILY_MAP keys.
@@ -200,6 +210,26 @@ def decode_family(coach_desc):
     if not coach_desc:
         return "OTHER"
     desc = str(coach_desc).strip().upper()
+    
+    # Dynamic classification for ARMV and ART based on POH vs Conversion
+    if desc.startswith("ARMV") or desc.startswith("ART") or desc.startswith("SPART") or desc.startswith("SPIC"):
+        is_conv = False
+        if repair_type is not None:
+            rt_str = str(repair_type).strip()
+            # Check for conversion repair codes
+            if rt_str in ("141", "181", "201"):
+                is_conv = True
+            else:
+                rt_label = decode_repair(rt_str).upper()
+                if "CONV" in rt_label or "CONVERSION" in rt_label:
+                    is_conv = True
+        
+        # If it's POH/SS2/SS3 (not conversion), classify as ICF for POH analysis
+        if not is_conv:
+            return "ICF"
+        else:
+            return "SPECIAL"
+            
     # Try each prefix (longest first) for a greedy match
     for prefix in _FAMILY_PREFIXES:
         if desc.upper().startswith(prefix.upper()):
@@ -291,7 +321,7 @@ def decode_all(d, summary_coachno=None, summary_desc=None):
     d["repair_label"] = decode_repair(repair_val)
     d["division_label"] = decode_division(d.get("dvnid"))
     d["workshop_label"] = decode_workshop(d.get("wkid"))
-    d["family"] = decode_family(desc)
+    d["family"] = decode_family(desc, repair_val)
 
     # Resolve corrosion severity (can be in corrosion, corr_repair, or curheavylow)
     corr_val = d.get("corrosion")

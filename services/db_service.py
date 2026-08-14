@@ -240,10 +240,29 @@ def sync_active_coaches_to_supabase(coaches_list, clear_table=True):
     """Sync active ERP coaches to Supabase (clear or upsert in chunks)."""
     # 1. Clear old entries only if requested (full sync)
     if clear_table:
-        logger.info("Clearing erp_active_coaches table for full sync...")
-        url_delete = f"{SUPABASE_URL}/erp_active_coaches?coachno=neq."
-        resp = requests.delete(url_delete, headers=get_headers())
-        resp.raise_for_status()
+        logger.info("Clearing erp_active_coaches table for full sync in chunks...")
+        try:
+            url_fetch = f"{SUPABASE_URL}/erp_active_coaches?select=demandid"
+            resp = requests.get(url_fetch, headers=get_headers())
+            resp.raise_for_status()
+            existing_rows = resp.json()
+            existing_ids = [r["demandid"] for r in existing_rows if r.get("demandid")]
+            
+            if existing_ids:
+                logger.info("Deleting %d existing records in chunks...", len(existing_ids))
+                delete_chunk_size = 500
+                for k in range(0, len(existing_ids), delete_chunk_size):
+                    chunk_ids = existing_ids[k : k + delete_chunk_size]
+                    ids_str = ",".join([str(id_).strip() for id_ in chunk_ids])
+                    url_delete = f"{SUPABASE_URL}/erp_active_coaches?demandid=in.({ids_str})"
+                    resp = requests.delete(url_delete, headers=get_headers())
+                    resp.raise_for_status()
+                logger.info("Successfully cleared existing records in chunks.")
+        except Exception as delete_ex:
+            logger.warning("Chunked delete failed, falling back to delete all query: %s", delete_ex)
+            url_delete = f"{SUPABASE_URL}/erp_active_coaches?coachno=neq."
+            resp = requests.delete(url_delete, headers=get_headers())
+            resp.raise_for_status()
     else:
         logger.info("Incremental sync: keeping existing table, upserting recent records...")
     

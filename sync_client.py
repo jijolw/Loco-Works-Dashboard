@@ -263,7 +263,10 @@ def sync_cycle(full_sync=False):
         
         # A. Process active coaches (always fetch details fresh to reflect live progress)
         for c in active_coaches:
+            coach_desc_upper = str(c.get("coach_desc") or "").strip().upper()
+                
             demandid = c.get("demandid")
+            detail = {}
             presurvey = ""
             final = ""
             last_poh = ""
@@ -312,15 +315,15 @@ def sync_cycle(full_sync=False):
                 "pitnum": c.get("pitnum"),
                 "recd_date": recd_iso,
                 "in_days": c.get("IN_DAYS"),
-                "status": c.get("status"),
+                "status": detail.get("status") or c.get("status") or "",
                 "division": c.get("division"),
                 "repair_type": c.get("repair_type"),
                 "year_built": c.get("year_built"),
                 "make": make_packed
             })
 
-        # B. Process historical coaches (received since 1990-04-01 or last 45 days for incremental sync)
-        cutoff = datetime(1990, 4, 1) if full_sync else datetime.now() - timedelta(days=45)
+        # B. Process historical coaches (received since 2026-04-01 for current financial year)
+        cutoff = datetime(1990, 4, 1) if full_sync else datetime(2026, 4, 1)
         logger.info("Processing historical/despatched coaches received since: %s", cutoff.strftime("%Y-%m-%d"))
         historical_count = 0
         
@@ -417,14 +420,10 @@ def sync_cycle(full_sync=False):
                         "corrosion": corrosion
                     }
                     cache_dirty = True
-                    # Periodic cache save to prevent data loss on interruption
-                    if len(cache) % 100 == 0:
-                        save_cache(cache)
                 except Exception as he:
                     logger.error(f"Failed to fetch details for historical coach {coachno}: {he}")
                     continue
             
-            # Map the ERP status for historical coaches
             status_upper = str(erp_status).strip().upper()
             if any(x in status_upper for x in ["RETURN", "COND"]):
                 sync_status = "COND" if "COND" in status_upper else "RETURN"
@@ -433,14 +432,12 @@ def sync_cycle(full_sync=False):
                 
             make_packed = f"{make or ''}||{presurvey}||{final}||{last_poh}||{last_pohdate}||{tfr_date}||{corr_place}||{corr_comp}||{desp_date}||{actualdespdate}||{pohdays}||{remarks}||{noofdays}||{corrosion}"
             
-            recd_iso = recd_dt.strftime("%Y-%m-%d") if recd_dt else recd_str
-
             payload.append({
                 "coachno": coachno,
                 "coach_desc": rec.get("coach_desc") or rec.get("coachdesc") or "",
                 "demandid": demandid_str,
                 "pitnum": "",
-                "recd_date": recd_iso,
+                "recd_date": recd_str,
                 "in_days": None,
                 "status": sync_status,
                 "division": division,
@@ -455,45 +452,32 @@ def sync_cycle(full_sync=False):
             logger.info("Local details cache updated.")
             
         logger.info(f"Processed {historical_count} historical/despatched coaches.")
-
         # C. Fetch active AC Locos and append them to payload
+        logger.info("Step C: Fetching active AC Locos...")
+        locos = []
         try:
             locos = fetch_local_ac_locos()
-            logger.info(f"Syncing {len(locos)} AC Locos from local Position page...")
             for l in locos:
-                recd_on = l.get("recd_on") or ""
-                stripping = l.get("stripping") or ""
-                dewheel = l.get("dewheel") or ""
-                wheeling = l.get("wheeling") or ""
-                test_trial = l.get("test_trial") or ""
-                traffic = l.get("traffic") or ""
-                super_str = l.get("super_str") or ""
-                tm = l.get("tm") or ""
-                ico_tm = l.get("ico_tm") or ""
-                tfr = l.get("tfr") or ""
+                # Pack AC Loco fields into 'make' column
+                # Fields in locoworks Position: Shed, Recd, Tfr, dewheel, stripping, super_str, tm, wheeling, test_trial, ico_tm, traffic, pdc
+                make_val = f"AC LOCO||{l.get('shed') or ''}||{l.get('date_recd') or ''}||{l.get('dewheel') or ''}||{l.get('stripping') or ''}||{l.get('super_str') or ''}||{l.get('tm') or ''}||{l.get('wheeling') or ''}||{l.get('test_trial') or ''}||{l.get('ico_tm') or ''}||{l.get('traffic') or ''}||{l.get('pdc') or ''}"
                 
-                # Packed AC Loco milestones: starts with 'AC LOCO' header prefix
-                make_packed = f"AC LOCO||{recd_on}||{stripping}||{dewheel}||{wheeling}||{test_trial}||{traffic}||{super_str}||{tm}||{ico_tm}||{tfr}"
-
-                loco_recd_str = l.get("date_recd") or l.get("recd_on") or ""
-                loco_recd_dt = _parse_date(loco_recd_str)
-                loco_recd_iso = loco_recd_dt.strftime("%Y-%m-%d") if loco_recd_dt else loco_recd_str
-
                 payload.append({
                     "coachno": l.get("loco_no"),
-                    "coach_desc": l.get("loco_desc") or "WAP7",
+                    "coach_desc": l.get("loco_desc") or "AC LOCO",
                     "demandid": f"LOCO_{l.get('loco_no')}",
                     "pitnum": l.get("pitnum") or "",
-                    "recd_date": loco_recd_iso,
+                    "recd_date": l.get("date_recd") or "",
                     "in_days": None,
                     "status": "AC LOCO",
-                    "division": l.get("shed") or l.get("division") or "",
-                    "repair_type": l.get("repair_type") or "POH",
-                    "year_built": l.get("pdc") or "",
-                    "make": make_packed
+                    "division": l.get("division") or l.get("shed") or "",
+                    "repair_type": "AC LOCO",
+                    "year_built": "",
+                    "make": make_val
                 })
+            logger.info(f"Enriched payload with {len(locos)} active AC Locos.")
         except Exception as le:
-            logger.error(f"Failed to fetch AC Locos for sync: {le}")
+            logger.error(f"Failed to fetch active AC Locos: {le}")
             
         # Deduplicate payload by demandid to prevent primary key conflicts in Supabase
         seen_demands = set()

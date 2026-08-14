@@ -40,7 +40,10 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://ykksfdiyczolhqnduwkh.supa
 SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlra3NmZGl5Y3pvbGhxbmR1d2toIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTA3ODk0OCwiZXhwIjoyMDk2NjU0OTQ4fQ.67jORriOLnHf0WGcYtxr4dQkgFPw7JZEJm8xlfysWFM")
 
 # ── Google Sheets ────────────────────────────────────
-GOOGLE_SHEET_KEY = os.environ.get("GOOGLE_SHEET_KEY", "17_yzOhhdSy0EQAqLpfuXMPJazsgtlW7QspNvYJLI2Qk")
-GOOGLE_CREDENTIALS_PATH = os.environ.get("GOOGLE_CREDENTIALS_PATH", "D:\\JIJO\\information\\Coach Position\\credentials.json")
+GOOGLE_SHEET_KEY = os.environ.get("GOOGLE_SHEET_KEY", "1xnJmZgqYODnJknNsas6J9k1f5NKp9h4x54nJp7AsOIY")
+GOOGLE_CREDENTIALS_PATH = os.environ.get("GOOGLE_CREDENTIALS_PATH", "D:\\\\JIJO\\\\information\\\\Coach Position\\\\credentials.json")
+# ── Gemini AI ─────────────────────────────────────────
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyACFwclOTLOALZv9MLgrG7OvI8RG0nNNi4")
+
 
 

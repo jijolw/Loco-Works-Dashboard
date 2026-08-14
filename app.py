@@ -68,12 +68,12 @@ def api_aerial():
         from services.aerial_service import get_aerial_data
         data = get_aerial_data()
         
-        # Track active coach movements dynamically
+        # Track active coach movements dynamically in background thread
         try:
             from services.sync_service import track_coach_movements
-            track_coach_movements()
+            threading.Thread(target=track_coach_movements, daemon=True).start()
         except Exception as se:
-            print("Background movement tracking error:", se)
+            print("Background movement tracking thread start error:", se)
             
         return jsonify(data)
     except Exception as e:
@@ -206,44 +206,11 @@ def api_coach_search(coachno):
                 if not decoded.get("corrosion_label") or decoded["corrosion_label"] == "":
                     decoded["corrosion_label"] = g_corr_status
 
-            # Enrich with manual updates from Supabase
-            try:
-                from services.db_service import get_manual_coach_update
-                manual_upd = get_manual_coach_update(row_coachno)
-                if manual_upd:
-                    # Check if manual update is stale (i.e. it was entered for a past visit)
-                    mu_date_str = manual_upd.get("physical_date") or manual_upd.get("vg_date") or ""
-                    mu_dt = _parse_date(mu_date_str)
-                    if not mu_dt and manual_upd.get("updated_at"):
-                        try:
-                            iso_date = manual_upd.get("updated_at").split('T')[0]
-                            mu_dt = datetime.strptime(iso_date, "%Y-%m-%d")
-                        except:
-                            pass
-                    
-                    is_mu_stale = False
-                    if mu_dt and recd_dt and mu_dt < recd_dt:
-                        is_mu_stale = True
-                        
-                    if is_mu_stale:
-                        manual_upd = None
-                
-                if manual_upd:
-                    decoded["vg_status"] = manual_upd.get("vg_status") or ""
-                    decoded["vg_date"] = manual_upd.get("vg_date") or ""
-                    decoded["physical_status"] = manual_upd.get("physical_status") or ""
-                    decoded["physical_date"] = manual_upd.get("physical_date") or ""
-                else:
-                    decoded["vg_status"] = ""
-                    decoded["vg_date"] = ""
-                    decoded["physical_status"] = ""
-                    decoded["physical_date"] = ""
-            except Exception as se:
-                print("Failed to load manual updates from Supabase:", se)
-                decoded["vg_status"] = ""
-                decoded["vg_date"] = ""
-                decoded["physical_status"] = ""
-                decoded["physical_date"] = ""
+            # Manual updates are bypassed to photocopy ERP exactly
+            decoded["vg_status"] = ""
+            decoded["vg_date"] = ""
+            decoded["physical_status"] = ""
+            decoded["physical_date"] = ""
 
             # Resolve division, repair_type, and status to match frontend keys
             decoded["division"] = _resolve_division(row, d)
@@ -369,40 +336,6 @@ def api_coach_movements(coachno):
         return jsonify({"error": str(e)}), 500
 
 
-@app.route("/api/coach/manual_update", methods=["POST"])
-def api_coach_manual_update():
-    """Upsert manual VG and physical despatch details to Supabase."""
-    try:
-        from services.db_service import upsert_manual_coach_update
-        data = request.json or {}
-        coachno = data.get("coachno")
-        if not coachno:
-            return jsonify({"error": "coachno is required"}), 400
-            
-        vg_status = data.get("vg_status", "")
-        vg_date = data.get("vg_date", "")
-        physical_status = data.get("physical_status", "")
-        physical_date = data.get("physical_date", "")
-        
-        upsert_manual_coach_update(coachno, vg_status, vg_date, physical_status, physical_date)
-        
-        # Clear all memory caches to reflect updates immediately in all modules
-        try:
-            from services.erp_service import cache_clear
-            from services.corrosion_service import corrosion_cache_clear
-            from services.live_service import live_cache_clear
-            from services.aerial_service import aerial_cache_clear
-            cache_clear()
-            corrosion_cache_clear()
-            live_cache_clear()
-            aerial_cache_clear()
-        except Exception as ce:
-            print("Failed to clear caches:", ce)
-            
-        return jsonify({"success": True})
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/audit/data")
@@ -420,55 +353,6 @@ def api_audit_data():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-
-@app.route("/api/audit/batch-despatch", methods=["POST"])
-def api_audit_batch_despatch():
-    """Batch mark coaches as VG Cleared & Physically Despatched in Supabase."""
-    try:
-        from services.db_service import upsert_manual_coach_updates_bulk
-        from services.erp_service import cache_clear, fetch_master, _parse_date
-        from datetime import datetime
-        
-        data = request.json or {}
-        coachnos = data.get("coachnos", [])
-        desp_date = data.get("date", "").strip()
-        
-        if not coachnos:
-            return jsonify({"error": "No coaches selected"}), 400
-
-        # Use current date if none provided
-        if not desp_date:
-            desp_date = datetime.now().strftime("%d/%m/%Y")
-            
-        payload = []
-        for coachno in coachnos:
-            payload.append({
-                "coachno": str(coachno).strip(),
-                "vg_status": "Completed",
-                "vg_date": desp_date,
-                "physical_status": "Despatched",
-                "physical_date": desp_date
-            })
-            
-        upsert_manual_coach_updates_bulk(payload)
-        
-        # Clear cache to reflect updates immediately
-        try:
-            from services.erp_service import cache_clear
-            from services.corrosion_service import corrosion_cache_clear
-            from services.live_service import live_cache_clear
-            from services.aerial_service import aerial_cache_clear
-            cache_clear()
-            corrosion_cache_clear()
-            live_cache_clear()
-            aerial_cache_clear()
-        except Exception as ce:
-            print("Failed to clear caches:", ce)
-        
-        return jsonify({"success": True, "updated_count": len(coachnos)})
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
 
 
 
@@ -837,6 +721,162 @@ def api_planning_save():
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+
+
+# =====================================================
+# API — Report Center
+# =====================================================
+
+@app.route("/api/reports/performance")
+def api_reports_performance():
+    try:
+        month = request.args.get("month", "June")
+        year = request.args.get("year", "2026")
+        bypass = request.args.get("bypass_cache", "false").lower() == "true"
+        report_type = request.args.get("report_type", "target_achievement")
+        
+        from services.performance_service import get_performance_report_data
+        data = get_performance_report_data(month, year, bypass_cache=bypass, report_type=report_type)
+        return jsonify(data)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/reports/performance/download")
+def api_reports_performance_download():
+    from flask import send_file
+    import io
+    try:
+        month = request.args.get("month", "June")
+        year = request.args.get("year", "2026")
+        bypass = request.args.get("bypass_cache", "false").lower() == "true"
+        report_type = request.args.get("report_type", "target_achievement")
+        
+        from services.performance_service import generate_performance_excel
+        excel_bytes = generate_performance_excel(month, year, bypass_cache=bypass, report_type=report_type)
+        
+        return send_file(
+            io.BytesIO(excel_bytes),
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            as_attachment=True,
+            download_name=f"{month.lower()}_{year}_performance_report.xlsx"
+        )
+    except Exception as e:
+        traceback.print_exc()
+        return f"Error: {e}", 500
+
+@app.route("/api/reports/yearly_outturn")
+def api_reports_yearly_outturn():
+    try:
+        fy = request.args.get("fy", "2026-27")
+        from services.yearly_outturn_service import get_yearly_outturn_data
+        data = get_yearly_outturn_data(fy)
+        return jsonify(data)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/reports/yearly_outturn/download")
+def api_reports_yearly_outturn_download():
+    from flask import send_file
+    import io
+    try:
+        fy = request.args.get("fy", "2026-27")
+        from services.yearly_outturn_service import generate_yearly_outturn_excel
+        excel_bytes = generate_yearly_outturn_excel(fy)
+        return send_file(
+            io.BytesIO(excel_bytes),
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            as_attachment=True,
+            download_name=f"yearly_outturn_{fy}.xlsx"
+        )
+    except Exception as e:
+        traceback.print_exc()
+        return f"Error: {e}", 500
+
+@app.route("/api/reports/inside_shop")
+def api_reports_inside_shop():
+    try:
+        from services.inside_shop_service import get_inside_shop_data
+        data = get_inside_shop_data()
+        return jsonify(data)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route("/api/reports/inside_shop/download")
+def api_reports_inside_shop_download():
+    from flask import send_file
+    import io
+    try:
+        from services.inside_shop_service import generate_inside_shop_excel
+        excel_bytes = generate_inside_shop_excel()
+        return send_file(
+            io.BytesIO(excel_bytes),
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            as_attachment=True,
+            download_name="coaches_inside_shop.xlsx"
+        )
+    except Exception as e:
+        traceback.print_exc()
+        return f"Error: {e}", 500
+
+
+@app.route("/api/reports/type_wise")
+def api_reports_type_wise():
+    try:
+        now = datetime.now()
+        current_month = now.strftime("%B")
+        current_year = str(now.year)
+        month = request.args.get("month", current_month)
+        year = request.args.get("year", current_year)
+        from services.type_wise_holding_service import get_type_wise_holding_report_data
+        data = get_type_wise_holding_report_data(month, year)
+        return jsonify(data)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/reports/type_wise/download")
+def api_reports_type_wise_download():
+    from flask import send_file
+    import io
+    try:
+        now = datetime.now()
+        current_month = now.strftime("%B")
+        current_year = str(now.year)
+        month = request.args.get("month", current_month)
+        year = request.args.get("year", current_year)
+        from services.type_wise_holding_service import generate_type_wise_holding_excel
+        excel_bytes = generate_type_wise_holding_excel(month, year)
+        return send_file(
+            io.BytesIO(excel_bytes),
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            as_attachment=True,
+            download_name=f"{month.lower()}_{year}_type_wise_holding_report.xlsx"
+        )
+    except Exception as e:
+        traceback.print_exc()
+        return f"Error: {e}", 500
+
+
+@app.route("/api/query", methods=["POST"])
+def api_natural_language_query():
+    try:
+        data = request.get_json() or {}
+        query_text = data.get("query", "")
+        month = data.get("month", "July")
+        year = data.get("year", 2026)
+        api_key = data.get("api_key") or request.headers.get("X-Gemini-API-Key")
+        
+        from services.query_service import QueryEngine
+        engine = QueryEngine(api_key=api_key)
+        res = engine.process_query(query_text, month=month, year=int(year))
+        return jsonify(res)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 # =====================================================

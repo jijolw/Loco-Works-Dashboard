@@ -4,22 +4,11 @@
 # Live position data processing
 # =====================================================
 
-"""
-Produces the dataset for the live-position view.
-
-Each coach is enriched with:
-- Division (from singledata → dvnid → DIVISION_MAP, fallback to coachmaster)
-- Year built / manufacturer (from coachmaster)
-- Family (from FAMILY_MAP via decoders)
-- IN_DAYS (from recd_date)
-
-Long-stay coaches (IN_DAYS > 365) are flagged as suspicious.
-"""
-
 import time
 import logging
 from datetime import datetime
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from services.erp_service import (
     fetch_clean,
@@ -33,6 +22,7 @@ from services.decoders import (
     decode_family,
     decode_repair,
     decode_all,
+    decode_corrosion,
     DIVISION_MAP,
 )
 
@@ -42,7 +32,6 @@ from config import CACHE_TTL_MASTER
 
 logger = logging.getLogger(__name__)
 
-# ── Simple cache ──────────────────────────────────────
 _live_cache: dict = {}
 
 
@@ -61,38 +50,21 @@ def _set_cached(key, data):
 
 
 def live_cache_clear():
-    """Invalidate live-position cache."""
     _live_cache.clear()
 
 
-# ── Long-stay threshold ──────────────────────────────
 LONG_STAY_DAYS = 365
 
 
-# =====================================================
-# Division resolution
-# =====================================================
-
 def _resolve_division(rec, detail):
-    """
-    Resolve division label for a coach.
-
-    Priority:
-    1. dvnid, outdvnid, or indvnid from single-coach detail (pohmaster/singledata)
-    2. dvnid from master record
-    3. dvnid from coachmaster/singledata (fallback)
-    """
-    # Try detail first (check dvnid, outdvnid, and indvnid)
     dvnid = (detail.get("dvnid") or detail.get("outdvnid") or detail.get("indvnid") or "").strip()
     if dvnid and dvnid in DIVISION_MAP:
         return decode_division(dvnid)
 
-    # Try master record
     dvnid = (rec.get("dvnid") or "").strip()
     if dvnid and dvnid in DIVISION_MAP:
         return decode_division(dvnid)
 
-    # Fallback: coachmaster
     coachno = rec.get("coachno", "")
     if coachno:
         cm = fetch_year_built(coachno)
@@ -103,23 +75,107 @@ def _resolve_division(rec, detail):
     return ""
 
 
-# =====================================================
-# Main entry point
-# =====================================================
+def _process_live_coach(rec, now):
+    status = str(rec.get("status", "") or rec.get("pohstatus", "")).strip().upper()
+    
+    # RULE 3: Exclude Return coaches completely!
+    if status in _LIVE_INACTIVE_STATUSES or status in ("DESPATCHED", "OUTTURN", "COMPLETED", "INACTIVE") or status == "AC LOCO" or "RETURN" in status or status == "161":
+        return None
+
+    coachno = rec.get("coachno", "")
+    coach_desc = rec.get("coach_desc", "") or rec.get("coachdesc", "")
+    demandid = rec.get("demandid", "")
+
+    detail = {}
+    if demandid:
+        try:
+            detail = fetch_single(demandid)
+        except Exception:
+            pass
+
+    status_erp = str(detail.get("status") or "").strip().upper()
+    if "RETURN" in status_erp or status_erp == "161":
+        return None
+
+    actual_desp = str(detail.get("actualdespdate") or "").strip()
+    recd_str = rec.get("recd_date", "") or rec.get("recddate", "")
+    recd_dt = _parse_date(recd_str)
+    
+    is_desp = False
+    if actual_desp and actual_desp.lower() not in ("none", "null", "nan", ""):
+        act_desp_dt = _parse_date(actual_desp)
+        if act_desp_dt and recd_dt:
+            if act_desp_dt >= recd_dt:
+                is_desp = True
+        else:
+            is_desp = True
+            
+    if is_desp:
+        return None
+
+    division = _resolve_division(rec, detail)
+
+    yb_info = {}
+    if coachno:
+        try:
+            yb_info = fetch_year_built(coachno)
+        except Exception:
+            pass
+
+    in_days = rec.get("IN_DAYS")
+    if in_days is None:
+        in_days = (now - recd_dt).days if recd_dt else None
+
+    family = decode_family(coach_desc)
+    repair_type = decode_repair(detail.get("repairid") or detail.get("repair_type") or rec.get("repairid") or rec.get("repair_type"))
+
+    pitnum = rec.get("pitnum", "")
+    corr_place = detail.get("corr_place", "")
+    corr_comp = detail.get("corr_comp", "")
+
+    is_fnd = False
+    desp_date = detail.get("desp_date") or detail.get("despdate") or ""
+    desp_dt = _parse_date(desp_date)
+    has_desp_date = False
+    if desp_dt:
+        if recd_dt:
+            if desp_dt >= recd_dt:
+                has_desp_date = True
+        else:
+            has_desp_date = True
+
+    if status in ("DESPATCHED", "OUTTURN") or has_desp_date:
+        is_fnd = True
+
+    coach = {
+        "coachno": coachno,
+        "coach_desc": coach_desc,
+        "demandid": demandid,
+        "pitnum": pitnum,
+        "recd_date": recd_str,
+        "IN_DAYS": in_days,
+        "family": family,
+        "repair_type": repair_type,
+        "division": division,
+        "corr_place": corr_place,
+        "corr_comp": corr_comp,
+        "corrosion_label": decode_corrosion(detail.get("corrosion")),
+        "desp_date": desp_date,
+        "status": status,
+        "last_poh": detail.get("last_poh", ""),
+        "tfr_date": detail.get("tfrdate") or detail.get("tfr_date") or "",
+        "make": yb_info.get("make", ""),
+        "year_built": yb_info.get("year_built", ""),
+        "presurveyhrs": detail.get("presurveyhrs", ""),
+        "finalhrs": detail.get("finalhrs", ""),
+        "is_fnd": is_fnd,
+    }
+
+    decode_all(coach, summary_coachno=coachno, summary_desc=coach_desc)
+    return coach
+
 
 def get_live_data():
-    """
-    Build the full live-position dataset.
-
-    Returns
-    -------
-    dict
-        {
-            "coaches":    [enriched coach dicts ...],
-            "metrics":    {total, filtered, coach_types, divisions, long_stay},
-            "suspicious": [coaches with IN_DAYS > 365 ...],
-        }
-    """
     cache_key = "live_full"
     cached = _get_cached(cache_key, CACHE_TTL_MASTER)
     if cached is not None:
@@ -133,238 +189,30 @@ def get_live_data():
     family_counter = Counter()
     division_counter = Counter()
 
-    for rec in records:
-        # ── Skip inactive coaches and AC Locos (handled separately) ─────────────────
-        status = str(rec.get("status", "") or rec.get("pohstatus", "")).strip().upper()
-        if status in _LIVE_INACTIVE_STATUSES or status == "AC LOCO":
-            continue
-
-        coachno = rec.get("coachno", "")
-        coach_desc = rec.get("coach_desc", "") or rec.get("coachdesc", "")
-        demandid = rec.get("demandid", "")
-
-        # ── Fetch single detail for division ──────
-        detail = {}
-        if demandid:
-            try:
-                detail = fetch_single(demandid)
-            except Exception as exc:
-                logger.warning("fetch_single(%s) error: %s", demandid, exc)
-
-        # ── Skip physically despatched coaches ────
-        actual_desp = str(detail.get("actualdespdate") or "").strip()
-        status_erp = str(rec.get("status") or "").strip().upper()
-        recd_str = rec.get("recd_date", "") or rec.get("recddate", "")
-        recd_dt = _parse_date(recd_str)
-        
-        is_desp = False
-        if actual_desp and actual_desp.lower() not in ("none", "null", "nan", ""):
-            act_desp_dt = _parse_date(actual_desp)
-            if act_desp_dt and recd_dt:
-                if act_desp_dt >= recd_dt:
-                    is_desp = True
-            else:
-                is_desp = True
-                
-        if is_desp:
-            # Keep in live list (for FND) if manual VG / physical is not completed
-            vg_completed = False
-            if coachno:
-                try:
-                    from services.db_service import get_manual_coach_update
-                    mu = get_manual_coach_update(coachno)
-                    if mu:
-                        mu_date_str = mu.get("physical_date") or mu.get("vg_date") or ""
-                        mu_dt = _parse_date(mu_date_str)
-                        is_mu_stale = False
-                        if mu_dt and recd_dt and mu_dt < recd_dt:
-                            is_mu_stale = True
-                        if not is_mu_stale and mu.get("vg_status") == "Completed" and mu.get("physical_status") == "Despatched":
-                            vg_completed = True
-                except Exception:
-                    pass
-            if vg_completed:
-                continue
-
-        # ── Resolve division ──────────────────────
-        division = _resolve_division(rec, detail)
-
-        # ── Fetch year-built info ─────────────────
-        yb_info = {}
-        if coachno:
-            try:
-                yb_info = fetch_year_built(coachno)
-            except Exception as exc:
-                logger.warning("fetch_year_built(%s) error: %s", coachno, exc)
-
-        # ── Calculate IN_DAYS ─────────────────────
-        in_days = rec.get("IN_DAYS")
-        if in_days is None:
-            recd_str = rec.get("recd_date", "") or rec.get("recddate", "")
-            recd_dt = _parse_date(recd_str)
-            in_days = (now - recd_dt).days if recd_dt else None
-
-        # ── Family & repair ───────────────────────
-        family = decode_family(coach_desc)
-        repair_type = decode_repair(detail.get("repairid") or detail.get("repair_type") or rec.get("repairid") or rec.get("repair_type"))
-
-        pitnum = rec.get("pitnum", "")
-
-        # ── Corrosion fields & Google Sheets enrichment ──
-        corr_place = detail.get("corr_place", "")
-        corr_comp = detail.get("corr_comp", "")
-        try:
-            from services.db_service import get_google_corrosion
-            google_corr = get_google_corrosion(coachno)
-            if google_corr:
-                g_corr_in = google_corr.get("corr_in_date") or ""
-                g_corr_status = google_corr.get("corrosion_status") or ""
-                if (not corr_place or str(corr_place).strip() in ("", "None", "null", "0")) and g_corr_in:
-                    corr_place = "GSheet: " + g_corr_in
-                if (not corr_comp or str(corr_comp).strip() in ("", "None", "null", "0")) and g_corr_status:
-                    if "completed" in g_corr_status.lower() or "/" in g_corr_status or "-" in g_corr_status:
-                        corr_comp = g_corr_status if ("/" in g_corr_status or "-" in g_corr_status) else "Completed"
-        except Exception:
-            pass
-
-        # ── Determine if FND coach ────────────────
-        is_fnd = False
-        desp_date = detail.get("desp_date") or detail.get("despdate") or ""
-        if not desp_date and "||" in (rec.get("make") or ""):
-            parts = rec.get("make").split("||")
-            if len(parts) > 8:
-                desp_date = parts[8]
-                
-        desp_dt = _parse_date(desp_date)
-        has_desp_date = False
-        if desp_dt:
-            recd_str = rec.get("recd_date", "") or rec.get("recddate", "")
-            recd_dt = _parse_date(recd_str)
-            if recd_dt:
-                if desp_dt >= recd_dt:
-                    has_desp_date = True
-            else:
-                has_desp_date = True
-
-        status_upper = status.upper()
-        if status_upper in ("DESPATCHED", "OUTTURN") or has_desp_date:
-            is_fnd = True
-
-        # ── Build enriched record ─────────────────
-        coach = {
-            "coachno": coachno,
-            "coach_desc": coach_desc,
-            "demandid": demandid,
-            "pitnum": pitnum,
-            "recd_date": rec.get("recd_date", "") or rec.get("recddate", ""),
-            "IN_DAYS": in_days,
-            "division": division,
-            "family": family,
-            "repair_type": repair_type,
-            "year_built": yb_info.get("year_built", ""),
-            "make": yb_info.get("make", ""),
-            "status": status,
-            "is_fnd": is_fnd,
-            "corr_place": corr_place,
-            "corr_comp": corr_comp,
-            "physical_status": detail.get("physical_status", ""),
-            "actualdespdate": detail.get("actualdespdate", ""),
-            "desp_date": desp_date,
-        }
-
-        # ── Compute AERIAL_STATUS dynamically ─────
-        try:
-            from services.aerial_service import _compute_aerial_status
-            coach["AERIAL_STATUS"] = _compute_aerial_status(coach)
-        except Exception:
-            coach["AERIAL_STATUS"] = "ROUTINE POH"
-
-        # ── Apply full decode_all ─────────────────
-        decode_all(coach, summary_coachno=coachno, summary_desc=coach_desc)
-
-        enriched.append(coach)
-
-        # ── Bookkeeping ──────────────────────────
-        family_counter[family] += 1
-        if division:
-            division_counter[division] += 1
-
-        # ── Flag suspicious long-stay ────────────
-        if in_days is not None and in_days > LONG_STAY_DAYS:
-            suspicious.append(coach)
-
-    # ── Process active AC Locos ─────────────────
-    try:
-        from services.aerial_service import _fetch_ac_locos
-        ac_locos = _fetch_ac_locos()
-        for l in ac_locos:
-            coachno = l.get("loco_no")
-            coach_desc = l.get("loco_desc") or "WAP7"
-            pitnum = l.get("pitnum") or ""
-            recd_date = l.get("date_recd") or l.get("recd_on") or ""
-            
-            # Calculate IN_DAYS
-            recd_dt = _parse_date(recd_date)
-            in_days = (now - recd_dt).days if recd_dt else None
-            
-            coach = {
-                "coachno": coachno,
-                "coach_desc": coach_desc,
-                "demandid": f"LOCO_{coachno}",
-                "pitnum": pitnum,
-                "recd_date": recd_date,
-                "IN_DAYS": in_days,
-                "division": l.get("shed") or "",
-                "family": "LOCO",
-                "repair_type": l.get("repair_type") or "POH",
-                "year_built": l.get("pdc") or "",
-                "make": "AC LOCO",
-                "status": "AC LOCO",
-                "is_fnd": False,
-                "AERIAL_STATUS": "NORMAL",
-            }
-            
-            # Apply decode_all
-            decode_all(coach, summary_coachno=coachno, summary_desc=coach_desc)
-            enriched.append(coach)
-            
-            family_counter["LOCO"] += 1
-            if coach["division"]:
-                division_counter[coach["division"]] += 1
-                
-            if in_days is not None and in_days > LONG_STAY_DAYS:
-                suspicious.append(coach)
-    except Exception as exc:
-        logger.error("Error enriching AC Locos in get_live_data: %s", exc)
-
-    # Calculate split-up counts
-    fnd_count = sum(1 for c in enriched if c.get("is_fnd"))
-    ac_loco_count = sum(1 for c in enriched if c.get("status") == "AC LOCO" or c.get("family") == "LOCO")
-    active_count = len(enriched) - fnd_count - ac_loco_count
-
-    # ── Build metrics ─────────────────────────────────
-    metrics = {
-        "total": len(enriched),
-        "filtered": len(enriched),
-        "coach_types": dict(family_counter.most_common()),
-        "divisions": dict(division_counter.most_common()),
-        "long_stay": len(suspicious),
-        "fnd_count": fnd_count,
-        "ac_loco_count": ac_loco_count,
-        "active_count": active_count,
-    }
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        futures = [executor.submit(_process_live_coach, rec, now) for rec in records]
+        for f in as_completed(futures):
+            res = f.result()
+            if res:
+                enriched.append(res)
+                family_counter[res["family"]] += 1
+                division_counter[res["division"]] += 1
+                if res["IN_DAYS"] is not None and res["IN_DAYS"] > LONG_STAY_DAYS:
+                    suspicious.append(res)
 
     result = {
         "coaches": enriched,
-        "metrics": metrics,
+        "metrics": {
+            "total": len(enriched),
+            "filtered": len(enriched),
+            "coach_types": dict(family_counter),
+            "divisions": dict(division_counter),
+            "long_stay": len(suspicious),
+        },
         "suspicious": suspicious,
     }
 
     _set_cached(cache_key, result)
-    logger.info(
-        "get_live_data: %d coaches (%d suspicious)",
-        len(enriched), len(suspicious),
-    )
     return result
 
 

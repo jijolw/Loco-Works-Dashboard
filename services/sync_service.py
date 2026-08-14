@@ -26,11 +26,10 @@ from config import GOOGLE_SHEET_KEY as SHEET_KEY, GOOGLE_CREDENTIALS_PATH as CRE
 
 def sync_corrosion_from_sheet(old_gsheet):
     """
-    Sync corrosion and stage data from the NEW public progress tracker Google Sheet.
-    Also handles auto-populating new active coaches from ERP, archiving despatched coaches,
-    and pushing to Supabase (online).
+    Sync corrosion and stage data disabled as requested.
     """
-    logger.info("Starting new Google Sheet Progress Tracker Sync...")
+    logger.info("Sync corrosion from progress sheet is disabled.")
+    return
     
     import json
     import gspread
@@ -52,7 +51,7 @@ def sync_corrosion_from_sheet(old_gsheet):
         
     try:
         ws_active = tracker_sheet.worksheet("Active Coaches")
-        ws_desp = tracker_sheet.worksheet("Despatched Coaches")
+        ws_desp = tracker_sheet.worksheet("Corrosion completed coaches")
     except Exception as e:
         logger.error(f"Failed to load worksheets: {e}")
         return
@@ -82,7 +81,7 @@ def sync_corrosion_from_sheet(old_gsheet):
         return
 
     headers_new = [
-        "Coach No", "Coach Code", "Division", "Type of Repair", "Type",
+        "Sl No", "Coach No", "Coach Code", "Division", "Type of Repair", "Type",
         "Corrosion", "Bio Toilet", "Carpentry", "Trimming", "Air Brake",
         "Under Frame", "Train Lighting", "Water Service", "Lowering",
         "Painting", "Final Cleaning", "Despatch"
@@ -94,19 +93,20 @@ def sync_corrosion_from_sheet(old_gsheet):
     if len(rows_active) > 0:
         active_coach_rows = rows_active[1:]
         for r in active_coach_rows:
-            if len(r) > 0 and r[0].strip():
-                active_coachnos.add(r[0].strip().lower())
+            if len(r) > 1 and r[1].strip():
+                active_coachnos.add(r[1].strip().lower())
                 
     # Parse despatched coaches in the sheet
     desp_coachnos = set()
     if len(rows_desp) > 0:
         for r in rows_desp[1:]:
-            if len(r) > 0 and r[0].strip():
-                desp_coachnos.add(r[0].strip().lower())
+            if len(r) > 1 and r[1].strip():
+                desp_coachnos.add(r[1].strip().lower())
 
     # 4. Auto-populate missing active coaches
     sheet_modified = False
     new_rows_added = 0
+    sl_idx = len(active_coach_rows) + 1
     
     for c in erp_active:
         cno = str(c.get("coachno", "")).strip()
@@ -119,9 +119,9 @@ def sync_corrosion_from_sheet(old_gsheet):
             # Check if recently despatched in ERP
             master_rec = erp_master_map.get(cno) or {}
             erp_status = str(master_rec.get("status") or "").strip().upper()
-            act_desp = master_rec.get("actualdespdate") or master_rec.get("desp_date")
+            act_desp = master_rec.get("actualdespdate")
             
-            if erp_status in ("DESPATCHED", "OUTTURN") or (act_desp and str(act_desp).strip().lower() not in ("none", "null", "nan", "")):
+            if erp_status in ("DESPATCHED",) or (act_desp and str(act_desp).strip().lower() not in ("none", "null", "nan", "")):
                 continue # Skip already despatched
                 
             # Get metadata
@@ -130,9 +130,10 @@ def sync_corrosion_from_sheet(old_gsheet):
             repair_type = decode_repair(c.get("repair_type") or master_rec.get("repair_type") or master_rec.get("repairid"))
             type_family = decode_family(coach_code)
             
-            new_row = [cno, coach_code, division, repair_type, type_family] + [""] * 12
+            new_row = [str(sl_idx), cno, coach_code, division, repair_type, type_family] + [""] * 12
             active_coach_rows.append(new_row)
             active_coachnos.add(cno_lower)
+            sl_idx += 1
             new_rows_added += 1
             sheet_modified = True
 
@@ -144,11 +145,11 @@ def sync_corrosion_from_sheet(old_gsheet):
     remaining_active_rows = []
     
     for row in active_coach_rows:
-        # Pad row to 17 columns if somehow shorter
-        if len(row) < 17:
-            row = row + [""] * (17 - len(row))
+        # Pad row to 18 columns if somehow shorter
+        if len(row) < 18:
+            row = row + [""] * (18 - len(row))
             
-        cno = str(row[0]).strip()
+        cno = str(row[1]).strip()
         if cno:
             master_rec = erp_master_map.get(cno)
             if master_rec:
@@ -162,37 +163,37 @@ def sync_corrosion_from_sheet(old_gsheet):
                         detail = {}
                         
                     # A. Auto-fill corrosion completion date if empty in sheet
-                    if not str(row[5]).strip():
+                    if not str(row[6]).strip():
                         erp_corr_comp = detail.get("corr_comp") or detail.get("corrosion") or master_rec.get("corr_comp") or master_rec.get("corrosion")
                         if erp_corr_comp and str(erp_corr_comp).strip().lower() not in ("none", "null", "nan", "", "0"):
                             dt = _parse_date(erp_corr_comp)
                             if dt:
-                                row[5] = dt.strftime("%d/%m/%Y")
+                                row[6] = dt.strftime("%d/%m/%Y")
                                 sheet_modified = True
                                 
                     # B. Auto-fill despatch date if empty in sheet
-                    if not str(row[16]).strip():
-                        erp_desp = detail.get("actualdespdate") or detail.get("desp_date")
+                    if not str(row[17]).strip():
+                        erp_desp = detail.get("actualdespdate")
                         if erp_desp and str(erp_desp).strip().lower() not in ("none", "null", "nan", "", "0"):
                             dt = _parse_date(erp_desp)
                             if dt:
-                                row[16] = dt.strftime("%d/%m/%Y")
+                                row[17] = dt.strftime("%d/%m/%Y")
                                 sheet_modified = True
             
-        desp_val = str(row[16]).strip()
-        # If Despatch column is not empty, move to archived
-        if desp_val:
+        corr_val = str(row[6]).strip()
+        # If Corrosion column is not empty, move to Corrosion completed coaches
+        if corr_val:
             despatched_to_move.append(row)
             sheet_modified = True
         else:
             remaining_active_rows.append(row)
 
     if despatched_to_move:
-        logger.info(f"Moving {len(despatched_to_move)} despatched coaches to archive worksheet.")
+        logger.info(f"Moving {len(despatched_to_move)} corrosion-completed coaches to Corrosion completed coaches worksheet.")
         try:
             ws_desp.append_rows(despatched_to_move)
         except Exception as e:
-            logger.error(f"Failed to append to Despatched Coaches worksheet: {e}")
+            logger.error(f"Failed to append to Corrosion completed coaches worksheet: {e}")
 
     # 6. Save back active sheet if changed
     if sheet_modified:
@@ -210,17 +211,17 @@ def sync_corrosion_from_sheet(old_gsheet):
     
     def process_rows_for_db(rows_list, is_despatched_list=False):
         for r in rows_list:
-            if len(r) < 17:
-                r = r + [""] * (17 - len(r))
+            if len(r) < 18:
+                r = r + [""] * (18 - len(r))
                 
-            cno = str(r[0]).strip()
+            cno = str(r[1]).strip()
             if not cno:
                 continue
                 
-            corr_val = str(r[5]).strip()
-            bio_val = str(r[6]).strip()
-            low_val = str(r[13]).strip()
-            desp_val = str(r[16]).strip()
+            corr_val = str(r[6]).strip()
+            bio_val = str(r[7]).strip()
+            low_val = str(r[14]).strip()
+            desp_val = str(r[17]).strip()
             
             # Map statuses
             corr_status = "Completed" if corr_val else "Pending"
@@ -229,7 +230,7 @@ def sync_corrosion_from_sheet(old_gsheet):
             
             # Count completed furnishing sub-sections
             completed_furn = 0
-            for idx in [7, 8, 9, 10, 11, 12, 14, 15]:
+            for idx in [8, 9, 10, 11, 12, 13, 15, 16]:
                 if str(r[idx]).strip():
                     completed_furn += 1
                     
@@ -244,15 +245,15 @@ def sync_corrosion_from_sheet(old_gsheet):
             section_data = {
                 "corrosion": corr_val,
                 "bio_toilet": bio_val,
-                "carpentry": str(r[7]).strip(),
-                "trimming": str(r[8]).strip(),
-                "air_brake": str(r[9]).strip(),
-                "under_frame": str(r[10]).strip(),
-                "train_lighting": str(r[11]).strip(),
-                "water_service": str(r[12]).strip(),
+                "carpentry": str(r[8]).strip(),
+                "trimming": str(r[9]).strip(),
+                "air_brake": str(r[10]).strip(),
+                "under_frame": str(r[11]).strip(),
+                "train_lighting": str(r[12]).strip(),
+                "water_service": str(r[13]).strip(),
                 "lowering": low_val,
-                "painting": str(r[14]).strip(),
-                "final_cleaning": str(r[15]).strip(),
+                "painting": str(r[15]).strip(),
+                "final_cleaning": str(r[16]).strip(),
                 "despatch": desp_val
             }
             remarks_json = json.dumps(section_data)
@@ -268,7 +269,7 @@ def sync_corrosion_from_sheet(old_gsheet):
                 "pdc": "",
                 "desp_date": desp_val,
                 "remarks": remarks_json,
-                "source_tab": str(r[4]).strip()
+                "source_tab": str(r[5]).strip()
             })
 
     # Process remaining active rows
@@ -333,7 +334,7 @@ def sync_targets(full_sync=False):
                  "https://www.googleapis.com/auth/drive"]
         creds = Credentials.from_service_account_file(CREDENTIALS_PATH, scopes=scope)
         client = gspread.authorize(creds)
-        gsheet = client.open_by_key(SHEET_KEY)
+        gsheet = client.open_by_key("17_yzOhhdSy0EQAqLpfuXMPJazsgtlW7QspNvYJLI2Qk")
         
         parsed_hq = {}
         parsed_archive = {}

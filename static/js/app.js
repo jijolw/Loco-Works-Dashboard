@@ -372,6 +372,8 @@ const PAGES = {
     analytics: loadAnalytics,
     acloco:    loadAcLoco,
     audit:     loadAuditModule,
+    reports:   loadReportCenter,
+    'ai-query': loadAiQueryPage,
 };
 
 let currentPage = null;
@@ -451,37 +453,8 @@ function navigate(page, force = false) {
 
 async function loadDashboard() {
     const container = document.getElementById('main-content');
-    showLoading();
-
-    let metrics = { total: '', active: '', ac_loco: '', fnd: '', corrosion: '', outturn: '', long_stay: '' };
-
-    try {
-        const data = await api('live');
-        if (data && data.coaches) {
-            const coaches = data.coaches;
-            const liveMetrics = data.metrics || {};
-            
-            metrics.total = liveMetrics.total || coaches.length;
-            metrics.ac_loco = liveMetrics.ac_loco_count !== undefined ? liveMetrics.ac_loco_count : coaches.filter(c => c.family === 'LOCO' || c.status === 'AC LOCO').length;
-            metrics.fnd = liveMetrics.fnd_count !== undefined ? liveMetrics.fnd_count : coaches.filter(c => c.is_fnd).length;
-            metrics.active = liveMetrics.active_count !== undefined ? liveMetrics.active_count : (metrics.total - metrics.ac_loco - metrics.fnd);
-            
-            metrics.corrosion = coaches.filter(c => {
-                if (c.is_fnd || c.family === 'LOCO' || c.status === 'AC LOCO') return false;
-                const s = (c.AERIAL_STATUS || '').toUpperCase();
-                return s.includes('UNDER CORROSION');
-            }).length;
-            
-            metrics.long_stay = coaches.filter(c => c.IN_DAYS !== null && c.IN_DAYS > 120).length;
-        }
-        const oData = await api('outturn');
-        if (oData && oData.metrics) {
-            metrics.outturn = oData.metrics.total;
-        }
-    } catch (e) {
-        console.warn('Dashboard: could not load metrics', e);
-    }
-
+    
+    // Render dashboard skeleton immediately
     container.innerHTML = `
         <div class="anim-slide">
             <div class="welcome-banner">
@@ -490,13 +463,12 @@ async function loadDashboard() {
             </div>
 
             <div class="metrics-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));">
-                ${createMetricCard('Total Inside Workshop', metrics.total, 'All coaches & locos currently in shop', 'accent-blue')}
-                ${createMetricCard('Under Repair (Active)', metrics.active, 'Coaches actively undergoing repair', 'accent-info')}
-                ${createMetricCard('AC Locomotives', metrics.ac_loco, 'AC locomotives under POH/repair', 'accent-danger')}
-                ${createMetricCard('FND / Pending Despatch', metrics.fnd, 'Paper despatched, physical pending', 'accent-purple')}
-                ${createMetricCard('Under Corrosion', metrics.corrosion, 'Coaches in corrosion shop', 'accent-gold')}
-                ${createMetricCard('Outturn This Month', metrics.outturn, 'Total outturns achieved this month', 'accent-success')}
-            </div>
+                <div id="metric-card-total">${createMetricCard('Total Inside Workshop', '—', 'All coaches & locos currently in shop', 'accent-blue')}</div>
+                <div id="metric-card-active">${createMetricCard('Under Repair (Active)', '—', 'Coaches actively undergoing repair', 'accent-info')}</div>
+                <div id="metric-card-ac-loco">${createMetricCard('AC Locomotives', '—', 'AC locomotives under POH/repair', 'accent-danger')}</div>
+                <div id="metric-card-fnd">${createMetricCard('FND / Pending Despatch', '—', 'Paper despatched, physical pending', 'accent-purple')}</div>
+                <div id="metric-card-corrosion">${createMetricCard('Under Corrosion', '—', 'Coaches in corrosion shop', 'accent-gold')}</div>
+                <div id="metric-card-outturn">${createMetricCard('Outturn This Month', '—', 'Total outturns achieved this month', 'accent-success')}</div>
             </div>
 
             <h2 style="font-size:16px;font-weight:600;color:var(--text-primary);margin:32px 0 16px;">Modules</h2>
@@ -570,6 +542,44 @@ async function loadDashboard() {
     `;
 
     hideLoading();
+
+    // Asynchronously update metric cards
+    api('live').then(data => {
+        if (data && data.coaches) {
+            const coaches = data.coaches;
+            const liveMetrics = data.metrics || {};
+            
+            const total = liveMetrics.total || coaches.length;
+            const ac_loco = liveMetrics.ac_loco_count !== undefined ? liveMetrics.ac_loco_count : coaches.filter(c => c.family === 'LOCO' || c.status === 'AC LOCO').length;
+            const fnd = liveMetrics.fnd_count !== undefined ? liveMetrics.fnd_count : coaches.filter(c => c.is_fnd).length;
+            const active = liveMetrics.active_count !== undefined ? liveMetrics.active_count : (total - ac_loco - fnd);
+            
+            const corrosion = coaches.filter(c => {
+                if (c.is_fnd || c.family === 'LOCO' || c.status === 'AC LOCO') return false;
+                const s = (c.AERIAL_STATUS || '').toUpperCase();
+                return s.includes('UNDER CORROSION');
+            }).length;
+
+            const elTotal = document.getElementById('metric-card-total');
+            const elActive = document.getElementById('metric-card-active');
+            const elAcLoco = document.getElementById('metric-card-ac-loco');
+            const elFnd = document.getElementById('metric-card-fnd');
+            const elCorr = document.getElementById('metric-card-corrosion');
+
+            if (elTotal) elTotal.innerHTML = createMetricCard('Total Inside Workshop', total, 'All coaches & locos currently in shop', 'accent-blue');
+            if (elActive) elActive.innerHTML = createMetricCard('Under Repair (Active)', active, 'Coaches actively undergoing repair', 'accent-info');
+            if (elAcLoco) elAcLoco.innerHTML = createMetricCard('AC Locomotives', ac_loco, 'AC locomotives under POH/repair', 'accent-danger');
+            if (elFnd) elFnd.innerHTML = createMetricCard('FND / Pending Despatch', fnd, 'Paper despatched, physical pending', 'accent-purple');
+            if (elCorr) elCorr.innerHTML = createMetricCard('Under Corrosion', corrosion, 'Coaches in corrosion shop', 'accent-gold');
+        }
+    }).catch(e => console.warn('Dashboard: live metrics load error', e));
+
+    api('outturn').then(oData => {
+        if (oData && oData.metrics) {
+            const elOut = document.getElementById('metric-card-outturn');
+            if (elOut) elOut.innerHTML = createMetricCard('Outturn This Month', oData.metrics.total, 'Total outturns achieved this month', 'accent-success');
+        }
+    }).catch(e => console.warn('Dashboard: outturn metrics load error', e));
 }
 
 /* ============================================================
@@ -1223,10 +1233,6 @@ async function searchCoach() {
                 ['Google Sheet PDC', coach.google_pdc || '—'],
                 ['Google Remarks',   coach.google_remarks || '—'],
                 ['ERP Remarks',      coach.remarks || '—'],
-                ['VG Status (Manual)', coach.vg_status || '—'],
-                ['VG Date (Manual)', coach.vg_date ? formatDate(coach.vg_date) : '—'],
-                ['Physical Despatch (Manual)', coach.physical_status || '—'],
-                ['Physical Date (Manual)', coach.physical_date ? formatDate(coach.physical_date) : '—'],
             ];
 
             // Get display date and year of this POH visit
@@ -1325,37 +1331,7 @@ async function searchCoach() {
                         </div>
                     `).join('')}
 
-                    <!-- Manual Updates Form Section -->
-                    <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border);">
-                        <h4 style="font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text-primary);">✍️ Update Outturn Milestones (Supabase)</h4>
-                        <div class="filter-bar" style="background:transparent;padding:0;margin-bottom:12px;border:none;gap:12px;flex-wrap:wrap;box-shadow:none;">
-                            <div class="filter-group" style="min-width:200px;flex:1;">
-                                <label class="filter-label" style="font-size:11px;">VG Status</label>
-                                <select class="filter-input" id="manual-vg-status-${coach.coachno}">
-                                    <option value="Pending" ${(!coach.vg_status || coach.vg_status === 'Pending' || coach.vg_status === '—' || coach.vg_status === '-') ? 'selected' : ''}>Pending</option>
-                                    <option value="Completed" ${coach.vg_status === 'Completed' ? 'selected' : ''}>Completed</option>
-                                </select>
-                            </div>
-                            <div class="filter-group" style="min-width:200px;flex:1;">
-                                <label class="filter-label" style="font-size:11px;">VG Date</label>
-                                <input type="date" class="filter-input" id="manual-vg-date-${coach.coachno}" value="${coach.vg_date || ''}">
-                            </div>
-                        </div>
-                        <div class="filter-bar" style="background:transparent;padding:0;margin-bottom:16px;border:none;gap:12px;flex-wrap:wrap;box-shadow:none;">
-                            <div class="filter-group" style="min-width:200px;flex:1;">
-                                <label class="filter-label" style="font-size:11px;">Physical Despatch</label>
-                                <select class="filter-input" id="manual-phys-status-${coach.coachno}">
-                                    <option value="Pending" ${(!coach.physical_status || coach.physical_status === 'Pending' || coach.physical_status === '—' || coach.physical_status === '-') ? 'selected' : ''}>Pending</option>
-                                    <option value="Despatched" ${coach.physical_status === 'Despatched' ? 'selected' : ''}>Despatched</option>
-                                </select>
-                            </div>
-                            <div class="filter-group" style="min-width:200px;flex:1;">
-                                <label class="filter-label" style="font-size:11px;">Despatch Date</label>
-                                <input type="date" class="filter-input" id="manual-phys-date-${coach.coachno}" value="${coach.physical_date || ''}">
-                            </div>
-                        </div>
-                        <button class="btn btn-primary btn-sm" onclick="saveManualUpdates('${coach.coachno}')">Save Milestone Updates</button>
-                    </div>
+
 
                     ${pohHistoryHtml}
 
@@ -1378,46 +1354,6 @@ async function searchCoach() {
     }
 }
 
-async function saveManualUpdates(coachno) {
-    const vgStatus = document.getElementById(`manual-vg-status-${coachno}`).value;
-    const vgDate = document.getElementById(`manual-vg-date-${coachno}`).value;
-    const physStatus = document.getElementById(`manual-phys-status-${coachno}`).value;
-    const physDate = document.getElementById(`manual-phys-date-${coachno}`).value;
-
-    showLoading();
-    try {
-        const response = await fetch('/api/coach/manual_update', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                coachno: coachno,
-                vg_status: vgStatus,
-                vg_date: vgDate,
-                physical_status: physStatus,
-                physical_date: physDate
-            })
-        });
-        const result = await response.json();
-        if (result.success) {
-            alert('Milestones updated successfully in Supabase!');
-            // Re-run search to refresh display
-            searchCoach();
-            // Force refresh the active page behind the modal to update lists
-            if (typeof currentPage !== 'undefined' && currentPage && currentPage !== 'search') {
-                navigate(currentPage, true);
-            }
-        } else {
-            alert('Error updating milestones: ' + result.error);
-        }
-    } catch (err) {
-        alert('Failed to save manual updates: ' + err.message);
-    } finally {
-        hideLoading();
-    }
-}
-window.saveManualUpdates = saveManualUpdates;
 
 /* ---------- Historical POH & Corrosion Hours Helpers ---------- */
 
@@ -5443,7 +5379,7 @@ window.renderProgressGrid = renderProgressGrid;
    ============================================================ */
 
 let _auditData = null;
-let _activeAuditTab = 'fnd';
+let _activeAuditTab = 'rankings';
 
 const AUDIT_SUBTYPES = {
     ICF: ["CN", "GS", "CZ", "SLR", "CZJ", "GSLRD", "GSRD", "CZRJ", "WCB", "VPH"],
@@ -5546,14 +5482,12 @@ async function loadAuditModule() {
                 <div style="flex:1;min-width:0;">
                     <!-- Navigation Tabs -->
                     <div class="tabs-nav-container" style="margin-bottom: 20px;">
-                        <button class="tab-nav-btn ${_activeAuditTab === 'fnd' ? 'active' : ''}" id="audit-tab-btn-fnd" onclick="switchAuditTab('fnd')">📋 FND (Pending VG & Physical Despatch)</button>
                         <button class="tab-nav-btn ${_activeAuditTab === 'rankings' ? 'active' : ''}" id="audit-tab-btn-rankings" onclick="switchAuditTab('rankings')">🏢 Workshop & Division Rankings</button>
                         <button class="tab-nav-btn ${_activeAuditTab === 'missing' ? 'active' : ''}" id="audit-tab-btn-missing" onclick="switchAuditTab('missing')">⚠️ Coaches Without Hours</button>
                         <button class="tab-nav-btn ${_activeAuditTab === 'condemned' ? 'active' : ''}" id="audit-tab-btn-condemned" onclick="switchAuditTab('condemned')">🗑️ Condemned & Returned</button>
                     </div>
 
                     <!-- Tab Contents -->
-                    <div id="audit-tab-fnd" class="audit-tab-content" style="${_activeAuditTab === 'fnd' ? '' : 'display:none;'}"></div>
                     <div id="audit-tab-rankings" class="audit-tab-content" style="${_activeAuditTab === 'rankings' ? '' : 'display:none;'}"></div>
                     <div id="audit-tab-missing" class="audit-tab-content" style="${_activeAuditTab === 'missing' ? '' : 'display:none;'}"></div>
                     <div id="audit-tab-condemned" class="audit-tab-content" style="${_activeAuditTab === 'condemned' ? '' : 'display:none;'}"></div>
@@ -5599,7 +5533,6 @@ function switchAuditTab(tab) {
     if (activeBtn) activeBtn.classList.add('active');
     
     // Toggle active views
-    document.getElementById('audit-tab-fnd').style.display = tab === 'fnd' ? 'block' : 'none';
     document.getElementById('audit-tab-rankings').style.display = tab === 'rankings' ? 'block' : 'none';
     document.getElementById('audit-tab-missing').style.display = tab === 'missing' ? 'block' : 'none';
     document.getElementById('audit-tab-condemned').style.display = tab === 'condemned' ? 'block' : 'none';
@@ -5607,153 +5540,10 @@ function switchAuditTab(tab) {
     renderActiveAuditTab();
 }
 window.switchAuditTab = switchAuditTab;
-
-function toggleAllFndCheckboxes(checked) {
-    document.querySelectorAll('.fnd-checkbox:not(:disabled)').forEach(cb => {
-        cb.checked = checked;
-    });
-}
-window.toggleAllFndCheckboxes = toggleAllFndCheckboxes;
-
-async function submitBatchDespatch() {
-    const checkedBoxes = document.querySelectorAll('.fnd-checkbox:checked');
-    if (checkedBoxes.length === 0) {
-        alert('Please select at least one coach.');
-        return;
-    }
-    
-    const coachnos = Array.from(checkedBoxes).map(cb => cb.value);
-    const dateInput = document.getElementById('batch-desp-date').value.trim();
-    
-    // Verify date format if entered
-    if (dateInput) {
-        const datePattern = /^\d{2}\/\d{2}\/\d{4}$/;
-        if (!datePattern.test(dateInput)) {
-            alert('Please enter date in DD/MM/YYYY format.');
-            return;
-        }
-    }
-    
-    if (!confirm(`Are you sure you want to mark ${coachnos.length} coach(es) as VG Cleared & Physically Despatched?`)) {
-        return;
-    }
-    
-    showLoading();
-    try {
-        const response = await fetch('/api/audit/batch-despatch', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ coachnos: coachnos, date: dateInput })
-        });
-        const res = await response.json();
-        if (res.error) {
-            alert('Batch update failed: ' + res.error);
-        } else {
-            alert(`Successfully updated ${res.updated_count} coach(es) in Supabase!`);
-            // Refresh data
-            await fetchAuditData();
-        }
-    } catch (e) {
-        console.error(e);
-        alert('Error submitting batch update.');
-    } finally {
-        hideLoading();
-    }
-}
-window.submitBatchDespatch = submitBatchDespatch;
-
 function renderActiveAuditTab() {
     if (!_auditData) return;
     
-    if (_activeAuditTab === 'fnd') {
-        const container = document.getElementById('audit-tab-fnd');
-        const list = _auditData.fnd || [];
-        
-        if (list.length === 0) {
-            container.innerHTML = `
-                <div class="card card-no-hover" style="text-align: center; padding: 40px;">
-                    <div style="font-size: 40px; margin-bottom: 12px;">🎉</div>
-                    <h3 style="color: var(--text-primary);">All Cleared!</h3>
-                    <p style="color: var(--text-secondary);">No coaches are currently pending VG clearance or physical despatch.</p>
-                </div>
-            `;
-            return;
-        }
-        
-        container.innerHTML = `
-            <div class="card card-no-hover" style="margin-bottom: 20px;">
-                <div class="card-title">⚡ Batch VG Clearance & Physical Despatch</div>
-                <p style="color: var(--text-secondary); margin-bottom: 15px; font-size: 13px;">
-                    Select coaches below to mark them as <strong>VG Cleared</strong> and <strong>Physically Despatched</strong>. This will update Supabase and remove them from the active workshop view.
-                </p>
-                <div style="display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap;">
-                    <div class="filter-group" style="margin-bottom: 0;">
-                        <label class="filter-label">Despatch Date (DD/MM/YYYY)</label>
-                        <input type="text" id="batch-desp-date" class="search-input" placeholder="e.g. 13/06/2026 (blank for today)" style="width: 260px;">
-                    </div>
-                    <button class="btn btn-primary" onclick="submitBatchDespatch()">Mark Selected as Completed</button>
-                </div>
-            </div>
-
-            <div class="card card-no-hover">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-                    <div class="card-title" style="margin-bottom: 0;">📋 Pending Coaches (${list.length})</div>
-                    <div>
-                        <button class="btn btn-secondary btn-sm" style="margin-right: 5px;" onclick="toggleAllFndCheckboxes(true)">Select All</button>
-                        <button class="btn btn-secondary btn-sm" onclick="toggleAllFndCheckboxes(false)">Deselect All</button>
-                    </div>
-                </div>
-                
-                <div style="overflow-x: auto;">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 50px; text-align: center;">Select</th>
-                                <th>Coach No</th>
-                                <th>Description</th>
-                                <th>Family</th>
-                                <th>Location</th>
-                                <th>Recd Date</th>
-                                <th>Paper Outturn</th>
-                                <th>VG Status</th>
-                                <th>Physical Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${list.map(c => {
-                                const vgBadge = c.vg_status === 'Completed' 
-                                    ? '<span class="badge badge-success">Completed</span>' 
-                                    : '<span class="badge badge-danger">Pending</span>';
-                                const physBadge = c.physical_status === 'Despatched'
-                                    ? '<span class="badge badge-success">Despatched</span>'
-                                    : '<span class="badge badge-danger">Pending</span>';
-                                    
-                                const checkboxHtml = `<input type="checkbox" class="fnd-checkbox" value="${escapeHtml(c.coachno)}">`;
-                                const coachNoLabel = `<a href="javascript:void(0)" onclick="window.navigateToSearch('${escapeHtml(c.coachno)}')" class="table-link">${escapeHtml(c.coachno)}</a>`;
-                                    
-                                return `
-                                    <tr>
-                                        <td style="text-align: center; vertical-align: middle;">
-                                            ${checkboxHtml}
-                                        </td>
-                                        <td style="font-weight: 600; color: var(--accent);">${coachNoLabel}</td>
-                                        <td>${escapeHtml(c.coach_desc)}</td>
-                                        <td><span class="badge badge-info">${escapeHtml(c.family)}</span></td>
-                                        <td><span style="font-family: var(--font-mono); font-size: 12px;">${escapeHtml(c.pitnum || '—')}</span></td>
-                                        <td>${escapeHtml(c.recd_date || '—')}</td>
-                                        <td>${escapeHtml(c.desp_date || '—')}</td>
-                                        <td>${vgBadge}</td>
-                                        <td>${physBadge}</td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
-    } 
-    else if (_activeAuditTab === 'rankings') {
+    if (_activeAuditTab === 'rankings') {
         const container = document.getElementById('audit-tab-rankings');
         const wRankings = _auditData.workshop_rankings || [];
         const dRankings = _auditData.division_rankings || [];
@@ -6244,6 +6034,1141 @@ async function saveCustomPlanDate(inputEl, coachno) {
     }
 }
 window.saveCustomPlanDate = saveCustomPlanDate;
+
+
+/* ============================================================
+   REPORT CENTER
+   ============================================================ */
+
+async function loadReportCenter() {
+    const container = document.getElementById('main-content');
+    showLoading();
+
+    container.innerHTML = `
+        <div class="anim-slide">
+            <div class="page-header">
+                <h1 class="page-title">📋 Report Center</h1>
+                <p class="page-subtitle">Generate, analyze, and download formatted Excel reports for workshop performance and inventory positions.</p>
+            </div>
+
+            <div class="grid-3" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <!-- Card 1: Monthly Performance -->
+                <div class="card card-no-hover" style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">📊 Target & Achievement</h3>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+                            Monthly summary of HQ & Internal targets compared against actual outturns (despatches). Features clubbed general class (LWS/LS5) and unified man-hours.
+                        </p>
+                        
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 12px; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 4px;">Select Month</label>
+                            <select id="report-perf-month" class="filter-input" style="width: 100%; padding: 8px; border-radius: 4px; background: var(--bg-body); border: 1px solid var(--border); color: var(--text-primary);">
+                                <option value="January">January</option>
+                                <option value="February">February</option>
+                                <option value="March">March</option>
+                                <option value="April">April</option>
+                                <option value="May">May</option>
+                                <option value="June" selected>June</option>
+                                <option value="July">July</option>
+                                <option value="August">August</option>
+                                <option value="September">September</option>
+                                <option value="October">October</option>
+                                <option value="November">November</option>
+                                <option value="December">December</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-size: 12px; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 4px;">Select Year</label>
+                            <select id="report-perf-year" class="filter-input" style="width: 100%; padding: 8px; border-radius: 4px; background: var(--bg-body); border: 1px solid var(--border); color: var(--text-primary);">
+                                <option value="2025">2025</option>
+                                <option value="2026" selected>2026</option>
+                                <option value="2027">2027</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="report-perf-bypass" style="cursor: pointer;">
+                            <label for="report-perf-bypass" style="font-size: 12px; cursor: pointer; color: var(--text-secondary);">Bypass cache (Query live ERP)</label>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-secondary" onclick="viewPerformanceReport()" style="flex: 1;">Preview</button>
+                        <button class="btn btn-primary" onclick="downloadPerformanceReport()" style="flex: 1;">Download Excel</button>
+                    </div>
+                </div>
+
+                <!-- Card 2: Yearly Outturn -->
+                <div class="card card-no-hover" style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">📅 Code-Wise Yearly Outturn</h3>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+                            Periodic yearly outturn report categorized by coach TRANSCODE codes (WGSCN, GS, LWSCN, NMG, DEMU, etc.) across the full fiscal year months.
+                        </p>
+                        
+                        <div style="margin-bottom: 24px;">
+                            <label style="font-size: 12px; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 4px;">Select Fiscal Year</label>
+                            <select id="report-yearly-fy" class="filter-input" style="width: 100%; padding: 8px; border-radius: 4px; background: var(--bg-body); border: 1px solid var(--border); color: var(--text-primary);">
+                                <option value="2025-26">2025-26</option>
+                                <option value="2026-27" selected>2026-27</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: auto;">
+                        <button class="btn btn-secondary" onclick="viewYearlyReport()" style="flex: 1;">Preview</button>
+                        <button class="btn btn-primary" onclick="downloadYearlyReport()" style="flex: 1;">Download Excel</button>
+                    </div>
+                </div>
+
+                <!-- Card 3: Coaches Inside Shop -->
+                <div class="card card-no-hover" style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">🏭 Coaches Inside Shop</h3>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+                            Live summary of all coaches currently under POH/repair in the shop. Categorized by ICF, LHB, and EMU lists with mapped railway zones, divisions, and PDCs.
+                        </p>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: auto; padding-top: 16px;">
+                        <button class="btn btn-secondary" onclick="viewInsideShopReport()" style="flex: 1;">Preview</button>
+                        <button class="btn btn-primary" onclick="downloadInsideShopReport()" style="flex: 1;">Download Excel</button>
+                    </div>
+                </div>
+
+                <!-- Card 4: FND & Outturn Performance -->
+                <div class="card card-no-hover" style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">📈 FND & Outturn Performance</h3>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+                            Detailed analysis of physical workshop despatches compared against target-meeting paper outturns (FND) recorded on the last date of the month.
+                        </p>
+                        
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 12px; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 4px;">Select Month</label>
+                            <select id="report-fnd-month" class="filter-input" style="width: 100%; padding: 8px; border-radius: 4px; background: var(--bg-body); border: 1px solid var(--border); color: var(--text-primary);">
+                                <option value="January">January</option>
+                                <option value="February">February</option>
+                                <option value="March">March</option>
+                                <option value="April">April</option>
+                                <option value="May">May</option>
+                                <option value="June" selected>June</option>
+                                <option value="July">July</option>
+                                <option value="August">August</option>
+                                <option value="September">September</option>
+                                <option value="October">October</option>
+                                <option value="November">November</option>
+                                <option value="December">December</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-size: 12px; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 4px;">Select Year</label>
+                            <select id="report-fnd-year" class="filter-input" style="width: 100%; padding: 8px; border-radius: 4px; background: var(--bg-body); border: 1px solid var(--border); color: var(--text-primary);">
+                                <option value="2025">2025</option>
+                                <option value="2026" selected>2026</option>
+                                <option value="2027">2027</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-secondary" onclick="viewFndReport()" style="flex: 1;">Preview</button>
+                        <button class="btn btn-primary" onclick="downloadFndReport()" style="flex: 1;">Download Excel</button>
+                    </div>
+                </div>
+
+                <!-- Card 5: Type-Wise Holding & POH -->
+                <div class="card card-no-hover" style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">🏠 Type-Wise Holding & POH</h3>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+                            Daily summary of coach holdings in the yard and under attention inside the workshop, compared with monthly targets and achievements.
+                        </p>
+                        
+                        <div style="margin-bottom: 12px;">
+                            <label style="font-size: 12px; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 4px;">Select Month</label>
+                            <select id="report-type-month" class="filter-input" style="width: 100%; padding: 8px; border-radius: 4px; background: var(--bg-body); border: 1px solid var(--border); color: var(--text-primary);">
+                                <option value="January">January</option>
+                                <option value="February">February</option>
+                                <option value="March">March</option>
+                                <option value="April">April</option>
+                                <option value="May">May</option>
+                                <option value="June" selected>June</option>
+                                <option value="July">July</option>
+                                <option value="August">August</option>
+                                <option value="September">September</option>
+                                <option value="October">October</option>
+                                <option value="November">November</option>
+                                <option value="December">December</option>
+                            </select>
+                        </div>
+                        
+                        <div style="margin-bottom: 16px;">
+                            <label style="font-size: 12px; font-weight: 500; color: var(--text-secondary); display: block; margin-bottom: 4px;">Select Year</label>
+                            <select id="report-type-year" class="filter-input" style="width: 100%; padding: 8px; border-radius: 4px; background: var(--bg-body); border: 1px solid var(--border); color: var(--text-primary);">
+                                <option value="2025">2025</option>
+                                <option value="2026" selected>2026</option>
+                                <option value="2027">2027</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-secondary" onclick="viewTypeWiseReport()" style="flex: 1;">Preview</button>
+                        <button class="btn btn-primary" onclick="downloadTypeWiseReport()" style="flex: 1;">Download Excel</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview Container -->
+            <div id="report-preview-container" style="margin-top: 24px;"></div>
+        </div>
+    `;
+
+    // Set dynamic default month/year based on current date
+    try {
+        const currentDate = new Date();
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        const currentMonthName = months[currentDate.getMonth()];
+        const currentYearVal = currentDate.getFullYear().toString();
+        
+        const mSelect = document.getElementById('report-type-month');
+        if (mSelect) mSelect.value = currentMonthName;
+        const ySelect = document.getElementById('report-type-year');
+        if (ySelect) ySelect.value = currentYearVal;
+        
+        const perfMSelect = document.getElementById('report-perf-month');
+        if (perfMSelect) perfMSelect.value = currentMonthName;
+        const perfYSelect = document.getElementById('report-perf-year');
+        if (perfYSelect) perfYSelect.value = currentYearVal;
+
+        const fndMSelect = document.getElementById('report-fnd-month');
+        if (fndMSelect) fndMSelect.value = currentMonthName;
+        const fndYSelect = document.getElementById('report-fnd-year');
+        if (fndYSelect) fndYSelect.value = currentYearVal;
+    } catch(e) {
+        console.error("Error setting dynamic report defaults:", e);
+    }
+
+    hideLoading();
+}
+
+window.viewPerformanceReport = async function() {
+    const month = document.getElementById('report-perf-month').value;
+    const year = document.getElementById('report-perf-year').value;
+    const bypass = document.getElementById('report-perf-bypass').checked;
+    const previewContainer = document.getElementById('report-preview-container');
+    
+    showLoading();
+    previewContainer.innerHTML = '';
+    
+    try {
+        const res = await fetch(`/api/reports/performance?month=${month}&year=${year}&bypass_cache=${bypass}&report_type=target_achievement`);
+        const data = await res.json();
+        
+        if (data.error) {
+            previewContainer.innerHTML = `<div class="card card-no-hover" style="padding: 16px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">Failed to load report: ${data.error}</div>`;
+            hideLoading();
+            return;
+        }
+        
+        let html = `
+            <div class="card card-no-hover" style="padding: 24px; animation: fadeIn 0.3s ease; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
+                <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                    Report Preview: Target & Achievement (${month} ${year})
+                </h2>
+                
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-top: 16px; margin-bottom: 8px;">Summary Stats</h3>
+                <div style="display: flex; gap: 20px; margin-bottom: 16px; flex-wrap: wrap;">
+                    <div style="background: var(--bg-body); padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">ICF Outturned</div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--text-primary);">${data.outturns.filter(c => c.family === 'ICF').length} coaches</div>
+                    </div>
+                    <div style="background: var(--bg-body); padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">LHB Outturned</div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--text-primary);">${data.outturns.filter(c => c.family === 'LHB').length} coaches</div>
+                    </div>
+                    <div style="background: var(--bg-body); padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">Other Outturned</div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--text-primary);">${data.outturns.filter(c => c.family !== 'ICF' && c.family !== 'LHB').length} coaches</div>
+                    </div>
+                </div>
+                
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Detail Outturn List</h3>
+                <table class="data-table" style="width:100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <th style="width: 50px; text-align: center; padding: 10px 8px;">S.No.</th>
+                            <th style="text-align: left; padding: 10px 8px;">Coach No</th>
+                            <th style="text-align: left; padding: 10px 8px;">Description</th>
+                            <th style="text-align: left; padding: 10px 8px;">Family</th>
+                            <th style="text-align: left; padding: 10px 8px;">Repair Type</th>
+                            <th style="text-align: left; padding: 10px 8px;">Division</th>
+                            <th style="text-align: left; padding: 10px 8px;">Outturn Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        if (data.outturns.length === 0) {
+            html += `<tr><td colspan="7" style="text-align:center; padding: 16px; color: var(--text-secondary);">No outturns found for this month</td></tr>`;
+        } else {
+            data.outturns.forEach((c, idx) => {
+                html += `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="text-align:center; padding: 10px 8px;">${idx + 1}</td>
+                        <td style="padding: 10px 8px;"><strong>${escapeHtml(c.coachno)}</strong></td>
+                        <td style="padding: 10px 8px;">${escapeHtml(c.coach_desc)}</td>
+                        <td style="padding: 10px 8px;"><span class="badge ${c.family === 'ICF' ? 'badge-primary' : (c.family === 'LHB' ? 'badge-success' : 'badge-warning')}">${escapeHtml(c.family)}</span></td>
+                        <td style="padding: 10px 8px;">${escapeHtml(c.repair_type)}</td>
+                        <td style="padding: 10px 8px;">${escapeHtml(c.division)}</td>
+                        <td style="padding: 10px 8px;">${escapeHtml(c.desp_date)}</td>
+                    </tr>
+                `;
+            });
+        }
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        previewContainer.innerHTML = html;
+    } catch (e) {
+        previewContainer.innerHTML = `<div class="card card-no-hover" style="padding: 16px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">Failed to connect to API: ${e}</div>`;
+    }
+    hideLoading();
+};
+
+window.downloadPerformanceReport = function() {
+    const month = document.getElementById('report-perf-month').value;
+    const year = document.getElementById('report-perf-year').value;
+    const bypass = document.getElementById('report-perf-bypass').checked;
+    window.location.href = `/api/reports/performance/download?month=${month}&year=${year}&bypass_cache=${bypass}&report_type=target_achievement`;
+};
+
+window.viewYearlyReport = async function() {
+    const fy = document.getElementById('report-yearly-fy').value;
+    const previewContainer = document.getElementById('report-preview-container');
+    
+    showLoading();
+    previewContainer.innerHTML = '';
+    
+    try {
+        const res = await fetch(`/api/reports/yearly_outturn?fy=${fy}`);
+        const data = await res.json();
+        
+        if (data.error) {
+            previewContainer.innerHTML = `<div class="card card-no-hover" style="padding: 16px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">Failed to load report: ${data.error}</div>`;
+            hideLoading();
+            return;
+        }
+        
+        let html = `
+            <div class="card card-no-hover" style="padding: 24px; animation: fadeIn 0.3s ease; overflow-x: auto; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
+                <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                    Report Preview: Code-Wise Yearly Outturn (${fy})
+                </h2>
+                
+                <table class="data-table" style="width:100%; font-size: 12px; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <th style="text-align: left; padding: 8px;">TRANSCODE</th>
+        `;
+        
+        data.months.forEach(m => {
+            html += `<th style="text-align: center; padding: 8px;">${m}</th>`;
+        });
+        html += `
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        for (const [sectName, codes] of Object.entries(data.grid)) {
+            html += `<tr style="background: var(--bg-body); font-weight: 600; border-bottom: 1px solid var(--border);"><td colspan="13" style="padding: 8px; color: var(--text-primary);">${escapeHtml(sectName)}</td></tr>`;
+            for (const [code, counts] of Object.entries(codes)) {
+                html += `<tr style="border-bottom: 1px solid var(--border);"><td style="padding: 8px;"><strong>${escapeHtml(code)}</strong></td>`;
+                counts.forEach(cnt => {
+                    html += `<td style="text-align: center; padding: 8px;">${cnt > 0 ? cnt : '—'}</td>`;
+                });
+                html += `</tr>`;
+            }
+        }
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        previewContainer.innerHTML = html;
+    } catch (e) {
+        previewContainer.innerHTML = `<div class="card card-no-hover" style="padding: 16px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">Failed to connect to API: ${e}</div>`;
+    }
+    hideLoading();
+};
+
+window.downloadYearlyReport = function() {
+    const fy = document.getElementById('report-yearly-fy').value;
+    window.location.href = `/api/reports/yearly_outturn/download?fy=${fy}`;
+};
+
+window.viewInsideShopReport = async function() {
+    const previewContainer = document.getElementById('report-preview-container');
+    
+    showLoading();
+    previewContainer.innerHTML = '';
+    
+    try {
+        const res = await fetch(`/api/reports/inside_shop`);
+        const data = await res.json();
+        
+        if (data.error) {
+            previewContainer.innerHTML = `<div class="card card-no-hover" style="padding: 16px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">Failed to load report: ${data.error}</div>`;
+            hideLoading();
+            return;
+        }
+        
+        let html = `
+            <div class="card card-no-hover" style="padding: 24px; animation: fadeIn 0.3s ease; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
+                <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                    Report Preview: Coaches Inside Shop (Active)
+                </h2>
+                
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-top: 16px; margin-bottom: 8px;">Shop Summary Counts</h3>
+                <div style="display: flex; gap: 20px; margin-bottom: 16px; flex-wrap: wrap;">
+                    <div style="background: var(--bg-body); padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">ICF Active</div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--text-primary);">${data.icf.length} coaches</div>
+                    </div>
+                    <div style="background: var(--bg-body); padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">LHB Active</div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--text-primary);">${data.lhb.length} coaches</div>
+                    </div>
+                    <div style="background: var(--bg-body); padding: 12px 20px; border-radius: 8px; border: 1px solid var(--border);">
+                        <div style="font-size: 11px; color: var(--text-secondary); text-transform: uppercase;">EMU/MEMU/DEMU Active</div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--text-primary);">${data.emu.length} coaches</div>
+                    </div>
+                </div>
+                
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; margin-top: 16px;">ICF Coaches List</h3>
+                <table class="data-table" style="width:100%; margin-bottom: 24px; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <th style="width: 50px; text-align: center; padding: 8px;">S.No.</th>
+                            <th style="text-align: center; padding: 8px;">Rly</th>
+                            <th style="text-align: center; padding: 8px;">Type</th>
+                            <th style="text-align: left; padding: 8px;">Coach No</th>
+                            <th style="text-align: center; padding: 8px;">Division</th>
+                            <th style="text-align: center; padding: 8px;">PDC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        if (data.icf.length === 0) {
+            html += `<tr><td colspan="6" style="text-align:center; padding: 12px; color: var(--text-secondary);">No ICF coaches in shop</td></tr>`;
+        } else {
+            data.icf.forEach((c, idx) => {
+                html += `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="text-align:center; padding: 8px;">${idx + 1}</td>
+                        <td style="text-align:center; padding: 8px;">${escapeHtml(c.rly)}</td>
+                        <td style="text-align:center; padding: 8px;">${escapeHtml(c.type)}</td>
+                        <td style="padding: 8px;"><strong>${escapeHtml(c.coachno)}</strong></td>
+                        <td style="text-align:center; padding: 8px;">${escapeHtml(c.divn)}</td>
+                        <td style="text-align:center; padding: 8px;">${escapeHtml(c.pdc || '—')}</td>
+                    </tr>
+                `;
+            });
+        }
+        
+        html += `
+                    </tbody>
+                </table>
+
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">LHB Coaches List</h3>
+                <table class="data-table" style="width:100%; margin-bottom: 24px; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <th style="width: 50px; text-align: center; padding: 8px;">S.No.</th>
+                            <th style="text-align: center; padding: 8px;">Rly</th>
+                            <th style="text-align: center; padding: 8px;">Type</th>
+                            <th style="text-align: left; padding: 8px;">Coach No</th>
+                            <th style="text-align: center; padding: 8px;">Division</th>
+                            <th style="text-align: center; padding: 8px;">PDC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        if (data.lhb.length === 0) {
+            html += `<tr><td colspan="6" style="text-align:center; padding: 12px; color: var(--text-secondary);">No LHB coaches in shop</td></tr>`;
+        } else {
+            data.lhb.forEach((c, idx) => {
+                html += `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="text-align:center; padding: 8px;">${idx + 1}</td>
+                        <td style="text-align:center; padding: 8px;">${escapeHtml(c.rly)}</td>
+                        <td style="text-align:center; padding: 8px;">${escapeHtml(c.type)}</td>
+                        <td style="padding: 8px;"><strong>${escapeHtml(c.coachno)}</strong></td>
+                        <td style="text-align:center; padding: 8px;">${escapeHtml(c.divn)}</td>
+                        <td style="text-align:center; padding: 8px;">${escapeHtml(c.pdc || '—')}</td>
+                    </tr>
+                `;
+            });
+        }
+        
+        html += `
+                    </tbody>
+                </table>
+
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">EMU/MEMU/DEMU Coaches List</h3>
+                <table class="data-table" style="width:100%; margin-bottom: 24px; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <th style="width: 50px; text-align: center; padding: 8px;">S.No.</th>
+                            <th style="text-align: center; padding: 8px;">Rly</th>
+                            <th style="text-align: center; padding: 8px;">Type</th>
+                            <th style="text-align: left; padding: 8px;">Coach No</th>
+                            <th style="text-align: center; padding: 8px;">Division</th>
+                            <th style="text-align: center; padding: 8px;">PDC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        if (data.emu.length === 0) {
+            html += `<tr><td colspan="6" style="text-align:center; padding: 12px; color: var(--text-secondary);">No EMU/MEMU/DEMU coaches in shop</td></tr>`;
+        } else {
+            data.emu.forEach((c, idx) => {
+                html += `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="text-align:center; padding: 8px;">${idx + 1}</td>
+                        <td style="text-align:center; padding: 8px;">${escapeHtml(c.rly)}</td>
+                        <td style="text-align:center; padding: 8px;">${escapeHtml(c.type)}</td>
+                        <td style="padding: 8px;"><strong>${escapeHtml(c.coachno)}</strong></td>
+                        <td style="text-align:center; padding: 8px;">${escapeHtml(c.divn)}</td>
+                        <td style="text-align:center; padding: 8px;">${escapeHtml(c.pdc || '—')}</td>
+                    </tr>
+                `;
+            });
+        }
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        previewContainer.innerHTML = html;
+    } catch (e) {
+        previewContainer.innerHTML = `<div class="card card-no-hover" style="padding: 16px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">Failed to connect to API: ${e}</div>`;
+    }
+    hideLoading();
+};
+
+window.downloadInsideShopReport = function() {
+    window.location.href = `/api/reports/inside_shop/download`;
+};
+
+window.viewFndReport = async function() {
+    const month = document.getElementById('report-fnd-month').value;
+    const year = document.getElementById('report-fnd-year').value;
+    const previewContainer = document.getElementById('report-preview-container');
+    
+    showLoading();
+    previewContainer.innerHTML = '';
+    
+    try {
+        const res = await fetch(`/api/reports/performance?month=${month}&year=${year}&bypass_cache=false&report_type=fnd_performance`);
+        const data = await res.json();
+        
+        if (data.error) {
+            previewContainer.innerHTML = `<div class="card card-no-hover" style="padding: 16px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">Failed to load report: ${data.error}</div>`;
+            hideLoading();
+            return;
+        }
+        
+        const monthNum = {
+            'January': 1, 'February': 2, 'March': 3, 'April': 4, 'May': 5, 'June': 6,
+            'July': 7, 'August': 8, 'September': 9, 'October': 10, 'November': 11, 'December': 12
+        }[month];
+        const lastDay = new Date(parseInt(year, 10), monthNum, 0).getDate();
+        
+        // Classify
+        const actuals = [];
+        const fnds = [];
+        
+        data.gsheet_outturns.forEach(c => {
+            if (!c.desp_date) {
+                fnds.push(c);
+                return;
+            }
+            const dateParts = c.desp_date.split('/');
+            if (dateParts.length < 3) {
+                fnds.push(c);
+                return;
+            }
+            const d = parseInt(dateParts[0], 10);
+            const m = parseInt(dateParts[1], 10);
+            const y = parseInt(dateParts[2], 10);
+            
+            if (y === parseInt(year, 10) && m === monthNum && d < lastDay) {
+                actuals.push(c);
+            } else {
+                fnds.push(c);
+            }
+        });
+        
+        const countByFamily = (list) => {
+            const c = {icf: 0, lhb: 0, other: 0};
+            list.forEach(x => {
+                if (x.family === 'ICF') c.icf++;
+                else if (x.family === 'LHB') c.lhb++;
+                else c.other++;
+            });
+            return c;
+        };
+        
+        const actC = countByFamily(actuals);
+        const fndC = countByFamily(fnds);
+        
+        let html = `
+            <div class="card card-no-hover" style="padding: 24px; animation: fadeIn 0.3s ease; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
+                <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                    Report Preview: FND & Outturn Performance (${month} ${year})
+                </h2>
+                
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Summary Stats</h3>
+                <table class="data-table" style="width:100%; border-collapse: collapse; margin-bottom: 24px;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--border); background: var(--bg-body);">
+                            <th style="text-align: left; padding: 10px 8px;">Outturn Category</th>
+                            <th style="text-align: center; padding: 10px 8px;">ICF</th>
+                            <th style="text-align: center; padding: 10px 8px;">LHB</th>
+                            <th style="text-align: center; padding: 10px 8px;">Other Stock</th>
+                            <th style="text-align: center; padding: 10px 8px;">Grand Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px 8px;"><strong>Actual Despatches (Physical)</strong></td>
+                            <td style="text-align: center; padding: 10px 8px;">${actC.icf}</td>
+                            <td style="text-align: center; padding: 10px 8px;">${actC.lhb}</td>
+                            <td style="text-align: center; padding: 10px 8px;">${actC.other}</td>
+                            <td style="text-align: center; padding: 10px 8px;"><strong>${actuals.length}</strong></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <td style="padding: 10px 8px;"><strong>FND (Paper outturns on last date)</strong></td>
+                            <td style="text-align: center; padding: 10px 8px;">${fndC.icf}</td>
+                            <td style="text-align: center; padding: 10px 8px;">${fndC.lhb}</td>
+                            <td style="text-align: center; padding: 10px 8px;">${fndC.other}</td>
+                            <td style="text-align: center; padding: 10px 8px;"><strong>${fnds.length}</strong></td>
+                        </tr>
+                        <tr style="border-bottom: 1px solid var(--border); background: var(--bg-body); font-weight: 700;">
+                            <td style="padding: 10px 8px;">Total Outturn</td>
+                            <td style="text-align: center; padding: 10px 8px;">${actC.icf + fndC.icf}</td>
+                            <td style="text-align: center; padding: 10px 8px;">${actC.lhb + fndC.lhb}</td>
+                            <td style="text-align: center; padding: 10px 8px;">${actC.other + fndC.other}</td>
+                            <td style="text-align: center; padding: 10px 8px;">${data.gsheet_outturns.length}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h3 style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Detailed Classification</h3>
+                <table class="data-table" style="width:100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--border);">
+                            <th style="width: 50px; text-align: center; padding: 10px 8px;">S.No.</th>
+                            <th style="text-align: left; padding: 10px 8px;">Coach No</th>
+                            <th style="text-align: left; padding: 10px 8px;">Family</th>
+                            <th style="text-align: left; padding: 10px 8px;">Description</th>
+                            <th style="text-align: left; padding: 10px 8px;">Actual Despatch Date</th>
+                            <th style="text-align: left; padding: 10px 8px;">Classification</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        if (data.gsheet_outturns.length === 0) {
+            html += `<tr><td colspan="6" style="text-align:center; padding: 16px; color: var(--text-secondary);">No outturns found for this month</td></tr>`;
+        } else {
+            data.gsheet_outturns.sort((a, b) => {
+                let dtA = null;
+                if (a.desp_date) {
+                    const dp = a.desp_date.split('/');
+                    if (dp.length >= 3) dtA = new Date(parseInt(dp[2], 10), parseInt(dp[1], 10) - 1, parseInt(dp[0], 10));
+                }
+                let dtB = null;
+                if (b.desp_date) {
+                    const dp = b.desp_date.split('/');
+                    if (dp.length >= 3) dtB = new Date(parseInt(dp[2], 10), parseInt(dp[1], 10) - 1, parseInt(dp[0], 10));
+                }
+                
+                const isFndA = !dtA || dtA.getFullYear() !== parseInt(year, 10) || (dtA.getMonth() + 1) !== monthNum || dtA.getDate() >= lastDay;
+                const isFndB = !dtB || dtB.getFullYear() !== parseInt(year, 10) || (dtB.getMonth() + 1) !== monthNum || dtB.getDate() >= lastDay;
+                
+                if (isFndA !== isFndB) {
+                    return isFndA ? 1 : -1;
+                }
+                
+                if (!isFndA) {
+                    return dtA - dtB;
+                } else {
+                    return a.coachno.localeCompare(b.coachno);
+                }
+            });
+            
+            data.gsheet_outturns.forEach((c, idx) => {
+                const dt = c.desp_date ? c.desp_date.split('/') : [];
+                let isFnd = true;
+                if (dt.length >= 3) {
+                    const d = parseInt(dt[0], 10);
+                    const m = parseInt(dt[1], 10);
+                    const y = parseInt(dt[2], 10);
+                    if (y === parseInt(year, 10) && m === monthNum && d < lastDay) {
+                        isFnd = false;
+                    }
+                }
+                
+                html += `
+                    <tr style="border-bottom: 1px solid var(--border);">
+                        <td style="text-align:center; padding: 10px 8px;">${idx + 1}</td>
+                        <td style="padding: 10px 8px;"><strong>${escapeHtml(c.coachno)}</strong></td>
+                        <td style="padding: 10px 8px;"><span class="badge ${c.family === 'ICF' ? 'badge-primary' : (c.family === 'LHB' ? 'badge-success' : 'badge-warning')}">${escapeHtml(c.family)}</span></td>
+                        <td style="padding: 10px 8px;">${escapeHtml(c.coach_desc)}</td>
+                        <td style="padding: 10px 8px;">${escapeHtml(c.desp_date)}</td>
+                        <td style="padding: 10px 8px;">
+                            <span class="badge" style="background: ${isFnd ? '#FDEDEC' : '#D6EAF8'}; color: ${isFnd ? '#78281F' : '#1B4F72'}; border: 1px solid ${isFnd ? '#FADBD8' : '#AED6F1'};">
+                                ${isFnd ? 'FND (Paper Outturn)' : 'Actual Despatch'}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        previewContainer.innerHTML = html;
+    } catch (err) {
+        console.error(err);
+        previewContainer.innerHTML = `<div class="card card-no-hover" style="padding: 16px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">Failed to generate preview: ${err.message}</div>`;
+    }
+    
+    hideLoading();
+};
+
+window.downloadFndReport = function() {
+    const month = document.getElementById('report-fnd-month').value;
+    const year = document.getElementById('report-fnd-year').value;
+    window.location.href = `/api/reports/performance/download?month=${month}&year=${year}&bypass_cache=false&report_type=fnd_performance`;
+};
+
+
+window.showTypeWiseCoachesModal = function(coachType, categoryName, coachesJsonStr) {
+    let coaches = [];
+    try {
+        coaches = JSON.parse(decodeURIComponent(coachesJsonStr));
+    } catch(e) {
+        console.error(e);
+    }
+    
+    let modal = document.getElementById('typewise-coaches-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'typewise-coaches-modal';
+        modal.className = 'modal-overlay';
+        modal.innerHTML = `
+            <div class="modal-card" style="max-width: 450px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+                <div class="modal-header" style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid var(--border); padding-bottom:10px;">
+                    <h3 style="font-size:16px; font-weight:600; color:var(--text-primary); margin:0;">📋 Coach Numbers: <span id="tw-modal-title"></span></h3>
+                    <button class="close-btn" onclick="closeTypeWiseModal()" style="background:none; border:none; color:var(--text-muted); font-size:20px; cursor:pointer;">&times;</button>
+                </div>
+                <div class="modal-body" style="margin-top:16px;">
+                    <div id="tw-modal-coaches-list" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 250px; overflow-y: auto; padding: 4px;"></div>
+                    <div id="tw-modal-empty-msg" style="text-align: center; color: var(--text-muted); margin-top: 12px; display: none;">No coaches found in this category.</div>
+                </div>
+                <div class="modal-footer" style="text-align:right; margin-top:20px; border-top: 1px solid var(--border); padding-top:10px;">
+                    <button class="btn btn-secondary btn-sm" onclick="closeTypeWiseModal()">Close</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+    
+    document.getElementById('tw-modal-title').textContent = `${coachType} (${categoryName})`;
+    const listContainer = document.getElementById('tw-modal-coaches-list');
+    const emptyMsg = document.getElementById('tw-modal-empty-msg');
+    listContainer.innerHTML = '';
+    
+    if (coaches && coaches.length > 0) {
+        emptyMsg.style.display = 'none';
+        coaches.forEach(cno => {
+            const item = document.createElement('a');
+            item.href = 'javascript:void(0)';
+            item.className = 'table-link';
+            item.style.textAlign = 'center';
+            item.style.padding = '8px';
+            item.style.border = '1px solid var(--border)';
+            item.style.borderRadius = '4px';
+            item.style.background = 'var(--bg-body)';
+            item.style.textDecoration = 'none';
+            item.style.color = 'var(--accent)';
+            item.style.fontWeight = '500';
+            item.textContent = cno;
+            item.onclick = function() {
+                closeTypeWiseModal();
+                if (window.navigateToSearch) {
+                    window.navigateToSearch(cno);
+                } else {
+                    const searchInput = document.getElementById('search-input');
+                    if (searchInput) {
+                        searchInput.value = cno;
+                        const searchBtn = document.getElementById('search-btn');
+                        if (searchBtn) searchBtn.click();
+                    }
+                }
+            };
+            listContainer.appendChild(item);
+        });
+    } else {
+        emptyMsg.style.display = 'block';
+    }
+    
+    modal.classList.add('open');
+};
+
+window.closeTypeWiseModal = function() {
+    const modal = document.getElementById('typewise-coaches-modal');
+    if (modal) modal.classList.remove('open');
+};
+
+window.viewTypeWiseReport = async function() {
+    const month = document.getElementById('report-type-month').value;
+    const year = document.getElementById('report-type-year').value;
+    const previewContainer = document.getElementById('report-preview-container');
+    
+    showLoading();
+    previewContainer.innerHTML = '';
+    
+    try {
+        const res = await fetch(`/api/reports/type_wise?month=${month}&year=${year}`);
+        const data = await res.json();
+        
+        if (data.error) {
+            previewContainer.innerHTML = `<div class="card card-no-hover" style="padding: 16px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">Failed to load report: ${data.error}</div>`;
+            hideLoading();
+            return;
+        }
+        
+        let rowsHtml = '';
+        let totYard = 0;
+        let totAtt = 0;
+        let totFnd = 0;
+        let totPhys = 0;
+        let totTarget = 0;
+        let totAchieved = 0;
+        let totCorr = 0;
+        let totPrevFnd = 0;
+        let totCorrCarry = 0;
+        
+        data.data.forEach(row => {
+            totYard += row.in_yard;
+            totAtt += row.under_attention;
+            totFnd += (row.fnd || 0);
+            totPhys += (row.physical_despatch || 0);
+            totCorr += (row.corrosion_completed || 0);
+            totCorrCarry += (row.corrosion_carry_forward || 0);
+            totPrevFnd += (row.prev_fnd || 0);
+            if (typeof row.target === 'number') totTarget += row.target;
+            else if (!isNaN(parseInt(row.target, 10))) totTarget += parseInt(row.target, 10);
+            if (typeof row.achieved === 'number') totAchieved += row.achieved;
+            else if (!isNaN(parseInt(row.achieved, 10))) totAchieved += parseInt(row.achieved, 10);
+            
+            const escapedYardCoaches = encodeURIComponent(JSON.stringify(row.in_yard_coaches || []));
+            const escapedShopCoaches = encodeURIComponent(JSON.stringify(row.under_attention_coaches || []));
+            const escapedFndCoaches = encodeURIComponent(JSON.stringify(row.fnd_coaches || []));
+            const escapedPhysCoaches = encodeURIComponent(JSON.stringify(row.physical_despatch_coaches || []));
+            const escapedCorrCoaches = encodeURIComponent(JSON.stringify(row.corrosion_completed_coaches || []));
+            const escapedCorrCarryCoaches = encodeURIComponent(JSON.stringify(row.corrosion_carry_forward_coaches || []));
+            const escapedPrevCoaches = encodeURIComponent(JSON.stringify(row.prev_fnd_coaches || []));
+            
+            rowsHtml += `
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="padding: 10px 8px; font-weight: 500; color: var(--text-primary); text-align: left;">${row.coach_type}</td>
+                    <td style="padding: 10px 8px; text-align: center; color: var(--text-primary);">${row.target}</td>
+                    <td style="padding: 10px 8px; text-align: center;">
+                        <a href="javascript:void(0)" onclick="showTypeWiseCoachesModal('${row.coach_type}', 'Physical Despatch', '${escapedPhysCoaches}')" style="text-decoration: underline; color: var(--accent); font-weight: 600;">
+                            ${row.physical_despatch || 0}
+                        </a>
+                    </td>
+                    <td style="padding: 10px 8px; text-align: center;">
+                        <a href="javascript:void(0)" onclick="showTypeWiseCoachesModal('${row.coach_type}', 'FND', '${escapedFndCoaches}')" style="text-decoration: underline; color: var(--accent); font-weight: 600;">
+                            ${row.fnd || 0}
+                        </a>
+                    </td>
+                    <td style="padding: 10px 8px; text-align: center;">
+                        <a href="javascript:void(0)" onclick="showTypeWiseCoachesModal('${row.coach_type}', 'Under Attention', '${escapedShopCoaches}')" style="text-decoration: underline; color: var(--accent); font-weight: 600;">
+                            ${row.under_attention}
+                        </a>
+                    </td>
+                    <td style="padding: 10px 8px; text-align: center;">
+                        <a href="javascript:void(0)" onclick="showTypeWiseCoachesModal('${row.coach_type}', 'In Yard', '${escapedYardCoaches}')" style="text-decoration: underline; color: var(--accent); font-weight: 600;">
+                            ${row.in_yard}
+                        </a>
+                    </td>
+                    <td style="padding: 10px 8px; text-align: center;">
+                        <a href="javascript:void(0)" onclick="showTypeWiseCoachesModal('${row.coach_type}', 'Last Month FND', '${escapedPrevCoaches}')" style="text-decoration: underline; color: var(--accent); font-weight: 600;">
+                            ${row.prev_fnd || 0}
+                        </a>
+                    </td>
+                    <td style="padding: 10px 8px; text-align: center;">
+                        <a href="javascript:void(0)" onclick="showTypeWiseCoachesModal('${row.coach_type}', 'Corrosion Carry Forward', '${escapedCorrCarryCoaches}')" style="text-decoration: underline; color: var(--accent); font-weight: 600;">
+                            ${row.corrosion_carry_forward || 0}
+                        </a>
+                    </td>
+                    <td style="padding: 10px 8px; text-align: center;">
+                        <a href="javascript:void(0)" onclick="showTypeWiseCoachesModal('${row.coach_type}', 'Corrosion Completed', '${escapedCorrCoaches}')" style="text-decoration: underline; color: var(--accent); font-weight: 600;">
+                            ${row.corrosion_completed || 0}
+                        </a>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        let html = `
+            <div class="card card-no-hover" style="padding: 24px; animation: fadeIn 0.3s ease; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
+                <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                    Report Preview: Type-Wise Holding & POH (${month} ${year})
+                </h2>
+                
+                <table class="data-table" style="width:100%; border-collapse: collapse; margin-top: 10px;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border); background: var(--bg-body);">
+                            <th style="text-align: left; padding: 10px 8px;">Coach Type</th>
+                            <th style="text-align: center; padding: 10px 8px;">Target</th>
+                            <th style="text-align: center; padding: 10px 8px;">Physical Despatch</th>
+                            <th style="text-align: center; padding: 10px 8px;">FND</th>
+                            <th style="text-align: center; padding: 10px 8px;">Holding in work area</th>
+                            <th style="text-align: center; padding: 10px 8px;">Holding at Yard</th>
+                            <th style="text-align: center; padding: 10px 8px;">Last Month FND</th>
+                            <th style="text-align: center; padding: 10px 8px;">Corrosion Carry Forward</th>
+                            <th style="text-align: center; padding: 10px 8px;">Corrosion Completed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml}
+                        <tr style="border-top: 2px solid var(--border); font-weight: 600; background: var(--bg-body);">
+                            <td style="padding: 12px 8px; text-align: left; color: var(--text-primary);">Total</td>
+                            <td style="padding: 12px 8px; text-align: center; color: var(--text-primary);">${totTarget}</td>
+                            <td style="padding: 12px 8px; text-align: center; color: var(--text-primary);">${totPhys}</td>
+                            <td style="padding: 12px 8px; text-align: center; color: var(--text-primary);">${totFnd}</td>
+                            <td style="padding: 12px 8px; text-align: center; color: var(--text-primary);">${totAtt}</td>
+                            <td style="padding: 12px 8px; text-align: center; color: var(--text-primary);">${totYard}</td>
+                            <td style="padding: 12px 8px; text-align: center; color: var(--text-primary);">${totPrevFnd}</td>
+                            <td style="padding: 12px 8px; text-align: center; color: var(--text-primary);">${totCorrCarry}</td>
+                            <td style="padding: 12px 8px; text-align: center; color: var(--text-primary);">${totCorr}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        previewContainer.innerHTML = html;
+    } catch (e) {
+        previewContainer.innerHTML = `<div class="card card-no-hover" style="padding: 16px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">Failed to load report: ${e}</div>`;
+    } finally {
+        hideLoading();
+    }
+};
+
+window.downloadTypeWiseReport = function() {
+    const month = document.getElementById('report-type-month').value;
+    const year = document.getElementById('report-type-year').value;
+    window.location.href = `/api/reports/type_wise/download?month=${month}&year=${year}`;
+};
+
+
+/* ============================================================
+   SMART AI QUERY PAGE
+   ============================================================ */
+
+function loadAiQueryPage() {
+    const main = document.getElementById('main-content');
+    if (!main) return;
+    
+    main.innerHTML = `
+        <div class="page-container" style="padding: 24px; max-width: 1200px; margin: 0 auto;">
+            <!-- Header -->
+            <div style="margin-bottom: 24px; background: linear-gradient(135deg, #1B4F72 0%, #2874A6 100%); color: #fff; padding: 24px; border-radius: 12px; box-shadow: 0 4px 15px rgba(27, 79, 114, 0.2);">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                    <div>
+                        <h1 style="font-size: 22px; font-weight: 700; margin: 0 0 6px 0; color: #fff;">🤖 Smart AI Query Assistant</h1>
+                        <p style="font-size: 13px; color: #D6EAF8; margin: 0;">
+                            Ask operational questions in plain English (e.g. <i>"How many corrosion released type wise in this month?"</i>, <i>"How many CN coaches available at hand?"</i>)
+                        </p>
+                    </div>
+                    <div>
+                        <span style="background: rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">Powered by LangChain & Gemini</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Box -->
+            <div class="card card-no-hover" style="padding: 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 24px;">
+                <form id="ai-query-form" onsubmit="event.preventDefault(); window.submitAiQuery();" style="display:flex; flex-direction:column; gap:16px;">
+                    <div style="display:flex; gap:12px; align-items:center;">
+                        <input type="text" id="ai-query-input" placeholder="Type your question here... e.g. How many CN coaches available at hand?" style="flex:1; padding: 12px 16px; font-size: 15px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-body); color: var(--text-primary); outline: none; transition: border-color 0.2s;" />
+                        <button type="submit" class="btn btn-primary" style="padding: 12px 24px; font-size: 14px; font-weight: 600; display:flex; align-items:center; gap:8px;">
+                            <span>🔍 Ask AI</span>
+                        </button>
+                    </div>
+
+                    <!-- Suggestion Chips -->
+                    <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+                        <span style="font-size: 12px; color: var(--text-secondary); font-weight: 600;">Sample Queries:</span>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.fillQuery('How many corrosion released type wise in this month?')" style="font-size:12px; border-radius:16px;">💡 Corrosion completed this month?</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.fillQuery('How many CN coaches available at hand?')" style="font-size:12px; border-radius:16px;">💡 CN coaches at hand?</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.fillQuery('What are the physical despatches for July 2026?')" style="font-size:12px; border-radius:16px;">💡 July physical despatches?</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.fillQuery('Show LWS coaches under attention')" style="font-size:12px; border-radius:16px;">💡 LWS under attention?</button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="window.fillQuery('Type wise holding summary')" style="font-size:12px; border-radius:16px;">💡 Type wise holdings?</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Response Container -->
+            <div id="ai-query-response-container">
+                <div class="card card-no-hover" style="padding: 32px; text-align: center; color: var(--text-muted); background: var(--bg-card); border: 1px dashed var(--border); border-radius: 10px;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">💡</div>
+                    <div style="font-size: 15px; font-weight: 500;">Ask any question above to query ERP records in human language</div>
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+window.fillQuery = function(text) {
+    const input = document.getElementById('ai-query-input');
+    if (input) {
+        input.value = text;
+        window.submitAiQuery();
+    }
+};
+
+window.submitAiQuery = async function() {
+    const input = document.getElementById('ai-query-input');
+    const container = document.getElementById('ai-query-response-container');
+    if (!input || !container) return;
+
+    const query = input.value.trim();
+    if (!query) return;
+
+    container.innerHTML = `
+        <div class="card card-no-hover" style="padding: 32px; text-align: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;">
+            <div class="spinner" style="margin: 0 auto 16px auto;"></div>
+            <div style="font-size: 14px; font-weight: 500; color: var(--text-primary);">Analyzing query with AI engine & fetching live ERP data…</div>
+        </div>
+    `;
+
+    try {
+        const res = await fetch('/api/query', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: query, month: 'July', year: 2026 })
+        });
+        const data = await res.json();
+
+        if (data.error) {
+            container.innerHTML = `
+                <div class="card card-no-hover" style="padding: 20px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">
+                    <strong>Error processing query:</strong> ${data.error}
+                </div>
+            `;
+            return;
+        }
+
+        const answerText = data.answer || "Query executed.";
+        const payload = data.data || {};
+        const coaches = payload.coaches || [];
+        const breakdown = payload.breakdown || [];
+
+        // Build Breakdown Table HTML
+        let tableHtml = '';
+        if (breakdown && breakdown.length > 0) {
+            const keys = Object.keys(breakdown[0]).filter(k => k !== 'Coaches' && k !== 'Shop Coaches' && k !== 'Yard Coaches');
+            
+            let headersHtml = keys.map(k => `<th style="padding: 10px 8px; text-align: left;">${k}</th>`).join('');
+            let rowsHtml = breakdown.map(row => {
+                let cells = keys.map(k => {
+                    let val = row[k];
+                    if (Array.isArray(val)) val = val.length;
+                    return `<td style="padding: 10px 8px; text-align: left; color: var(--text-primary);">${val}</td>`;
+                }).join('');
+                return `<tr style="border-bottom: 1px solid var(--border);">${cells}</tr>`;
+            }).join('');
+
+            tableHtml = `
+                <table class="data-table" style="width:100%; border-collapse: collapse; margin-top: 16px;">
+                    <thead>
+                        <tr style="border-bottom: 2px solid var(--border); background: var(--bg-body);">
+                            ${headersHtml}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rowsHtml}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        // Build Coach Badges HTML
+        let badgesHtml = '';
+        if (coaches && coaches.length > 0) {
+            badgesHtml = `
+                <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border);">
+                    <div style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 10px;">
+                        📋 Associated Coach Numbers (${coaches.length}):
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 180px; overflow-y: auto;">
+                        ${coaches.map(cno => `
+                            <a href="javascript:void(0)" onclick="window.navigateToSearch('${cno}')" 
+                               style="padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg-body); color: var(--accent); font-weight: 600; text-decoration: none; font-size: 13px;">
+                                ${cno}
+                            </a>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        container.innerHTML = `
+            <div class="card card-no-hover" style="padding: 24px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-md);">
+                <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--accent); letter-spacing: 0.5px; margin-bottom: 8px;">
+                    Answer Response
+                </div>
+                <div style="font-size: 16px; font-weight: 600; color: var(--text-primary); line-height: 1.5; margin-bottom: 16px; background: var(--bg-body); padding: 16px; border-radius: 8px; border-left: 4px solid var(--accent);">
+                    ${answerText}
+                </div>
+                ${tableHtml}
+                ${badgesHtml}
+            </div>
+        `;
+
+    } catch (err) {
+        container.innerHTML = `
+            <div class="card card-no-hover" style="padding: 20px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">
+                Failed to process query: ${err.message}
+            </div>
+        `;
+    }
+};
 
 
 /* ============================================================

@@ -84,10 +84,13 @@ def _populate_batch_cache():
     active_coaches = []
     limit = 1000
     offset = 0
+    cache_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "erp_master_cache.json")
+    
+    supabase_failed = False
     while True:
         url_coaches = f"{SUPABASE_URL}/erp_active_coaches?select=*&limit={limit}&offset={offset}"
         try:
-            resp = requests.get(url_coaches, headers=get_headers(), timeout=30)
+            resp = requests.get(url_coaches, headers=get_headers(), timeout=2)
             resp.raise_for_status()
             chunk = resp.json()
             if not chunk:
@@ -98,27 +101,37 @@ def _populate_batch_cache():
             offset += limit
         except Exception as exc:
             logger.error("Failed to fetch erp_active_coaches chunk: %s", exc)
-            return False
-
-    # 2. Fetch all manual updates in chunks of 1000
-    manual_updates = []
-    limit = 1000
-    offset = 0
-    while True:
-        url_manual = f"{SUPABASE_URL}/manual_coach_updates?select=*&limit={limit}&offset={offset}"
-        try:
-            resp_m = requests.get(url_manual, headers=get_headers(), timeout=30)
-            resp_m.raise_for_status()
-            chunk = resp_m.json()
-            if not chunk:
-                break
-            manual_updates.extend(chunk)
-            if len(chunk) < limit:
-                break
-            offset += limit
-        except Exception as exc:
-            logger.error("Failed to fetch manual_coach_updates chunk: %s", exc)
+            supabase_failed = True
             break
+
+    # 2. Fetch all manual updates in chunks of 1000 (Bypassed)
+    manual_updates = []
+
+    if supabase_failed:
+        logger.warning("Supabase fetch failed. Falling back to local erp_master_cache.json")
+        if os.path.exists(cache_file):
+            try:
+                import json
+                with open(cache_file, "r", encoding="utf-8") as f:
+                    mapped_records = json.load(f)
+                demandid_map = {}
+                coachno_map = {}
+                for rec in mapped_records:
+                    d_id = rec.get("demandid")
+                    if d_id:
+                        demandid_map[str(d_id).strip()] = rec
+                    c_no = rec.get("coachno")
+                    if c_no:
+                        coachno_map[str(c_no).strip()] = rec
+                _set_cached("master_list", mapped_records)
+                _set_cached("demandid_map", demandid_map)
+                _set_cached("coachno_map", coachno_map)
+                _set_cached("manual_updates_map", {})
+                logger.info("Successfully populated batch cache from local disk fallback: %d records", len(mapped_records))
+                return True
+            except Exception as ce:
+                logger.error("Failed to load local erp_master_cache.json fallback: %s", ce)
+        return False
 
     # 3. Process and map active coaches
     mapped_records = []
@@ -261,15 +274,23 @@ def _populate_batch_cache():
         coachno = r.get("coachno")
         if coachno:
             coachno_map[str(coachno).strip()] = mapped
-
-    # 4. Map manual updates
+ 
+     # 4. Map manual updates
     manual_updates_map = {}
     for mu in manual_updates:
         coachno = mu.get("coachno")
         if coachno:
             manual_updates_map[str(coachno).strip()] = mu
-
-    # 5. Store maps in cache
+ 
+     # Save to disk cache
+    try:
+        import json
+        with open(cache_file, "w", encoding="utf-8") as f:
+            json.dump(mapped_records, f, indent=2)
+    except Exception as e:
+        logger.error("Failed to write erp_master_cache.json: %s", e)
+ 
+     # 5. Store maps in cache
     _set_cached("master_list", mapped_records)
     _set_cached("demandid_map", demandid_map)
     _set_cached("coachno_map", coachno_map)
@@ -300,7 +321,7 @@ def fetch_master_live_search(coachno):
         sess.post(login_url, data={
             "username": COACH_ERP_USERNAME,
             "password": COACH_ERP_PASSWORD,
-        }, timeout=10)
+        }, timeout=1)
         
         # 2. Query listdata2.html with search parameter
         url = f"{COACH_ERP_BASE_URL}/coach/pohmaster/listdata2.html"
@@ -319,7 +340,7 @@ def fetch_master_live_search(coachno):
             "columns[1][searchable]": "true",
             "columns[1][orderable]": "true",
         }
-        resp = sess.post(url, data=payload, headers={"X-Requested-With": "XMLHttpRequest"}, timeout=15)
+        resp = sess.post(url, data=payload, headers={"X-Requested-With": "XMLHttpRequest"}, timeout=1)
         if resp.ok:
             data = resp.json()
             records = data.get("data", [])
@@ -565,9 +586,9 @@ def fetch_single(demandid, bypass_cache=False):
         sess.post(f"{COACH_ERP_BASE_URL}/coach/login", data={
             "username": COACH_ERP_USERNAME,
             "password": COACH_ERP_PASSWORD
-        }, timeout=5)
+        }, timeout=1)
         
-        resp = sess.post(f"{COACH_ERP_BASE_URL}/coach/pohmaster/singledata.html", data={"demandid": demandid}, headers={"X-Requested-With": "XMLHttpRequest"}, timeout=10)
+        resp = sess.post(f"{COACH_ERP_BASE_URL}/coach/pohmaster/singledata.html", data={"demandid": demandid}, headers={"X-Requested-With": "XMLHttpRequest"}, timeout=1)
         if resp.ok:
             detail = resp.json()
             if detail:
@@ -583,6 +604,45 @@ def fetch_single(demandid, bypass_cache=False):
                 return detail
     except Exception as e:
         logger.error(f"Fallback live ERP fetch failed for demandid {demandid}: {e}")
+        cache_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "erp_coaches_cache.json")
+        if os.path.exists(cache_file):
+            try:
+                import json
+                with open(cache_file, "r", encoding="utf-8") as f:
+                    cache_data = json.load(f)
+                if demandid in cache_data:
+                    c = cache_data[demandid]
+                    detail = {
+                        "demandid": demandid,
+                        "coachno": c.get("coachno", ""),
+                        "status": c.get("status", ""),
+                        "pohstatus": c.get("status", ""),
+                        "repair_type": c.get("repair_type", ""),
+                        "repairid": c.get("repair_type", ""),
+                        "division": c.get("division", ""),
+                        "dvnid": c.get("division", ""),
+                        "year_built": c.get("year_built", ""),
+                        "make": c.get("make", ""),
+                        "presurveyhrs": c.get("presurvey", ""),
+                        "finalhrs": c.get("final", ""),
+                        "last_poh": c.get("last_poh", ""),
+                        "last_pohdate": c.get("last_pohdate", ""),
+                        "tfrdate": c.get("tfr_date", ""),
+                        "tfr_date": c.get("tfr_date", ""),
+                        "corr_place": c.get("corr_place", ""),
+                        "corr_comp": c.get("corr_comp", ""),
+                        "despdate": c.get("desp_date", ""),
+                        "desp_date": c.get("desp_date", ""),
+                        "actualdespdate": c.get("actualdespdate", ""),
+                        "pohdays": c.get("pohdays", ""),
+                        "remarks": c.get("remarks", ""),
+                        "corrosion": c.get("corrosion", ""),
+                        "plan_date": c.get("plandate", ""),
+                        "plandate": c.get("plandate", "")
+                    }
+                    return detail
+            except Exception as ce:
+                logger.error("Failed to read erp_coaches_cache.json: %s", ce)
     return {}
 
     coachno = coach.get("coachno")
@@ -621,54 +681,11 @@ def fetch_single(demandid, bypass_cache=False):
         "curheavylow": coach.get("curheavylow", "")
     }
 
-    # Merge manual updates if they exist
-    if manual_update:
-        recd_str = coach.get("recd_date") or coach.get("recddate") or ""
-        recd_dt = _parse_date(recd_str)
-        mu_date_str = manual_update.get("physical_date") or manual_update.get("vg_date") or ""
-        mu_dt = _parse_date(mu_date_str)
-        if not mu_dt and manual_update.get("updated_at"):
-            try:
-                iso_date = manual_update.get("updated_at").split('T')[0]
-                mu_dt = datetime.strptime(iso_date, "%Y-%m-%d")
-            except:
-                pass
-        
-        is_mu_stale = False
-        if mu_dt and recd_dt and mu_dt < recd_dt:
-            is_mu_stale = True
-            
-        if is_mu_stale:
-            manual_update = None
-
-    if manual_update:
-        detail["vg_status"] = manual_update.get("vg_status") or ""
-        detail["vg_date"] = manual_update.get("vg_date") or ""
-        detail["physical_status"] = manual_update.get("physical_status") or ""
-        detail["physical_date"] = manual_update.get("physical_date") or ""
-        
-        vg_status = manual_update.get("vg_status", "")
-        vg_date = manual_update.get("vg_date", "")
-        phys_status = manual_update.get("physical_status", "")
-        phys_date = manual_update.get("physical_date", "")
-        
-        # Outturn date (desp_date) prioritizes vg_date
-        outturn_date = ""
-        if vg_status == "Completed" and vg_date:
-            outturn_date = vg_date
-        elif phys_status == "Despatched" and phys_date:
-            outturn_date = phys_date
-            
-        # Only override desp_date/despdate if they are empty/vacant in ERP
-        erp_desp = str(coach.get("desp_date", "")).strip()
-        if (not erp_desp or erp_desp in ("—", "None", "null", "")) and outturn_date:
-            detail["desp_date"] = outturn_date
-            detail["despdate"] = outturn_date
-            
-        # Only override actualdespdate if it is empty/vacant in ERP
-        erp_act_desp = str(coach.get("actualdespdate", "")).strip()
-        if (not erp_act_desp or erp_act_desp in ("—", "None", "null", "")) and phys_status == "Despatched":
-            detail["actualdespdate"] = phys_date or datetime.now().strftime("%d/%m/%Y")
+    # Merge manual updates is bypassed to photocopy ERP exactly
+    detail["vg_status"] = ""
+    detail["vg_date"] = ""
+    detail["physical_status"] = ""
+    detail["physical_date"] = ""
 
     return detail
 
@@ -690,6 +707,31 @@ def fetch_year_built(coachno):
             "manufacturing_date": "",
             "dvnid": coach.get("division", "")
         }
+
+    # Fallback to local caches for historical outturns
+    cache_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "erp_coaches_cache.json")
+    if os.path.exists(cache_file):
+        try:
+            import json
+            with open(cache_file, "r", encoding="utf-8") as f:
+                cache_data = json.load(f)
+            master_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "erp_master_cache.json")
+            if os.path.exists(master_file):
+                with open(master_file, "r", encoding="utf-8") as mf:
+                    master_records = json.load(mf)
+                for rec in master_records:
+                    if str(rec.get("coachno")).strip() == coachno:
+                        d_id = rec.get("demandid")
+                        if d_id in cache_data:
+                            c = cache_data[d_id]
+                            return {
+                                "year_built": c.get("year_built", ""),
+                                "make": c.get("make", ""),
+                                "manufacturing_date": "",
+                                "dvnid": rec.get("dvnid", "")
+                            }
+        except Exception as ce:
+            logger.error("Failed to read fallback for fetch_year_built: %s", ce)
 
     return {}
 

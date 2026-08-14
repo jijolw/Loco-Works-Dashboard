@@ -1,11 +1,12 @@
 # =====================================================
 # services/outturn_service.py
-# LW/PER Workshop Intelligence System (Pure Supabase version)
+# LW/PER Workshop Intelligence System (Supabase version)
 # =====================================================
 
 import logging
 from datetime import datetime, timedelta
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from services.erp_service import (
     fetch_master,
@@ -21,154 +22,124 @@ from services.decoders import (
 
 logger = logging.getLogger(__name__)
 
+
+def _process_candidate_outturn(rec, start_date, end_date):
+    demandid = rec.get("demandid")
+    if not demandid:
+        return None
+
+    try:
+        detail = fetch_single(demandid)
+    except Exception:
+        return None
+
+    status_val = str(detail.get("status") or rec.get("status") or "").strip().upper()
+
+    # RULE 3: Return type coaches should NOT be considered anywhere!
+    if any(x in status_val for x in ["RETURN", "COND", "BHOPAL", "161"]):
+        return None
+
+    # RULE 1: Paper Outturn Date = First Despatch Date (desp_date)
+    desp_str = detail.get("desp_date") or detail.get("despdate") or rec.get("desp_date") or rec.get("despdate")
+    desp_dt = _parse_date(desp_str)
+
+    # RULE 2: Physical Despatch Date = Actual Despatch Date (actualdespdate)
+    act_desp_str = detail.get("actualdespdate") or rec.get("actualdespdate")
+    act_desp_dt = _parse_date(act_desp_str)
+
+    # Check if coach was outturned in date range based on Paper Outturn Date or Physical Despatch Date
+    is_outturned = False
+    target_dt = desp_dt or act_desp_dt
+
+    if target_dt and start_date <= target_dt <= end_date:
+        is_outturned = True
+
+    if not is_outturned:
+        return None
+
+    coachno = rec.get("coachno", "")
+    coach_desc = rec.get("coach_desc", "") or rec.get("coachdesc", "")
+    family = decode_family(coach_desc)
+    division = decode_division(detail.get("dvnid") or rec.get("dvnid"))
+    repair_type = decode_repair(detail.get("repairid") or detail.get("repair_type") or rec.get("repairid"))
+
+    recd_str = rec.get("recd_date", "") or rec.get("recddate", "")
+    recd_dt = _parse_date(recd_str)
+    turnaround_days = (target_dt - recd_dt).days if (target_dt and recd_dt and target_dt >= recd_dt) else None
+
+    # Resolve/decode all properties for UI compatibility
+    coach = {
+        "coachno": coachno,
+        "coach_desc": coach_desc,
+        "demandid": demandid,
+        "family": family,
+        "division": division,
+        "repair_type": repair_type,
+        "recd_date": recd_str,
+        "desp_date": desp_dt.strftime("%d/%m/%Y") if desp_dt else "",
+        "actualdespdate": act_desp_dt.strftime("%d/%m/%Y") if act_desp_dt else "",
+        "turnaround_days": turnaround_days,
+        "status": status_val,
+    }
+    decode_all(coach, summary_coachno=coachno, summary_desc=coach_desc)
+    return coach
+
+
 def get_outturn_data(start_date_str=None, end_date_str=None):
-    """
-    Get coaches outturned (despatched) between start_date and end_date.
-    
-    Parameters
-    ----------
-    start_date_str : str, optional (YYYY-MM-DD or DD/MM/YYYY)
-    end_date_str : str, optional (YYYY-MM-DD or DD/MM/YYYY)
-    
-    Returns
-    -------
-    dict
-        {
-            "coaches": [enriched outturned coach dicts ...],
-            "metrics": {total, coach_types, divisions},
-        }
-    """
     now = datetime.now()
-    
-    # Default start_date to 1st of current month, end_date to today
+
     if not start_date_str:
         start_date = datetime(now.year, now.month, 1)
     else:
         start_date = _parse_date(start_date_str) or datetime(now.year, now.month, 1)
-        
+
     if not end_date_str:
         end_date = now
     else:
         end_date = _parse_date(end_date_str) or now
-        
-    logger.info("get_outturn_data (Supabase): filtering from %s to %s", start_date.strftime("%Y-%m-%d"), end_date.strftime("%Y-%m-%d"))
-    
-    # Candidate coaches: entry date or despatch date should be within lookback range
-    cutoff_start = start_date - timedelta(days=365)
-    
+
     master = fetch_master()
     candidates = []
-    
+
     for rec in master:
         demandid = rec.get("demandid")
-        if not demandid:
-            continue
-            
+        if not demandid: continue
+
         recd_str = rec.get("recd_date") or rec.get("recddate")
         recd_dt = _parse_date(recd_str)
-        
+
         desp_str = rec.get("desp_date") or rec.get("despdate")
         desp_dt = _parse_date(desp_str)
-        
+
         act_desp_str = rec.get("actualdespdate")
         act_desp_dt = _parse_date(act_desp_str)
-        
-        is_candidate = False
-        if recd_dt and cutoff_start <= recd_dt <= end_date:
-            is_candidate = True
-        if desp_dt and cutoff_start <= desp_dt <= end_date:
-            is_candidate = True
-        if act_desp_dt and cutoff_start <= act_desp_dt <= end_date:
-            is_candidate = True
-            
+
+        is_candidate = True
+        master_dt = desp_dt or act_desp_dt
+        if master_dt and not (start_date - timedelta(days=60) <= master_dt <= end_date + timedelta(days=60)):
+            is_candidate = False
+
         if is_candidate:
             candidates.append(rec)
-            
-    logger.info("get_outturn_data (Supabase): found %d candidate records based on entry date", len(candidates))
-    
+
     outturned_coaches = []
     family_counter = Counter()
     division_counter = Counter()
-    
-    # Fetch details for candidates to check actual despatch date
-    for rec in candidates:
-        demandid = rec["demandid"]
-        try:
-            detail = fetch_single(demandid)
-        except Exception as exc:
-            logger.warning("fetch_single(%s) failed: %s", demandid, exc)
-            continue
-            
-        # Filter out Condemned, Return, and Bhopal statuses
-        status_upper = str(detail.get("status") or detail.get("pohstatus") or "").strip().upper()
-        if any(x in status_upper for x in ["COND", "RETURN", "BHOPAL"]):
-            continue
 
-        # Check despatch date, correcting for obvious database typos where desp_date < recd_date
-        recd_str = rec.get("recd_date") or rec.get("recddate")
-        recd_dt = _parse_date(recd_str)
-        
-        desp_str = detail.get("desp_date") or detail.get("despdate")
-        desp_dt = _parse_date(desp_str)
-        
-        act_desp_str = detail.get("actualdespdate")
-        act_desp_dt = _parse_date(act_desp_str)
-        
-        # If desp_dt is invalid (e.g., before recd_dt) but we have a valid actualdespdate, use actualdespdate
-        if recd_dt and desp_dt and desp_dt < recd_dt and act_desp_dt and act_desp_dt >= recd_dt:
-            desp_dt = act_desp_dt
-            desp_str = act_desp_str
-        elif not desp_dt:
-            desp_dt = act_desp_dt or _parse_date(desp_str)
-            if act_desp_dt:
-                desp_str = act_desp_str
-                
-        # Outturn must be based strictly on official ERP entry, no fallback to google sheet desp_date
-        coachno = rec.get("coachno", "")
-                    
-        if not desp_dt:
-            continue
-            
-        # Check if within selected date range
-        if start_date <= desp_dt <= end_date:
-            coach_desc = rec.get("coach_desc") or rec.get("coachdesc") or ""
-            
-            family = decode_family(coach_desc)
-            repair_type = decode_repair(detail.get("repairid") or detail.get("repair_type") or rec.get("repairid") or rec.get("repair_type"))
-            division = decode_division(detail.get("dvnid") or rec.get("dvnid"))
-            
-            coach = {
-                "coachno": coachno,
-                "coach_desc": coach_desc,
-                "demandid": demandid,
-                "recd_date": rec.get("recd_date") or rec.get("recddate") or "",
-                "desp_date": desp_str,
-                "family": family,
-                "repair_type": repair_type,
-                "division": division,
-                "year_built": detail.get("year_built", "") or rec.get("year_built", ""),
-                "make": detail.get("make", "") or rec.get("make", ""),
-                "status": "OUTTURN",
-            }
-            
-            decode_all(coach, summary_coachno=coachno, summary_desc=coach_desc)
-            outturned_coaches.append(coach)
-            
-            family_counter[family] += 1
-            if division:
-                division_counter[division] += 1
-                
-    # Sort outturned coaches by despatch date descending
-    outturned_coaches.sort(key=lambda c: _parse_date(c["desp_date"]) or datetime.min, reverse=True)
-    
-    result = {
+    with ThreadPoolExecutor(max_workers=20) as executor:
+        futures = [executor.submit(_process_candidate_outturn, rec, start_date, end_date) for rec in candidates]
+        for f in as_completed(futures):
+            res = f.result()
+            if res:
+                outturned_coaches.append(res)
+                family_counter[res["family"]] += 1
+                division_counter[res["division"]] += 1
+
+    return {
         "coaches": outturned_coaches,
         "metrics": {
             "total": len(outturned_coaches),
-            "coach_types": dict(family_counter.most_common()),
-            "divisions": dict(division_counter.most_common()),
-        }
+            "coach_types": dict(family_counter),
+            "divisions": dict(division_counter),
+        },
     }
-    
-    logger.info("get_outturn_data (Supabase): found %d outturned coaches", len(outturned_coaches))
-    return result

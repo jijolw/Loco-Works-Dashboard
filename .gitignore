@@ -24,7 +24,10 @@ env/
 # Local databases and caches
 db.sqlite
 erp_coaches_cache.json
+erp_master_cache.json
+services/erp_master_cache.json
 supabase_sync.log
 
 # Log files
 *.log
+

@@ -74,21 +74,14 @@ def analyze_poh_performance(fy=None):
     lhb_coaches_list = []
     
     # Track coach details for POH and LHB analysis
+    from datetime import timedelta
+    recd_cutoff = start_date - timedelta(days=365)
+    
     for rec in master:
+        # Pre-filter by receipt date to avoid fetching details for thousands of old historic coaches
         recd_str = rec.get("recd_date") or rec.get("recddate")
         recd_dt = _parse_date(recd_str)
-        if not recd_dt:
-            continue
-            
-        coachno = rec.get("coachno", "")
-        coach_desc = rec.get("coach_desc", "") or rec.get("coachdesc", "")
-        family = decode_family(coach_desc)
-        
-        is_in_period = (start_date <= recd_dt <= end_date)
-        is_lhb = (family == "LHB")
-        
-        # Performance optimization: Skip details for old non-LHB coaches
-        if not is_in_period and not is_lhb:
+        if not recd_dt or recd_dt < recd_cutoff:
             continue
             
         demandid = rec.get("demandid")
@@ -105,7 +98,23 @@ def analyze_poh_performance(fy=None):
         if status in ("COND", "BHOPAL", "RETURN") or "COND" in status or "RETURN" in status:
             continue
             
+        desp_str = detail.get("desp_date") or detail.get("despdate") or ""
+        desp_dt = _parse_date(desp_str)
+        if not desp_dt:
+            continue
+            
+        coachno = rec.get("coachno", "")
+        coach_desc = rec.get("coach_desc", "") or rec.get("coachdesc", "")
         rt = str(detail.get("repairid") or detail.get("repair_type") or rec.get("repairid") or rec.get("repair_type") or "").strip()
+        family = decode_family(coach_desc, rt)
+        
+        is_in_period = (start_date <= desp_dt <= end_date)
+        is_lhb = (family == "LHB")
+        
+        # Performance optimization: Skip details for old non-LHB coaches
+        if not is_in_period and not is_lhb:
+            continue
+            
         last_poh_wks = str(detail.get("last_poh") or rec.get("last_poh") or "").strip().upper()
         
         # Calculate man hours
@@ -123,7 +132,7 @@ def analyze_poh_performance(fy=None):
         # Premature return: repair code is "4" (Out of Course Repair, "OR")
         is_premature = (rt == "4" or rt.upper() == "OR" or decode_repair(rt) == "OR")
         
-        # Group by previous workshop (only for coaches received in the selected period)
+        # Group by previous workshop (only for coaches outturned in the selected period)
         if is_in_period and last_poh_wks and last_poh_wks not in ("", "nan", "None", "0"):
             if last_poh_wks not in wks_data:
                 wks_data[last_poh_wks] = {
@@ -148,6 +157,7 @@ def analyze_poh_performance(fy=None):
                 "family": family,
                 "repair_type": decode_repair(rt),
                 "recd_date": recd_str,
+                "desp_date": desp_str,
                 "man_hours": eff_hrs,
                 "weight_band": band,
                 "is_premature": is_premature
@@ -164,15 +174,9 @@ def analyze_poh_performance(fy=None):
             try:
                 yb = int(float(yb_raw))
             except (ValueError, TypeError):
-                yb = None
+                yb = extract_year_built_from_no(coachno)
                 
-            fallback_yb = extract_year_built_from_no(coachno)
-            if yb is not None and fallback_yb is not None and abs(yb - fallback_yb) >= 2:
-                yb = fallback_yb
-            elif yb is None:
-                yb = fallback_yb
-                
-            age = recd_dt.year - yb if yb and recd_dt else None
+            age = desp_dt.year - yb if yb and desp_dt else None
             
             issue = None
             if sched == "CONV_POH":
@@ -187,13 +191,13 @@ def analyze_poh_performance(fy=None):
                     issue = f"Coach is old ({age} years) for a minor SS1 schedule"
                     
             # Group LHB schedule statistics by Financial Year
-            y, m = recd_dt.year, recd_dt.month
-            fy = f"{y}-{str(y+1)[2:]}" if m >= 4 else f"{y-1}-{str(y)[2:]}"
+            y, m = desp_dt.year, desp_dt.month
+            fy_grp = f"{y}-{str(y+1)[2:]}" if m >= 4 else f"{y-1}-{str(y)[2:]}"
             
-            if fy not in lhb_by_fy:
-                lhb_by_fy[fy] = {"SS1": 0, "SS2": 0, "SS3": 0, "CONV_POH": 0, "OTHER": 0, "TOTAL": 0}
-            lhb_by_fy[fy][sched] += 1
-            lhb_by_fy[fy]["TOTAL"] += 1
+            if fy_grp not in lhb_by_fy:
+                lhb_by_fy[fy_grp] = {"SS1": 0, "SS2": 0, "SS3": 0, "CONV_POH": 0, "OTHER": 0, "TOTAL": 0}
+            lhb_by_fy[fy_grp][sched] += 1
+            lhb_by_fy[fy_grp]["TOTAL"] += 1
             
             # Group LHB schedule statistics by coach type
             if coach_desc not in lhb_by_type:
@@ -210,9 +214,10 @@ def analyze_poh_performance(fy=None):
                 "year_built": yb,
                 "age": age,
                 "recd_date": recd_str,
+                "desp_date": desp_str,
                 "last_poh_wks": last_poh_wks,
                 "issue": issue,
-                "fy": fy
+                "fy": fy_grp
             })
 
     # Summarize workshop stats

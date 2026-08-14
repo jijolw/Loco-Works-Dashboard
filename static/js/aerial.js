@@ -769,9 +769,9 @@ function applyAerialFilters() {
     const coaches = _aerialData.coaches || [];
     const topology = _aerialData.topology || {};
     const metrics = _aerialData.metrics || {};
-    const layout = topology.LAYOUT || [];
-    const twoSlotLines = topology.TWO_SLOT_LINES || [];
-    const aliases = topology.PITNUM_ALIASES || {};
+    const layout = Array.isArray(topology) ? topology : (topology.LAYOUT || topology || []);
+    const twoSlotLines = _aerialData.two_slot_lines || topology.TWO_SLOT_LINES || [];
+    const aliases = _aerialData.pitnum_aliases || topology.PITNUM_ALIASES || {};
 
     const family = (document.getElementById('af-family') || {}).value || '';
     const status = (document.getElementById('af-status') || {}).value || '';

@@ -188,59 +188,7 @@ def get_audit_data(fy_filter="ALL", family_filter="ALL", type_filter="ALL"):
         })
     division_rankings.sort(key=lambda x: x["avg_hours"], reverse=True)
 
-    # 2. Active Coaches FND Pending List
-    active_coaches = fetch_clean()
     fnd_list = []
-    
-    for c in active_coaches:
-        coach_desc = c.get("coach_desc") or c.get("coachdesc") or ""
-        family = decode_family(coach_desc)
-        if family == "LOCO":
-            continue
-            
-        recd_str = c.get("recd_date") or c.get("recddate")
-        recd_dt = _parse_date(recd_str)
-        
-        fy = "UNKNOWN"
-        if recd_dt:
-            y, m = recd_dt.year, recd_dt.month
-            fy = f"{y}-{str(y+1)[2:]}" if m >= 4 else f"{y-1}-{str(y)[2:]}"
-
-        # Apply same filters
-        if fy_filter != "ALL" and fy.upper() != fy_filter:
-            continue
-        if family_filter != "ALL" and family.upper() != family_filter:
-            continue
-        if type_filter != "ALL" and coach_desc.strip().upper() != type_filter:
-            continue
-
-        demandid = c.get("demandid")
-        if not demandid:
-            continue
-            
-        detail = fetch_single(demandid)
-        
-        # FND / VG Pending List
-        actual_desp = str(detail.get("actualdespdate") or "").strip()
-        has_actual_desp = actual_desp and actual_desp.lower() not in ("none", "null", "nan", "")
-        
-        if has_actual_desp:
-            vg_status = detail.get("vg_status") or ""
-            phys_status = detail.get("physical_status") or ""
-            
-            if vg_status != "Completed" or phys_status != "Despatched":
-                fnd_list.append({
-                    "coachno": c.get("coachno"),
-                    "coach_desc": coach_desc,
-                    "family": family,
-                    "pitnum": c.get("pitnum") or "",
-                    "recd_date": c.get("recd_date"),
-                    "desp_date": desp_date,
-                    "vg_status": vg_status,
-                    "vg_date": detail.get("vg_date") or "",
-                    "physical_status": phys_status,
-                    "physical_date": detail.get("physical_date") or ""
-                })
                 
     return {
         "workshop_rankings": workshop_rankings,
