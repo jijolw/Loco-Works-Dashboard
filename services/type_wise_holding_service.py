@@ -149,7 +149,9 @@ def get_report_category(code, family):
         if "DEMU TC" in code_upper: return "DEMU TC"
         if "DPC" in code_upper: return "DPC"
         return "ART"
-    return None
+    
+    # Fallback to description itself
+    return code_upper
 
 def get_type_wise_holding_report_data(month_name, year_val):
     """
@@ -193,15 +195,51 @@ def get_type_wise_holding_report_data(month_name, year_val):
             "fnd_coaches": [],
             "physical_despatch": 0,
             "physical_despatch_coaches": [],
+            "physical_despatch_dates": {},
             "prev_fnd": 0,
             "prev_fnd_coaches": [],
             "corrosion_completed": 0,
             "corrosion_completed_coaches": [],
+            "corrosion_completed_dates": {},
             "corrosion_carry_forward": 0,
-            "corrosion_carry_forward_coaches": []
+            "corrosion_carry_forward_coaches": [],
+            "corrosion_carry_forward_dates": {}
         }
         for cat in ordered_cats
     }
+
+    def add_dynamic_cat(cat_name):
+        if not cat_name:
+            return
+        cat_name = str(cat_name).strip().upper()
+        if cat_name in target_categories_map:
+            return
+        idx = len(ordered_cats) - 1
+        if "OR" in ordered_cats:
+            idx = ordered_cats.index("OR")
+        ordered_cats.insert(idx, cat_name)
+        target_categories_map[cat_name] = {
+            "coach_type": cat_name,
+            "target": 0,
+            "achieved": 0,
+            "in_yard": 0,
+            "in_yard_coaches": [],
+            "under_attention": 0,
+            "under_attention_coaches": [],
+            "fnd": 0,
+            "fnd_coaches": [],
+            "physical_despatch": 0,
+            "physical_despatch_coaches": [],
+            "physical_despatch_dates": {},
+            "prev_fnd": 0,
+            "prev_fnd_coaches": [],
+            "corrosion_completed": 0,
+            "corrosion_completed_coaches": [],
+            "corrosion_completed_dates": {},
+            "corrosion_carry_forward": 0,
+            "corrosion_carry_forward_coaches": [],
+            "corrosion_carry_forward_dates": {}
+        }
     
     lookup_month = month_name[:3].upper() + " " + str(year_val)
     
@@ -219,6 +257,9 @@ def get_type_wise_holding_report_data(month_name, year_val):
                     achieved_qty = int(a_val) if a_val.isdigit() else 0
                     
                     # Target mapping
+                    if raw_cat and raw_cat.upper() not in ("3-PHASE", "DPC/DTC"):
+                        add_dynamic_cat(raw_cat)
+                        
                     if raw_cat in target_categories_map:
                         target_categories_map[raw_cat]["target"] = target_qty
                         target_categories_map[raw_cat]["achieved"] = achieved_qty
@@ -238,7 +279,6 @@ def get_type_wise_holding_report_data(month_name, year_val):
         
     active_coaches = []
     active_details_map = {}
-    target_categories = [target_categories_map[cat] for cat in ordered_cats]
 
     # A. Get active coaches from ERP (Excluding "Return" status)
     try:
@@ -259,7 +299,6 @@ def get_type_wise_holding_report_data(month_name, year_val):
             demandid = coach.get("demandid") or ""
             
             # Fetch detail via fetch_single to get the true database value
-            # Fetch detail via fetch_single to get the true database value
             try:
                 detail = fetch_single(demandid)
             except:
@@ -272,6 +311,8 @@ def get_type_wise_holding_report_data(month_name, year_val):
 
             mapped_code = map_coach_desc_to_code(desc, family) or desc
             cat = get_report_category(mapped_code, family)
+            if cat:
+                add_dynamic_cat(cat)
             
             cats_to_increment = []
             if repair_type_val == "OR":
@@ -280,30 +321,34 @@ def get_type_wise_holding_report_data(month_name, year_val):
                 cats_to_increment.append(cat)
             
             for c_cat in cats_to_increment:
-                is_yard = is_yard_location(pitnum)
-                for tc in target_categories:
-                    if tc["coach_type"] == c_cat:
-                        if is_yard:
-                            tc["in_yard"] += 1
-                            if cno and cno not in tc["in_yard_coaches"]:
-                                tc["in_yard_coaches"].append(cno)
-                        else:
-                            tc["under_attention"] += 1
-                            if cno and cno not in tc["under_attention_coaches"]:
-                                tc["under_attention_coaches"].append(cno)
-                        # Corrosion Completed check for active coaches
-                        if detail:
-                            corr_comp_str = detail.get("corr_comp") or ""
-                            corr_dt = _parse_date_local(corr_comp_str)
-                            if corr_dt:
-                                if corr_dt.month == month_idx and corr_dt.year == int(year_val):
-                                    tc["corrosion_completed"] += 1
-                                    if cno and cno not in tc["corrosion_completed_coaches"]:
-                                        tc["corrosion_completed_coaches"].append(cno)
-                                elif corr_dt < month_start:
-                                    tc["corrosion_carry_forward"] += 1
-                                    if cno and cno not in tc["corrosion_carry_forward_coaches"]:
-                                        tc["corrosion_carry_forward_coaches"].append(cno)
+                if c_cat in target_categories_map:
+                    tc = target_categories_map[c_cat]
+                    is_yard = is_yard_location(pitnum)
+                    if is_yard:
+                        tc["in_yard"] += 1
+                        if cno and cno not in tc["in_yard_coaches"]:
+                            tc["in_yard_coaches"].append(cno)
+                    else:
+                        tc["under_attention"] += 1
+                        if cno and cno not in tc["under_attention_coaches"]:
+                            tc["under_attention_coaches"].append(cno)
+                    # Corrosion Completed check for active coaches
+                    if detail:
+                        corr_comp_str = detail.get("corr_comp") or ""
+                        corr_dt = _parse_date_local(corr_comp_str)
+                        if corr_dt:
+                            if corr_dt.month == month_idx and corr_dt.year == int(year_val):
+                                tc["corrosion_completed"] += 1
+                                if cno and cno not in tc["corrosion_completed_coaches"]:
+                                    tc["corrosion_completed_coaches"].append(cno)
+                                if cno:
+                                    tc["corrosion_completed_dates"][cno] = corr_dt.strftime("%d/%m/%Y")
+                            elif corr_dt < month_start:
+                                tc["corrosion_carry_forward"] += 1
+                                if cno and cno not in tc["corrosion_carry_forward_coaches"]:
+                                    tc["corrosion_carry_forward_coaches"].append(cno)
+                                if cno:
+                                    tc["corrosion_carry_forward_dates"][cno] = corr_dt.strftime("%d/%m/%Y")
     except Exception as e:
         print("Error parsing active ERP coaches:", e)
 
@@ -344,6 +389,8 @@ def get_type_wise_holding_report_data(month_name, year_val):
             
             mapped_code = map_coach_desc_to_code(desc, family) or desc
             cat = get_report_category(mapped_code, family)
+            if cat:
+                add_dynamic_cat(cat)
             
             status_val = str(detail.get("status") or "").strip().upper()
             repair_type_val = str(detail.get("repair_type") or "").strip().upper()
@@ -397,53 +444,54 @@ def get_type_wise_holding_report_data(month_name, year_val):
                 cats_to_increment.append(cat)
                 
             for c_cat in cats_to_increment:
-                if is_fnd:
-                    for tc in target_categories:
-                        if tc["coach_type"] == c_cat:
-                            if cno and cno not in tc["fnd_coaches"]:
-                                tc["fnd_coaches"].append(cno)
-                                tc["fnd"] += 1
-                if is_prev_fnd:
-                    for tc in target_categories:
-                        if tc["coach_type"] == c_cat:
-                            if cno and cno not in tc["prev_fnd_coaches"]:
-                                tc["prev_fnd_coaches"].append(cno)
-                                tc["prev_fnd"] += 1
-                if is_phys_despatch:
-                    for tc in target_categories:
-                        if tc["coach_type"] == c_cat:
-                            if cno and cno not in tc["physical_despatch_coaches"]:
-                                tc["physical_despatch_coaches"].append(cno)
-                                tc["physical_despatch"] += 1
-                
-                # Check corrosion completion date
-                corr_comp_str = detail.get("corr_comp") or ""
-                corr_dt = _parse_date_local(corr_comp_str)
-                
-                is_corr_completed = False
-                is_corr_carry_forward = False
-                if corr_dt and (is_fnd or is_phys_despatch):
-                    if corr_dt.month == month_idx and corr_dt.year == int(year_val):
-                        is_corr_completed = True
-                    elif corr_dt < month_start:
-                        is_corr_carry_forward = True
-                        
-                if is_corr_completed:
-                    for tc in target_categories:
-                        if tc["coach_type"] == c_cat:
-                            tc["corrosion_completed"] += 1
-                            if cno and cno not in tc["corrosion_completed_coaches"]:
-                                tc["corrosion_completed_coaches"].append(cno)
-                                
-                if is_corr_carry_forward:
-                    for tc in target_categories:
-                        if tc["coach_type"] == c_cat:
-                            tc["corrosion_carry_forward"] += 1
-                            if cno and cno not in tc["corrosion_carry_forward_coaches"]:
-                                tc["corrosion_carry_forward_coaches"].append(cno)
+                if c_cat in target_categories_map:
+                    tc = target_categories_map[c_cat]
+                    if is_fnd:
+                        if cno and cno not in tc["fnd_coaches"]:
+                            tc["fnd_coaches"].append(cno)
+                            tc["fnd"] += 1
+                    if is_prev_fnd:
+                        if cno and cno not in tc["prev_fnd_coaches"]:
+                            tc["prev_fnd_coaches"].append(cno)
+                            tc["prev_fnd"] += 1
+                    if is_phys_despatch:
+                        if cno and cno not in tc["physical_despatch_coaches"]:
+                            tc["physical_despatch_coaches"].append(cno)
+                            tc["physical_despatch"] += 1
+                            if "physical_despatch_dates" not in tc:
+                                tc["physical_despatch_dates"] = {}
+                            tc["physical_despatch_dates"][cno] = actual_desp_str
+                    
+                    # Check corrosion completion date
+                    corr_comp_str = detail.get("corr_comp") or ""
+                    corr_dt = _parse_date_local(corr_comp_str)
+                    
+                    is_corr_completed = False
+                    is_corr_carry_forward = False
+                    if corr_dt and (is_fnd or is_phys_despatch):
+                        if corr_dt.month == month_idx and corr_dt.year == int(year_val):
+                            is_corr_completed = True
+                        elif corr_dt < month_start:
+                            is_corr_carry_forward = True
+                            
+                    if is_corr_completed:
+                        tc["corrosion_completed"] += 1
+                        if cno and cno not in tc["corrosion_completed_coaches"]:
+                            tc["corrosion_completed_coaches"].append(cno)
+                        if cno and corr_dt:
+                            tc["corrosion_completed_dates"][cno] = corr_dt.strftime("%d/%m/%Y")
+                                    
+                    if is_corr_carry_forward:
+                        tc["corrosion_carry_forward"] += 1
+                        if cno and cno not in tc["corrosion_carry_forward_coaches"]:
+                            tc["corrosion_carry_forward_coaches"].append(cno)
+                        if cno and corr_dt:
+                            tc["corrosion_carry_forward_dates"][cno] = corr_dt.strftime("%d/%m/%Y")
     except Exception as e:
         print("Error parsing ERP-only outturns and despatches:", e)
 
+    target_categories = [target_categories_map[cat] for cat in ordered_cats]
+    
     # Sort all coach lists
     for tc in target_categories:
         tc["in_yard_coaches"] = sorted(list(set(tc["in_yard_coaches"])))
@@ -485,10 +533,6 @@ def generate_type_wise_holding_excel(month_name, year_val):
         top=Side(style='thin', color='BDC3C7'), bottom=Side(style='thin', color='BDC3C7')
     )
     
-    # Title Block
-    ws["A1"] = f"TYPE-WISE HOLDING & POH PERFORMANCE REPORT — {month_name.upper()} {year_val}"
-    ws["A1"].font = font_title
-    ws["A1"].alignment = align_center
     # Title Block
     ws["A1"] = f"TYPE-WISE HOLDING & POH PERFORMANCE REPORT — {month_name.upper()} {year_val}"
     ws["A1"].font = font_title
