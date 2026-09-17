@@ -1,6 +1,7 @@
 
 def is_excluded_status(st='', stage='', tfr_s=''):
-    return False
+    st_u = str(st).upper()
+    return any(x in st_u for x in ["RETURN", "CONDEMN", "COND", "SCRAP", "SURVEY", "TO BHOPAL"])
 import os
 import json
 import calendar

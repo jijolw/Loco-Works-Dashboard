@@ -229,7 +229,7 @@ def fetch_live_keycloak_demands(bypass_cache=False):
             print(f"Warning: Live coach-receipts query error: {e}")
 
         # 2. Parallel scan of recent demands directly from Keycloak (covering current FY outturns + new entries)
-        demands_range = list(range(max(75000, max_did - 1200), max_did + 50))
+        demands_range = list(range(max(70000, max_did - 2500), max_did + 100))
         to_query = [d for d in demands_range if str(d) not in live_demands]
         
         def _fetch_single(did):
