@@ -50,9 +50,7 @@ TWO_SLOT_LINES = {
     "AS/L6", "AS/L5", "AS/P4", "AS/P3", "AS/P2", "AS/L1",
 }
 
-EXCLUDED_COACHES = {
-    "190027",
-}
+EXCLUDED_COACHES = set()
 
 SHOPS = [
     ("PAINT SHOP", PAINT_ORDER, "#9B2226"),

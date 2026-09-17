@@ -9,6 +9,7 @@ import logging
 from datetime import datetime, date
 
 from services.erp_service import (
+    _load_disk_coaches_cache,
     fetch_master,
     fetch_clean,
     fetch_single,
@@ -268,11 +269,26 @@ def get_corrosion_analysis(fy_list=None, family_filter=None):
         if family_filter != "ALL" and family != family_filter:
             continue
 
-        try:
-            detail = fetch_single(demandid)
-        except Exception as exc:
-            logger.warning("fetch_single(%s) failed: %s", demandid, exc)
-            continue
+                # Fast disk cache lookup
+        cache_data = _load_disk_coaches_cache()
+        if str(demandid) in cache_data:
+            c_det = cache_data[str(demandid)]
+            detail = {
+                "presurveyhrs": c_det.get("presurvey", 0),
+                "finalhrs": c_det.get("final", 0),
+                "last_poh": c_det.get("last_poh", ""),
+                "last_pohdate": c_det.get("last_pohdate", ""),
+                "year_built": c_det.get("year_built", ""),
+                "make": c_det.get("make", ""),
+                "status": c_det.get("status", ""),
+                "repair_type": c_det.get("repair_type", ""),
+                "dvnid": c_det.get("division", "")
+            }
+        else:
+            try:
+                detail = fetch_single(demandid)
+            except Exception:
+                detail = {}
 
         # Skip Condemned/Returned/Bhopal
         status = str(detail.get("status") or detail.get("pohstatus") or "").strip().upper()

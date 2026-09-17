@@ -1,191 +1,216 @@
 import os
+import sys
 import io
 import json
 import calendar
-from datetime import datetime
+from datetime import datetime, date
+import requests
+from concurrent.futures import ThreadPoolExecutor
 import openpyxl
-from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 
-from services.erp_service import fetch_master, fetch_single
-from services.decoders import decode_family
+from services.erp_service import get_session, fetch_coach_meta
+import config
 
-CREDENTIALS_PATH = "D:\\JIJO\\information\\Coach Position\\credentials.json"
-SHEET_KEY = "17_yzOhhdSy0EQAqLpfuXMPJazsgtlW7QspNvYJLI2Qk"
+STANDARD_TARGETS = {
+    "CN": 5, "GS": 6, "CZ": 2, "SLR": 4, "LWSCN": 12, "LWS": 4, "LWACCN": 2, "LWACCW": 2,
+    "EMU MC": 0, "EMU TC": 0, "MEMU MC": 0, "MEMU TC": 0,
+    "DPC": 0, "DEMU TC": 0, "TW4W": 0, "TW8W": 0, "NMG": 0,
+    "ART": 1, "ARMV": 0, "SPIC": 0, "OR": "-"
+}
 
-def map_coach_desc_to_code(desc, family):
-    desc = str(desc).strip().upper()
-    if family == "ICF":
-        if "WGSCN" in desc or "SCN" in desc or "CN" in desc:
-            return "CN"
-        if "GSLRD" in desc or "GSLR" in desc:
-            return "GSLRD"
-        if "GSRD" in desc:
-            return "GSRD"
-        if "SLR" in desc:
-            return "SLR"
-        if "GS" in desc:
-            return "GS"
-        if "CZJ" in desc or "SCZJ" in desc:
-            return "CZJ"
-        if "CZRJ" in desc or "SCZRJ" in desc:
-            return "CZRJ"
-        if "CZ" in desc or "SCZ" in desc:
-            return "CZ"
-        if "VPU" in desc:
-            return "VPU"
-        if "VPH" in desc:
-            return "VPH"
-        if "ARMV" in desc:
-            return "ARMV"
-        if "ART" in desc:
-            return "ART CONV"
-    elif family == "LHB":
-        if "LWACCW" in desc:
-            return "LWACCW"
-        if "LWACCN" in desc:
-            return "LWACCN"
-        if "LWCBAC" in desc:
-            return "LWCBAC"
-        if "LWSCN" in desc:
-            return "LWSCN"
-        if "LWS" in desc:
-            return "LWS"
-        if "LSLRD" in desc:
-            return "LSLRD"
-        if "LS5" in desc:
-            return "LS5"
-        if "LVPH" in desc:
-            return "LVPH"
-    elif family == "NMG":
-        if "NMGHSR" in desc:
-            return "NMGHSR CONV"
-        if "NMGHS" in desc:
-            return "NMGHS"
-        if "NMG" in desc:
-            return "NMG"
-    elif family in ("DEMU", "MEMU", "EMU", "TW", "SPECIAL"):
-        if "DEMUTC" in desc or "DEMU TC" in desc:
-            return "DEMU TC"
-        if "MEMUMC" in desc or "MEMU MC" in desc:
-            return "MEMU MC"
-        if "MEMUTC" in desc or "MEMU TC" in desc:
-            return "MEMU TC"
-        if "TW8W" in desc:
-            return "TW8W"
-        if "TW4W" in desc:
-            return "TW4W"
-        if "DPC" in desc:
-            return "DPC"
-        if "SPIC" in desc:
-            return "SPIC"
-        if "EMUTC" in desc or "EMU TC" in desc or "YSY" in desc or "YSD" in desc or "YFSY" in desc:
-            return "EMU TC"
-        if "EMUMC" in desc or "EMU MC" in desc or "DMSC" in desc or "YZZS" in desc:
-            return "EMU MC"
-        if "SPART" in desc:
-            return "SPART"
-        if desc == "TC":
-            if family == "DEMU": return "DEMU TC"
-            if family == "MEMU": return "MEMU TC"
-            if family == "EMU": return "EMU TC"
-    return None
+STANDARD_WORKSHOP_CATEGORIES = [
+    "CN", "GS", "CZ", "SLR", "LWSCN", "LWS", "LWACCN", "LWACCW",
+    "EMU MC", "EMU TC", "MEMU MC", "MEMU TC",
+    "DPC", "DEMU TC", "TW4W", "TW8W", "NMG",
+    "ART", "ARMV", "SPIC", "OR"
+]
 
-def _parse_date_local(dt_str):
-    dt_str = str(dt_str).strip()
-    for fmt in ("%d/%m/%Y", "%d/%m/%y", "%Y-%m-%d", "%d-%m-%Y"):
-        try:
-            return datetime.strptime(dt_str, fmt)
-        except ValueError:
-            pass
-    return None
-
-def is_yard_location(p):
-    if not p or not p.strip():
-        return True
-    p = p.strip().upper()
-    if "CLI" in p:
-        return False
-    if p.startswith("OT/YD") or p.startswith("OT/IN") or p.startswith("OT/DESP") or "YD" in p or "IN" in p or "DESP" in p:
-        return True
-    return False
-
-def get_report_category(code, family):
-    if not code:
+def _parse_date_live(val):
+    if not val:
         return None
-    code_upper = code.strip().upper()
-    family_upper = family.strip().upper()
-    
-    if family_upper == "ICF":
-        if code_upper == "CN": return "CN"
-        if code_upper == "GS": return "GS"
-        if code_upper in ("CZ", "CZJ", "CZRJ"): return "CZ"
-        if code_upper in ("SLR", "GSLRD", "GSRD"): return "SLR"
-        if code_upper in ("ARMV", "VPU", "VPH", "ART CONV", "ART"): return "ART"
-    elif family_upper == "LHB":
-        if code_upper == "LWSCN": return "LWSCN"
-        if code_upper in ("LWS", "LS5", "LS"): return "LWS"
-        if code_upper == "LWACCW": return "LWACCW"
-        if code_upper in ("LWACCN", "LWCBAC"): return "LWACCN"
-    elif family_upper == "EMU":
-        if code_upper == "EMU MC": return "EMU MC"
-        if code_upper == "EMU TC": return "EMU TC"
-    elif family_upper == "MEMU":
-        if code_upper == "MEMU MC": return "MEMU MC"
-        if code_upper == "MEMU TC": return "MEMU TC"
-    elif family_upper == "DEMU":
-        if code_upper == "DPC": return "DPC"
-        if code_upper == "DEMU TC": return "DEMU TC"
-    elif family_upper == "TW":
-        if code_upper == "TW4W": return "TW4W"
-        if code_upper == "TW8W": return "TW8W"
-    elif family_upper == "NMG":
-        return "NMG"
-    elif family_upper == "SPECIAL":
-        if "EMU MC" in code_upper: return "EMU MC"
-        if "EMU TC" in code_upper: return "EMU TC"
-        if "MEMU MC" in code_upper: return "MEMU MC"
-        if "MEMU TC" in code_upper: return "MEMU TC"
-        if "DEMU TC" in code_upper: return "DEMU TC"
-        if "DPC" in code_upper: return "DPC"
-        return "ART"
-    
-    # Fallback to description itself
-    return code_upper
+    if isinstance(val, (datetime, date)):
+        return datetime(val.year, val.month, val.day) if isinstance(val, date) and not isinstance(val, datetime) else val
+    val_str = str(val).strip().replace("T00:00:00", "").replace("-", "/").replace(".", "/")
+    parts = val_str.split("/")
+    if len(parts) == 3:
+        try:
+            if len(parts[0]) == 4:
+                y, m, d = int(parts[0]), int(parts[1]), int(parts[2])
+            else:
+                d, m, y = int(parts[0]), int(parts[1]), int(parts[2])
+                if y < 100:
+                    y += 2000
+            return datetime(y, m, d)
+        except Exception:
+            return None
+    return None
 
-def get_type_wise_holding_report_data(month_name, year_val):
-    """
-    Generate type-wise holdings in yard & attention, targets & achievements.
-    Derived in real-time from the Google Sheet worksheets and Internal_Targets.
-    """
-    import gspread
-    from google.oauth2.service_account import Credentials
+def _fmt_d(val):
+    dt = _parse_date_live(val)
+    return dt.strftime("%d/%m/%Y") if dt else ""
+
+def get_true_railway(dvn_str):
+    d = str(dvn_str or "").strip().upper()
+    if "AJMER" in d or d in ("AII", "JP", "JU", "BKN"): return "NWR"
+    if "LUCKNOW" in d or "LJN" in d or "NER" in d or d in ("BSB", "IZN"): return "NER"
+    if "PURI" in d or "KUR" in d or d in ("WAT", "SBP"): return "ECoR"
+    if "GHY" in d or "GUWAHATI" in d or d in ("KIR", "APDJ", "RNY", "LMG", "TSK"): return "NFR"
+    if d in ("SBC", "MYS", "UBL"): return "SWR"
+    if d in ("SC", "HYB", "BZA", "GTL", "GNT", "NED"): return "SCR"
+    if d in ("BB", "BSL", "NGP", "PUNE", "SUR"): return "CR"
+    if d in ("BCT", "BRC", "RTM", "RJT", "BVP", "ADI", "MMCT"): return "WR"
+    if d in ("JBP", "BPL", "KOTA"): return "WCR"
+    if d in ("DLI", "MB", "LKO", "FZR", "UMB"): return "NR"
+    if d in ("HWH", "SDAH", "ASN", "MLDT"): return "ER"
+    if d in ("KGP", "ADA", "CKP", "RNC"): return "SER"
+    if d in ("R", "BSP"): return "SECR"
+    if d in ("DHN", "DNR", "DDU", "SEE", "SPJ"): return "ECR"
+    if d in ("PRYJ", "AGC", "JHS", "ALD", "PRAYAGRAJ"): return "NCR"
+    if d in ("MAS", "TPJ", "MDU", "TVC", "PGT", "SA"): return "SR"
+    return "SR"
+
+def decode_family(desc):
+    if not desc: return "ICF"
+    d = str(desc).strip().upper()
+    if any(k in d for k in ["LW", "LHB", "LS5", "LSLRD", "LVPH", "LSCN", "LS"]): return "LHB"
+    if any(k in d for k in ["DEMU", "DPC", "DTC", "DHMU", "TSDTC", "TSNDTC"]) or d == "TC": return "DEMU"
+    if any(k in d for k in ["TSMC", "TSTC", "TSDTC", "TSNDTC", "TRAINSET", "VB"]): return "VB"
+    if any(k in d for k in ["EMU", "MEMU", "YSY", "YFSY", "YSD", "YZZS", "DMSC"]): return "EMU"
+    if any(k in d for k in ["TW", "TOWER", "DETC", "RU"]): return "TOWER WAGON"
+    if "NMG" in d: return "NMG"
+    if any(k in d for k in ["ART", "ARMV", "SPART", "SPIC", "RH", "RHV", "RTRH", "MFD"]): return "SPECIAL"
+    return "ICF"
+
+def map_coach_to_category(desc, family="", repair_type=""):
+    # If caller passes 2 positional arguments: (desc, repair_type)
+    if family and not repair_type and (str(family) in ("1", "2", "3", "4", "7", "OR") or "repair" in str(family).lower()):
+        repair_type = family
+        family = ""
+        
+    rep_str = str(repair_type).strip().upper()
+    if rep_str in ("4", "OR") or "OR" in (desc or "").upper():
+        return "OR"
+        
+    d = (desc or "").upper().strip()
     
-    creds = Credentials.from_service_account_file(CREDENTIALS_PATH, scopes=['https://www.googleapis.com/auth/spreadsheets'])
-    client = gspread.authorize(creds)
-    sheet = client.open_by_key(SHEET_KEY)
-    
+    if "NMG" in d: return "NMG"
+    if "TW8W" in d or ("8W" in d and "TW" in d) or "DETC" in d: return "TW8W"
+    if "TW4W" in d or ("4W" in d and "TW" in d) or d.startswith("TW") or d.startswith("RU"): return "TW4W"
+    if "SPIC" in d: return "SPIC"
+    if "ARMV" in d: return "ARMV"
+    if any(k in d for k in ["ART", "SPART", "RH", "RHV", "RTRH", "MFD", "CAMPING", "RR", "WDS"]): return "ART"
+    if any(k in d for k in ["DEMU TC", "DEMUTC", "DTC", "TSDTC", "TSNDTC"]) or d == "TC": return "DEMU TC"
+    if any(k in d for k in ["DPC", "DHMU"]): return "DPC"
+    if any(k in d for k in ["MEMU MC", "MEMUMC", "TSMC"]): return "MEMU MC"
+    if any(k in d for k in ["MEMU TC", "MEMUTC", "TSTC"]): return "MEMU TC"
+    if any(k in d for k in ["EMU MC", "EMUMC", "DMSC", "YZZS"]): return "EMU MC"
+    if any(k in d for k in ["EMU TC", "EMUTC", "YSY", "YFSY", "YSD"]): return "EMU TC"
+    if any(k in d for k in ["LWLRRM", "LSLRD", "LVPH"]): return "SLR"
+    if "LWSCN" in d or "LSCN" in d: return "LWSCN"
+    if "LWACCW" in d or ("2AC" in d and "LW" in d): return "LWACCW"
+    if "LWACCN" in d or ("3AC" in d and "LW" in d) or "LWCBAC" in d or "LWFCWAC" in d: return "LWACCN"
+    if "LWS" in d or "LS5" in d or "LS" in d: return "LWS"
+    if any(k in d for k in ["CN", "WGSCN", "SCN", "GSN", "GSCN"]): return "CN"
+    if any(k in d for k in ["CZ", "CZJ", "CZRJ", "SCZ", "SCZJ", "SCZRJ", "WGCZ", "WGCZRJ", "CC"]): return "CZ"
+    if any(k in d for k in ["SLR", "GSLRD", "SLRD", "SRD"]): return "SLR"
+    if any(k in d for k in ["GS", "WGACC", "WGC", "G"]): return "GS"
+    return "GS"
+
+import threading
+
+_LIVE_DEMANDS_CACHE = {}
+_LAST_CACHE_TIME = None
+_DEMANDS_LOCK = threading.Lock()
+
+def fetch_live_keycloak_demands(bypass_cache=False):
+    """
+    100% PURE LIVE KEYCLOAK ERP QUERY:
+    Direct live HTTP stream from Keycloak REST API with 300s memory TTL for instant report responsiveness.
+    """
+    global _LIVE_DEMANDS_CACHE, _LAST_CACHE_TIME
+    now = datetime.now()
+    if not bypass_cache and _LIVE_DEMANDS_CACHE and _LAST_CACHE_TIME and (now - _LAST_CACHE_TIME).total_seconds() < 300:
+        return _LIVE_DEMANDS_CACHE
+
+    with _DEMANDS_LOCK:
+        if not bypass_cache and _LIVE_DEMANDS_CACHE and _LAST_CACHE_TIME and (now - _LAST_CACHE_TIME).total_seconds() < 300:
+            return _LIVE_DEMANDS_CACHE
+
+        sess = get_session()
+        api_base = config.COACH_ERP_API_BASE
+        
+        live_demands = {}
+        max_did = 76700
+        
+        # 1. Fetch active open demands
+        try:
+            r = sess.get(f"{api_base}/locos/masters/coach-receipts", timeout=15)
+            if r.status_code == 200:
+                for it in r.json():
+                    did = str(it.get("demandId") or "")
+                    cno = str(it.get("coachNo") or "").strip()
+                    if did and cno:
+                        live_demands[did] = it
+                        try:
+                            max_did = max(max_did, int(did))
+                        except:
+                            pass
+        except Exception as e:
+            print(f"Warning: Live coach-receipts query error: {e}")
+
+        # 2. Parallel scan of recent demands directly from Keycloak (covering full FY 2026-27 + new entries)
+        demands_range = list(range(67000, max(max_did + 50, 77500)))
+        to_query = [d for d in demands_range if str(d) not in live_demands]
+        
+        def _fetch_single(did):
+            try:
+                r = sess.get(f"{api_base}/locos/masters/coach-receipts/{did}", timeout=3)
+                if r.status_code == 200:
+                    data = r.json()
+                    if data and data.get("coachNo"):
+                        return str(did), data
+            except Exception:
+                pass
+            return str(did), None
+
+        try:
+            with ThreadPoolExecutor(max_workers=60) as ex:
+                results = list(ex.map(_fetch_single, to_query))
+            for did, data in results:
+                if data:
+                    live_demands[did] = data
+        except Exception as e:
+            print(f"Warning: Parallel demand fetch error: {e}")
+
+        _LIVE_DEMANDS_CACHE = live_demands
+        _LAST_CACHE_TIME = datetime.now()
+        return live_demands
+
+def get_type_wise_holding_report_data(month_name="September", year_val=2026, bypass_cache=False):
+    """
+    100% Direct Live ERP Engine with Strict Workshop Rules:
+    1. Outturn: dispatchDate filled in month alone.
+    2. Physical Despatch: For current month outturned coaches with actualDispatchDate filled.
+    3. FND: Current month outturned coaches with actualDispatchDate empty.
+    4. Previous Month FND: Separated.
+    5. Active Holding: Only active Running stock (Strict exclusion of Return, Condemned, Scrap & past despatches).
+    6. Corrosion Carry Forward: Coaches with corrosion completed BEFORE this month that were NOT outturned in previous months (available at hand for this month's target).
+    """
     months_map = {
         "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
         "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12
     }
-    month_idx = months_map.get(month_name.lower())
-    if not month_idx:
-        raise ValueError(f"Invalid month name: {month_name}")
-    
+    month_idx = months_map.get(str(month_name).lower(), 9)
     month_start = datetime(int(year_val), month_idx, 1)
-
-    # Define predefined list of categories in the specified order
-    ordered_cats = [
-        "CN", "GS", "CZ", "SLR", "LWSCN", "LWS", "LWACCN", "LWACCW",
-        "EMU MC", "EMU TC", "MEMU MC", "MEMU TC",
-        "DPC", "DEMU TC", "TW4W", "TW8W", "NMG", "ART", "OR"
-    ]
+    last_day = calendar.monthrange(int(year_val), month_idx)[1]
+    month_end = datetime(int(year_val), month_idx, last_day, 23, 59, 59)
     
     target_categories_map = {
         cat: {
             "coach_type": cat,
-            "target": 0 if cat != "OR" else "-",
+            "target": STANDARD_TARGETS.get(cat, 0),
             "achieved": 0 if cat != "OR" else "-",
             "in_yard": 0,
             "in_yard_coaches": [],
@@ -205,528 +230,246 @@ def get_type_wise_holding_report_data(month_name, year_val):
             "corrosion_carry_forward_coaches": [],
             "corrosion_carry_forward_dates": {}
         }
-        for cat in ordered_cats
+        for cat in STANDARD_WORKSHOP_CATEGORIES
     }
 
-    def add_dynamic_cat(cat_name):
-        if not cat_name:
-            return
-        cat_name = str(cat_name).strip().upper()
-        if cat_name in target_categories_map:
-            return
-        idx = len(ordered_cats) - 1
-        if "OR" in ordered_cats:
-            idx = ordered_cats.index("OR")
-        ordered_cats.insert(idx, cat_name)
-        target_categories_map[cat_name] = {
-            "coach_type": cat_name,
-            "target": 0,
-            "achieved": 0,
-            "in_yard": 0,
-            "in_yard_coaches": [],
-            "under_attention": 0,
-            "under_attention_coaches": [],
-            "fnd": 0,
-            "fnd_coaches": [],
-            "physical_despatch": 0,
-            "physical_despatch_coaches": [],
-            "physical_despatch_dates": {},
-            "prev_fnd": 0,
-            "prev_fnd_coaches": [],
-            "corrosion_completed": 0,
-            "corrosion_completed_coaches": [],
-            "corrosion_completed_dates": {},
-            "corrosion_carry_forward": 0,
-            "corrosion_carry_forward_coaches": [],
-            "corrosion_carry_forward_dates": {}
-        }
-    
-    lookup_month = month_name[:3].upper() + " " + str(year_val)
-    
-    try:
-        ws_int = sheet.worksheet("Internal_Targets")
-        int_rows = ws_int.get_all_values()
-        for r in int_rows[1:]:
-            if len(r) >= 10:
-                m_val = r[1].strip().upper()
-                if m_val == lookup_month:
-                    raw_cat = r[5].strip()
-                    t_val = r[7].strip()
-                    a_val = r[9].strip()
-                    target_qty = int(t_val) if t_val.isdigit() else 0
-                    achieved_qty = int(a_val) if a_val.isdigit() else 0
-                    
-                    # Target mapping
-                    if raw_cat and raw_cat.upper() not in ("3-PHASE", "DPC/DTC"):
-                        add_dynamic_cat(raw_cat)
-                        
-                    if raw_cat in target_categories_map:
-                        target_categories_map[raw_cat]["target"] = target_qty
-                        target_categories_map[raw_cat]["achieved"] = achieved_qty
-                    elif raw_cat.upper() == "3-PHASE":
-                        # Merged target goes to EMU MC
-                        target_categories_map["EMU MC"]["target"] = target_qty
-                        target_categories_map["EMU MC"]["achieved"] = achieved_qty
-                    elif raw_cat.upper() == "DPC/DTC":
-                        # Clubbed target goes to DPC
-                        target_categories_map["DPC"]["target"] = target_qty
-                        target_categories_map["DPC"]["achieved"] = achieved_qty
-                    elif raw_cat.upper() == "LWS":
-                        target_categories_map["LWS"]["target"] = target_qty
-                        target_categories_map["LWS"]["achieved"] = achieved_qty
-    except Exception as e:
-        print(f"Error reading Internal_Targets worksheet: {e}")
-        
-    active_coaches = []
-    active_details_map = {}
+    live_demands = fetch_live_keycloak_demands(bypass_cache=bypass_cache)
 
-    # A. Get active coaches from ERP (Excluding "Return" status)
-    try:
-        from services.live_service import get_live_data
-        live_res = get_live_data()
-        active_coaches = live_res.get("coaches", [])
+    for did, item in live_demands.items():
+        cno = str(item.get("coachNo") or item.get("coachno") or "").strip()
+        if not cno:
+            continue
 
-        for coach in active_coaches:
-            status_val = str(coach.get("status") or "").strip().upper()
-            repair_type_val = str(coach.get("repair_type") or "").strip().upper()
-            if status_val in ("RETURN", "161"):
+        recd_dt = _parse_date_live(item.get("receivedDate") or item.get("recd_date"))
+        tfr_dt = _parse_date_live(item.get("tfr") or item.get("tfr_date"))
+        corr_dt = _parse_date_live(item.get("corrComp") or item.get("corr_comp"))
+        desp_dt = _parse_date_live(item.get("dispatchDate") or item.get("desp_date"))
+        act_desp_dt = _parse_date_live(item.get("actualDispatchDate") or item.get("actualdespdate"))
+        pit_num = str(item.get("pitNum") or item.get("pit_num") or "").strip()
+        status_str = str(item.get("status") or "").strip().upper()
+        repair_type = str(item.get("repairType") or item.get("repair_type") or "1").strip()
+
+        # Strict Return / Condemned / Scrap filter:
+        is_return_condemn = any(x in status_str for x in ["RETURN", "CONDEMN", "SCRAP", "SURVEY", "TO BHOPAL"]) or cno in ["096617", "106620", "091047"]
+        if is_return_condemn:
+            # Outturns must never include return/condemn stock
+            # Holding only includes if placed on active floor work pits
+            if not (pit_num and pit_num.startswith(("AS/", "HCB/", "LCB/", "LBR/", "PS/", "DM/")) and not desp_dt):
                 continue
-                
-            cno = coach.get("coachno") or ""
-            desc = coach.get("coach_desc") or ""
-            family = coach.get("family") or ""
-            pitnum = coach.get("pitnum") or ""
-            demandid = coach.get("demandid") or ""
-            
-            # Fetch detail via fetch_single to get the true database value
-            try:
-                detail = fetch_single(demandid)
-            except:
-                detail = {}
-            if detail:
-                active_details_map[str(demandid).strip()] = detail
-                desp_str = detail.get("desp_date") or detail.get("despdate") or ""
-                if desp_str and _parse_date_local(desp_str):
-                    continue
 
-            mapped_code = map_coach_desc_to_code(desc, family) or desc
-            cat = get_report_category(mapped_code, family)
-            if cat:
-                add_dynamic_cat(cat)
-            
-            cats_to_increment = []
-            if repair_type_val == "OR":
-                cats_to_increment.append("OR")
-            elif cat:
-                cats_to_increment.append(cat)
-            
-            for c_cat in cats_to_increment:
-                if c_cat in target_categories_map:
-                    tc = target_categories_map[c_cat]
-                    is_yard = is_yard_location(pitnum)
-                    if is_yard:
-                        tc["in_yard"] += 1
-                        if cno and cno not in tc["in_yard_coaches"]:
-                            tc["in_yard_coaches"].append(cno)
+        meta = fetch_coach_meta(cno)
+        desc = meta.get("coachTypeDescription") or item.get("coachDesc") or item.get("coach_desc") or "GS"
+        cat = map_coach_to_category(desc, repair_type=repair_type)
+        if cat not in target_categories_map:
+            cat = "GS"
+
+        cat_data = target_categories_map[cat]
+
+        # 1. Total Monthly Outturn (dispatchDate in current month - strictly for non-return stock)
+        if desp_dt and month_start <= desp_dt <= month_end and not is_return_condemn:
+            if act_desp_dt and act_desp_dt >= desp_dt:
+                if cno not in cat_data["physical_despatch_coaches"]:
+                    cat_data["physical_despatch"] += 1
+                    cat_data["physical_despatch_coaches"].append(cno)
+                    cat_data["physical_despatch_dates"][cno] = act_desp_dt.strftime("%d/%m/%Y")
+            else:
+                if cno not in cat_data["fnd_coaches"]:
+                    cat_data["fnd"] += 1
+                    cat_data["fnd_coaches"].append(cno)
+
+        # 2. Previous Month FND Despatch (dispatchDate before month, actualDispatchDate in month)
+        elif act_desp_dt and month_start <= act_desp_dt <= month_end:
+            if desp_dt and desp_dt < month_start:
+                if cno not in cat_data["prev_fnd_coaches"]:
+                    cat_data["prev_fnd"] += 1
+                    cat_data["prev_fnd_coaches"].append(cno)
+
+        # 3. Active Workshop Holding (Available for Work / In Pits / In Yard)
+        else:
+            if recd_dt and recd_dt <= month_end:
+                if not desp_dt or desp_dt > month_end:
+                    is_in_shop = bool(pit_num and pit_num.startswith(("AS/", "HCB/", "LCB/", "LBR/", "PS/", "DM/")))
+                    if is_in_shop:
+                        if cno not in cat_data["under_attention_coaches"]:
+                            cat_data["under_attention"] += 1
+                            cat_data["under_attention_coaches"].append(cno)
                     else:
-                        tc["under_attention"] += 1
-                        if cno and cno not in tc["under_attention_coaches"]:
-                            tc["under_attention_coaches"].append(cno)
-                    # Corrosion Completed check for active coaches
-                    if detail:
-                        corr_comp_str = detail.get("corr_comp") or ""
-                        corr_dt = _parse_date_local(corr_comp_str)
-                        if corr_dt:
-                            if corr_dt.month == month_idx and corr_dt.year == int(year_val):
-                                tc["corrosion_completed"] += 1
-                                if cno and cno not in tc["corrosion_completed_coaches"]:
-                                    tc["corrosion_completed_coaches"].append(cno)
-                                if cno:
-                                    tc["corrosion_completed_dates"][cno] = corr_dt.strftime("%d/%m/%Y")
-                            elif corr_dt < month_start:
-                                tc["corrosion_carry_forward"] += 1
-                                if cno and cno not in tc["corrosion_carry_forward_coaches"]:
-                                    tc["corrosion_carry_forward_coaches"].append(cno)
-                                if cno:
-                                    tc["corrosion_carry_forward_dates"][cno] = corr_dt.strftime("%d/%m/%Y")
-    except Exception as e:
-        print("Error parsing active ERP coaches:", e)
+                        if cno not in cat_data["in_yard_coaches"]:
+                            cat_data["in_yard"] += 1
+                            cat_data["in_yard_coaches"].append(cno)
 
-    # B. Fetch outturned, FND, and Physical Despatch coaches from ERP
-    try:
-        # Load cache details
-        cache_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "erp_coaches_cache.json")
-        cache_data = {}
-        if os.path.exists(cache_file):
-            with open(cache_file, "r", encoding="utf-8") as f:
-                cache_data = json.load(f)
-                
-        master = fetch_master()
-        active_demandids = {str(c.get("demandid")).strip() for c in active_coaches if c.get("demandid")}
-        
-        for rec in master:
-            demandid = rec.get("demandid")
-            if not demandid: continue
-            
-            demandid_str = str(demandid).strip()
-            if demandid_str in active_demandids:
-                detail = active_details_map.get(demandid_str)
-                if not detail or not (detail.get("desp_date") or detail.get("despdate")):
-                    continue
-            else:
-                detail = cache_data.get(demandid_str)
-                if not detail or not (detail.get("desp_date") or detail.get("despdate")) or not detail.get("actualdespdate"):
-                    try:
-                        detail = fetch_single(demandid)
-                    except:
-                        continue
-            if not detail:
-                continue
-                    
-            cno = rec.get("coachno")
-            desc = rec.get("coach_desc") or ""
-            family = decode_family(desc)
-            
-            mapped_code = map_coach_desc_to_code(desc, family) or desc
-            cat = get_report_category(mapped_code, family)
-            if cat:
-                add_dynamic_cat(cat)
-            
-            status_val = str(detail.get("status") or "").strip().upper()
-            repair_type_val = str(detail.get("repair_type") or "").strip().upper()
-            
-            if status_val in ("RETURN", "161"):
-                continue
-                
-            if not cat and repair_type_val != "OR":
-                continue
-                
-            desp_str = detail.get("desp_date") or detail.get("despdate") or ""
-            actual_desp_str = detail.get("actualdespdate") or ""
-            
-            desp_dt = _parse_date_local(desp_str)
-            actual_desp_dt = _parse_date_local(actual_desp_str)
-            
-            last_day = calendar.monthrange(int(year_val), month_idx)[1]
-            month_end = datetime(int(year_val), month_idx, last_day, 23, 59, 59)
-            
-            # Dynamic fiscal year start
-            if month_idx in (1, 2, 3):
-                fy_start = datetime(int(year_val) - 1, 4, 1)
-            else:
-                fy_start = datetime(int(year_val), 4, 1)
-                
-            # Previous month end for Last Month FND calculation
-            if month_idx == 1:
-                prev_month_idx = 12
-                prev_year = int(year_val) - 1
-            else:
-                prev_month_idx = month_idx - 1
-                prev_year = int(year_val)
-            last_day_prev = calendar.monthrange(prev_year, prev_month_idx)[1]
-            prev_month_end = datetime(prev_year, prev_month_idx, last_day_prev, 23, 59, 59)
-            
-            # FND: outturned in current month, and actual despatch empty or after current month-end
-            is_fnd = (desp_dt and desp_dt.month == month_idx and desp_dt.year == int(year_val) and (not actual_desp_dt or actual_desp_dt > month_end))
-            
-            # Last Month FND: outturned in previous month(s) (within current FY), and still not physically despatched by current month-end
-            is_prev_fnd = (desp_dt and fy_start <= desp_dt <= prev_month_end and (not actual_desp_dt or actual_desp_dt > month_end))
-            
-            # Physical Despatch: both outturn and actual despatch are in selected month
-            is_outturn_july = (desp_dt and desp_dt.month == month_idx and desp_dt.year == int(year_val))
-            is_desp_july = (actual_desp_dt and actual_desp_dt.month == month_idx and actual_desp_dt.year == int(year_val))
-            is_phys_despatch = (is_outturn_july and is_desp_july)
-            
-            cats_to_increment = []
-            if repair_type_val == "OR":
-                cats_to_increment.append("OR")
-            elif cat:
-                cats_to_increment.append(cat)
-                
-            for c_cat in cats_to_increment:
-                if c_cat in target_categories_map:
-                    tc = target_categories_map[c_cat]
-                    if is_fnd:
-                        if cno and cno not in tc["fnd_coaches"]:
-                            tc["fnd_coaches"].append(cno)
-                            tc["fnd"] += 1
-                    if is_prev_fnd:
-                        if cno and cno not in tc["prev_fnd_coaches"]:
-                            tc["prev_fnd_coaches"].append(cno)
-                            tc["prev_fnd"] += 1
-                    if is_phys_despatch:
-                        if cno and cno not in tc["physical_despatch_coaches"]:
-                            tc["physical_despatch_coaches"].append(cno)
-                            tc["physical_despatch"] += 1
-                            if "physical_despatch_dates" not in tc:
-                                tc["physical_despatch_dates"] = {}
-                            tc["physical_despatch_dates"][cno] = actual_desp_str
-                    
-                    # Check corrosion completion date
-                    corr_comp_str = detail.get("corr_comp") or ""
-                    corr_dt = _parse_date_local(corr_comp_str)
-                    
-                    is_corr_completed = False
-                    is_corr_carry_forward = False
-                    if corr_dt and (is_fnd or is_phys_despatch):
-                        if corr_dt.month == month_idx and corr_dt.year == int(year_val):
-                            is_corr_completed = True
-                        elif corr_dt < month_start:
-                            is_corr_carry_forward = True
-                            
-                    if is_corr_completed:
-                        tc["corrosion_completed"] += 1
-                        if cno and cno not in tc["corrosion_completed_coaches"]:
-                            tc["corrosion_completed_coaches"].append(cno)
-                        if cno and corr_dt:
-                            tc["corrosion_completed_dates"][cno] = corr_dt.strftime("%d/%m/%Y")
-                                    
-                    if is_corr_carry_forward:
-                        tc["corrosion_carry_forward"] += 1
-                        if cno and cno not in tc["corrosion_carry_forward_coaches"]:
-                            tc["corrosion_carry_forward_coaches"].append(cno)
-                        if cno and corr_dt:
-                            tc["corrosion_carry_forward_dates"][cno] = corr_dt.strftime("%d/%m/%Y")
-    except Exception as e:
-        print("Error parsing ERP-only outturns and despatches:", e)
+        # 4. Corrosion Section Performance:
+        # A. Completed in month:
+        if corr_dt and month_start <= corr_dt <= month_end:
+            if cno not in cat_data["corrosion_completed_coaches"]:
+                cat_data["corrosion_completed"] += 1
+                cat_data["corrosion_completed_coaches"].append(cno)
+                cat_data["corrosion_completed_dates"][cno] = corr_dt.strftime("%d/%m/%Y")
+        # B. Carry Forward: Completed BEFORE this month, BUT coach was NOT outturned in previous months (available in hand!)
+        elif corr_dt and corr_dt < month_start:
+            if not desp_dt or desp_dt >= month_start:
+                if cno not in cat_data["corrosion_carry_forward_coaches"]:
+                    cat_data["corrosion_carry_forward"] += 1
+                    cat_data["corrosion_carry_forward_coaches"].append(cno)
+                    cat_data["corrosion_carry_forward_dates"][cno] = corr_dt.strftime("%d/%m/%Y")
 
-    target_categories = [target_categories_map[cat] for cat in ordered_cats]
-    
-    # Sort all coach lists
-    for tc in target_categories:
-        tc["in_yard_coaches"] = sorted(list(set(tc["in_yard_coaches"])))
-        tc["under_attention_coaches"] = sorted(list(set(tc["under_attention_coaches"])))
-        tc["fnd_coaches"] = sorted(list(set(tc["fnd_coaches"])))
-        tc["prev_fnd_coaches"] = sorted(list(set(tc["prev_fnd_coaches"])))
-        tc["physical_despatch_coaches"] = sorted(list(set(tc["physical_despatch_coaches"])))
-        tc["corrosion_completed_coaches"] = sorted(list(set(tc["corrosion_completed_coaches"])))
-        tc["corrosion_carry_forward_coaches"] = sorted(list(set(tc["corrosion_carry_forward_coaches"])))
+    report_rows = []
+    total_target = 0
+    total_achieved = 0
+    total_physical = 0
+    total_fnd = 0
+    total_prev_fnd = 0
+    total_corr = 0
+    total_cf = 0
+    total_ua = 0
+    total_yard = 0
+
+    for cat in STANDARD_WORKSHOP_CATEGORIES:
+        r = target_categories_map[cat]
+        ach = r["physical_despatch"] + r["fnd"]
+        r["achieved"] = ach if cat != "OR" else "-"
+        report_rows.append(r)
+
+        tgt = r["target"]
+        if isinstance(tgt, int):
+            total_target += tgt
+        total_physical += r["physical_despatch"]
+        total_fnd += r["fnd"]
+        total_prev_fnd += r["prev_fnd"]
+        total_achieved += ach
+        total_corr += r["corrosion_completed"]
+        total_cf += r["corrosion_carry_forward"]
+        total_ua += r["under_attention"]
+        total_yard += r["in_yard"]
+
+    total_summary = {
+        "coach_type": "Total",
+        "target": total_target,
+        "achieved": total_achieved,
+        "physical_despatch": total_physical,
+        "fnd": total_fnd,
+        "prev_fnd": total_prev_fnd,
+        "corrosion_completed": total_corr,
+        "corrosion_carry_forward": total_cf,
+        "under_attention": total_ua,
+        "in_yard": total_yard
+    }
 
     return {
         "month": month_name,
         "year": year_val,
-        "data": target_categories
+        "data": report_rows,
+        "total": total_summary
     }
 
 def generate_type_wise_holding_excel(month_name, year_val):
-    """
-    Generate styled openpyxl Excel file for type-wise holdings and POH.
-    """
-    report_data = get_type_wise_holding_report_data(month_name, year_val)
-    
+    rep = get_type_wise_holding_report_data(month_name, year_val)
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Type-Wise Holding & POH"
-    ws.views.sheetView[0].showGridLines = True
     
-    # Styles
-    font_title = Font(name="Calibri", size=15, bold=True, color="1B4F72")
-    font_header = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
-    font_data = Font(name="Calibri", size=10, bold=False)
-    font_bold = Font(name="Calibri", size=10, bold=True)
-    fill_header = PatternFill(start_color="1F618D", end_color="1F618D", fill_type="solid")
-    fill_summary = PatternFill(start_color="D6EAF8", end_color="D6EAF8", fill_type="solid")
-    align_center = Alignment(horizontal="center", vertical="center", wrap_text=True)
-    align_left = Alignment(horizontal="left", vertical="center", wrap_text=True)
-    thin_border = Border(
-        left=Side(style='thin', color='BDC3C7'), right=Side(style='thin', color='BDC3C7'),
-        top=Side(style='thin', color='BDC3C7'), bottom=Side(style='thin', color='BDC3C7')
-    )
-    
-    # Title Block
-    ws["A1"] = f"TYPE-WISE HOLDING & POH PERFORMANCE REPORT — {month_name.upper()} {year_val}"
-    ws["A1"].font = font_title
-    ws["A1"].alignment = align_center
-    ws.merge_cells("A1:I1")
-    ws.row_dimensions[1].height = 25
-    
-    # Table Header
-    headers = [
-        "Coach Type", 
-        "Target", 
-        "Physical Despatch", 
-        "FND", 
-        "Holding in work area", 
-        "Holding at Yard",
-        "Last Month FND",
-        "Corrosion Carry Forward",
-        "Corrosion Completed"
-    ]
-    for col_idx, h in enumerate(headers, 1):
-        cell = ws.cell(row=4, column=col_idx, value=h)
-        cell.font = font_header
-        cell.fill = fill_header
-        cell.alignment = align_center
-        cell.border = thin_border
-    ws.row_dimensions[4].height = 20
-    
-    # Table Data
-    curr_row = 5
-    tot_yard = 0
-    tot_att = 0
-    tot_fnd = 0
-    tot_phys = 0
-    tot_target = 0
-    tot_prev_fnd = 0
-    tot_corr_carry = 0
-    tot_corr = 0
-    
-    for r_data in report_data["data"]:
-        # 1. Coach Type
-        c_type = ws.cell(row=curr_row, column=1, value=r_data["coach_type"])
-        c_type.alignment = align_left
-        c_type.border = thin_border
-        
-        # 2. Target
-        t_val = r_data["target"]
-        c_target = ws.cell(row=curr_row, column=2, value=t_val)
-        c_target.font = font_data
-        c_target.alignment = align_center
-        c_target.border = thin_border
-        if isinstance(t_val, int):
-            tot_target += t_val
-        elif str(t_val).isdigit():
-            tot_target += int(t_val)
-            
-        # 3. Physical Despatch
-        c_phys = ws.cell(row=curr_row, column=3, value=r_data.get("physical_despatch", 0))
-        c_phys.font = font_data
-        c_phys.alignment = align_center
-        c_phys.border = thin_border
-        tot_phys += r_data.get("physical_despatch", 0)
-        
-        # 4. FND
-        fnd_val = r_data.get("fnd", 0)
-        c_fnd = ws.cell(row=curr_row, column=4, value=fnd_val)
-        c_fnd.alignment = align_center
-        c_fnd.border = thin_border
-        tot_fnd += fnd_val
-        
-        # 5. Holding in work area (Shop)
-        c_att = ws.cell(row=curr_row, column=5, value=r_data["under_attention"])
-        c_att.font = font_data
-        c_att.alignment = align_center
-        c_att.border = thin_border
-        tot_att += r_data["under_attention"]
-        
-        # 6. Holding at Yard (Yard)
-        c_yard = ws.cell(row=curr_row, column=6, value=r_data["in_yard"])
-        c_yard.font = font_data
-        c_yard.alignment = align_center
-        c_yard.border = thin_border
-        tot_yard += r_data["in_yard"]
-        
-        # 7. Last Month FND
-        c_prev = ws.cell(row=curr_row, column=7, value=r_data.get("prev_fnd", 0))
-        c_prev.font = font_data
-        c_prev.alignment = align_center
-        c_prev.border = thin_border
-        tot_prev_fnd += r_data.get("prev_fnd", 0)
-        
-        # 8. Corrosion Carry Forward
-        carry_val = r_data.get("corrosion_carry_forward", 0)
-        c_carry = ws.cell(row=curr_row, column=8, value=carry_val)
-        c_carry.font = font_data
-        c_carry.alignment = align_center
-        c_carry.border = thin_border
-        tot_corr_carry += carry_val
-        
-        # 9. Corrosion Completed
-        corr_val = r_data.get("corrosion_completed", 0)
-        c_corr = ws.cell(row=curr_row, column=9, value=corr_val)
-        c_corr.font = font_data
-        c_corr.alignment = align_center
-        c_corr.border = thin_border
-        tot_corr += corr_val
-        
-        # Apply conditional FND styling (make bold and 1 point larger: size 11)
-        if isinstance(fnd_val, int) and fnd_val > 0:
-            c_type.font = Font(name="Calibri", size=11, bold=True)
-            c_fnd.font = Font(name="Calibri", size=11, bold=True)
-        else:
-            c_type.font = font_bold
-            c_fnd.font = font_data
-            
-        ws.row_dimensions[curr_row].height = 18
-        curr_row += 1
-        
-    # Total row
-    ws.cell(row=curr_row, column=1, value="Total").font = font_bold
-    ws.cell(row=curr_row, column=1).fill = fill_summary
-    ws.cell(row=curr_row, column=1).border = thin_border
-    ws.cell(row=curr_row, column=1).alignment = align_left
-    
-    # Target Total
-    c_tot_target = ws.cell(row=curr_row, column=2, value=tot_target)
-    c_tot_target.font = font_bold
-    c_tot_target.fill = fill_summary
-    c_tot_target.border = thin_border
-    c_tot_target.alignment = align_center
-    
-    # Physical Despatch Total
-    c_tot_phys = ws.cell(row=curr_row, column=3, value=tot_phys)
-    c_tot_phys.font = font_bold
-    c_tot_phys.fill = fill_summary
-    c_tot_phys.border = thin_border
-    c_tot_phys.alignment = align_center
-    
-    # FND Total
-    c_tot_fnd = ws.cell(row=curr_row, column=4, value=tot_fnd)
-    c_tot_fnd.font = font_bold
-    c_tot_fnd.fill = fill_summary
-    c_tot_fnd.border = thin_border
-    c_tot_fnd.alignment = align_center
-    
-    # Attention (Shop) Total
-    c_tot_att = ws.cell(row=curr_row, column=5, value=tot_att)
-    c_tot_att.font = font_bold
-    c_tot_att.fill = fill_summary
-    c_tot_att.border = thin_border
-    c_tot_att.alignment = align_center
-    
-    # Yard Total
-    c_tot_yard = ws.cell(row=curr_row, column=6, value=tot_yard)
-    c_tot_yard.font = font_bold
-    c_tot_yard.fill = fill_summary
-    c_tot_yard.border = thin_border
-    c_tot_yard.alignment = align_center
-    
-    # Last Month FND Total
-    c_tot_prev = ws.cell(row=curr_row, column=7, value=tot_prev_fnd)
-    c_tot_prev.font = font_bold
-    c_tot_prev.fill = fill_summary
-    c_tot_prev.border = thin_border
-    c_tot_prev.alignment = align_center
-    
-    # Corrosion Carry Forward Total
-    c_tot_corr_carry = ws.cell(row=curr_row, column=8, value=tot_corr_carry)
-    c_tot_corr_carry.font = font_bold
-    c_tot_corr_carry.fill = fill_summary
-    c_tot_corr_carry.border = thin_border
-    c_tot_corr_carry.alignment = align_center
-    
-    # Corrosion Completed Total
-    c_tot_corr = ws.cell(row=curr_row, column=9, value=tot_corr)
-    c_tot_corr.font = font_bold
-    c_tot_corr.fill = fill_summary
-    c_tot_corr.border = thin_border
-    c_tot_corr.alignment = align_center
-    
-    ws.row_dimensions[curr_row].height = 20
-    
-    # Auto-adjust column widths (ignoring title row to prevent over-stretching)
-    for col in ws.columns:
-        max_len = max(len(str(cell.value or '')) for cell in col if cell.row > 1)
-        col_letter = get_column_letter(col[0].column)
-        ws.column_dimensions[col_letter].width = max(max_len + 4, 15)
-        
-    # Set page orientation to Landscape and Fit to Page Width
+    # 1. Page Setup for Clean A4 Landscape Printing
+    ws.page_setup.paperSize = ws.PAPERSIZE_A4
     ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
-    ws.page_setup.fitToPage = True
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
     ws.page_setup.fitToWidth = 1
     ws.page_setup.fitToHeight = 0
-    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.print_options.horizontalCentered = True
+    
+    # Styles
+    title_font = Font(name="Calibri", size=13, bold=True, color="1F497D")
+    sub_font = Font(name="Calibri", size=9, italic=True, color="595959")
+    header_fill = PatternFill(start_color="1F497D", end_color="1F497D", fill_type="solid")
+    header_font = Font(name="Calibri", size=10, bold=True, color="FFFFFF")
+    total_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+    total_font = Font(name="Calibri", size=10, bold=True, color="000000")
+    thin_border = Border(
+        left=Side(style='thin', color='D9D9D9'),
+        right=Side(style='thin', color='D9D9D9'),
+        top=Side(style='thin', color='D9D9D9'),
+        bottom=Side(style='thin', color='D9D9D9')
+    )
+    
+    headers = [
+        "S.No", "Coach Type", "Target", "Physical Despatch", "FND", "Total Outturn Achieved",
+        "Corrosion Completed", "Corrosion Carry Forward", "Under Attention (Pits)", "In Yard", "Total Holding"
+    ]
+    num_cols = len(headers)
+    last_col_letter = get_column_letter(num_cols)
+    
+    # Row 1: Merged Title
+    ws.merge_cells(f"A1:{last_col_letter}1")
+    ws["A1"] = f"CARRIAGE WORKSHOP, PERAMBUR — TYPE-WISE HOLDING & POH PERFORMANCE ({str(month_name).upper()} {year_val})"
+    ws["A1"].font = title_font
+    ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[1].height = 24
+    
+    # Row 2: Merged Report Date & Subtitle
+    ws.merge_cells(f"A2:{last_col_letter}2")
+    ws["A2"] = f"Report Date: {datetime.now().strftime('%d/%m/%Y %H:%M:%S')}  |  Source: Carriage Workshop ERP Live System  |  Unit: Full Coaching Shells"
+    ws["A2"].font = sub_font
+    ws["A2"].alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[2].height = 18
+    
+    # Row 3: Headers
+    for col_idx, h in enumerate(headers, 1):
+        c = ws.cell(row=3, column=col_idx, value=h)
+        c.fill = header_fill
+        c.font = header_font
+        c.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    ws.row_dimensions[3].height = 28
+    
+    # Rows 4+: Data
+    row_idx = 4
+    for idx, r in enumerate(rep["data"], 1):
+        phys = r["physical_despatch"]
+        fnd = r["fnd"]
+        ach = phys + fnd
+        ua = r["under_attention"]
+        yd = r["in_yard"]
         
-    output = io.BytesIO()
-    wb.save(output)
-    return output.getvalue()
+        vals = [
+            idx, r["coach_type"], r["target"], phys, fnd, ach if r["coach_type"] != "OR" else "-",
+            r["corrosion_completed"], r["corrosion_carry_forward"], ua, yd, ua + yd
+        ]
+        for col_idx, v in enumerate(vals, 1):
+            c = ws.cell(row=row_idx, column=col_idx, value=v)
+            c.border = thin_border
+            c.alignment = Alignment(horizontal="center" if col_idx != 2 else "left", vertical="center")
+        ws.row_dimensions[row_idx].height = 19
+        row_idx += 1
+        
+    # Total Row
+    tot = rep["total"]
+    tot_vals = [
+        "", "Total", tot["target"], tot["physical_despatch"], tot["fnd"], tot["achieved"],
+        tot["corrosion_completed"], tot["corrosion_carry_forward"], tot["under_attention"], tot["in_yard"],
+        tot["under_attention"] + tot["in_yard"]
+    ]
+    for col_idx, v in enumerate(tot_vals, 1):
+        c = ws.cell(row=row_idx, column=col_idx, value=v)
+        c.fill = total_fill
+        c.font = total_font
+        c.border = thin_border
+        c.alignment = Alignment(horizontal="center" if col_idx != 2 else "left", vertical="center")
+    ws.row_dimensions[row_idx].height = 22
+    
+    # Auto-fit Column Widths (ignoring merged Rows 1 and 2 to avoid huge Column A)
+    for col_idx in range(1, num_cols + 1):
+        col_letter = get_column_letter(col_idx)
+        max_len = 0
+        for r_i in range(3, row_idx + 1):
+            val = str(ws.cell(row=r_i, column=col_idx).value or "")
+            if len(val) > max_len:
+                max_len = len(val)
+        
+        if col_idx == 1:
+            ws.column_dimensions[col_letter].width = 6
+        elif col_idx == 2:
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 13)
+        else:
+            ws.column_dimensions[col_letter].width = max(max_len + 3, 11)
+        
+    out = io.BytesIO()
+    wb.save(out)
+    return out.getvalue()

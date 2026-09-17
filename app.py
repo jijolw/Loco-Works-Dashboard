@@ -33,6 +33,7 @@ def index():
 @app.route("/coach/reports/aerialview/print.html")
 @app.route("/reports/aerialview/print.html")
 @app.route("/report/aerial")
+@app.route("/api/pdf/aerial")
 def serve_aerial_pdf():
     from services.pdf_service import generate_pdf_bytes
     from flask import make_response, request
@@ -55,6 +56,33 @@ def serve_aerial_pdf():
     except Exception as e:
         app.logger.exception("Error generating PDF report")
         return f"Error generating PDF report: {e}", 500
+
+
+@app.route("/coach/reports/aerialview/print2.html")
+@app.route("/reports/aerialview/print2.html")
+@app.route("/report/aerial2")
+def serve_aerial_pdf2():
+    from services.pdf_service import generate_pdf_bytes
+    from flask import make_response, request
+    try:
+        today_plan = request.args.get("today_plan", "")
+        tmrw_plan = request.args.get("tmrw_plan", "")
+        today_out = request.args.get("today_out", "")
+        wise_desp = request.args.get("wise_desp", "")
+        
+        pdf_data = generate_pdf_bytes(
+            today_plan=today_plan,
+            tmrw_plan=tmrw_plan,
+            today_out=today_out,
+            wise_desp=wise_desp
+        )
+        response = make_response(pdf_data)
+        response.headers['Content-Type'] = 'application/pdf'
+        response.headers['Content-Disposition'] = 'inline; filename=aerial_view2_snapshot.pdf'
+        return response
+    except Exception as e:
+        app.logger.exception("Error generating Aerial View 2 PDF report")
+        return f"Error generating Aerial View 2 PDF report: {e}", 500
 
 
 # =====================================================
@@ -304,7 +332,8 @@ def api_poh_analysis():
     try:
         from services.poh_service import analyze_poh_performance
         fy = request.args.get("fy")
-        data = analyze_poh_performance(fy)
+        family = request.args.get("family", "ALL")
+        data = analyze_poh_performance(fy=fy, family=family)
         return jsonify(data)
     except Exception as e:
         traceback.print_exc()
@@ -401,6 +430,7 @@ def api_acloco_program():
 # =====================================================
 
 @app.route("/api/coach/<coachno>/historical_poh")
+@app.route("/api/coach/history/<coachno>")
 def api_coach_historical_poh(coachno):
     """Fetch merged POH history and manual records for a coach."""
     try:
@@ -769,8 +799,9 @@ def api_reports_performance_download():
 def api_reports_yearly_outturn():
     try:
         fy = request.args.get("fy", "2026-27")
+        bypass = request.args.get("bypass_cache", "false").lower() == "true" or request.args.get("refresh", "false").lower() == "true"
         from services.yearly_outturn_service import get_yearly_outturn_data
-        data = get_yearly_outturn_data(fy)
+        data = get_yearly_outturn_data(fy, bypass_cache=bypass)
         return jsonify(data)
     except Exception as e:
         traceback.print_exc()
@@ -830,8 +861,25 @@ def api_reports_type_wise():
         current_year = str(now.year)
         month = request.args.get("month", current_month)
         year = request.args.get("year", current_year)
+        bypass = request.args.get("bypass_cache", "false").lower() == "true" or request.args.get("refresh", "false").lower() == "true"
         from services.type_wise_holding_service import get_type_wise_holding_report_data
-        data = get_type_wise_holding_report_data(month, year)
+        data = get_type_wise_holding_report_data(month, year, bypass_cache=bypass)
+        return jsonify(data)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/inside_shop")
+def api_inside_shop():
+    try:
+        now = datetime.now()
+        current_month = now.strftime("%B")
+        current_year = now.year
+        month = request.args.get("month", current_month)
+        year = int(request.args.get("year", current_year))
+        from services.inside_shop_service import get_inside_shop_data
+        data = get_inside_shop_data(month, year)
         return jsonify(data)
     except Exception as e:
         traceback.print_exc()
@@ -861,6 +909,67 @@ def api_reports_type_wise_download():
         return f"Error: {e}", 500
 
 
+@app.route("/api/reports/production_planning")
+@app.route("/api/reports/holding_master")
+def api_reports_production_planning():
+    try:
+        from services.production_planning_service import get_production_planning_data
+        data = get_production_planning_data()
+        return jsonify(data)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/reports/production_planning/download")
+@app.route("/api/reports/holding_master/download")
+def api_reports_production_planning_download():
+    from flask import send_file
+    import io
+    try:
+        from services.production_planning_service import generate_production_planning_excel
+        excel_bytes = generate_production_planning_excel()
+        return send_file(
+            io.BytesIO(excel_bytes),
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            as_attachment=True,
+            download_name=f"workshop_production_planning_holding_{datetime.now().strftime('%Y%m%d')}.xlsx"
+        )
+    except Exception as e:
+        traceback.print_exc()
+        return f"Error: {e}", 500
+
+
+@app.route("/api/reports/age_analysis")
+def api_reports_age_analysis():
+    try:
+        from services.age_analysis_service import get_age_analysis_summary
+        data = get_age_analysis_summary()
+        return jsonify(data)
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/reports/age_analysis/download")
+def api_reports_age_analysis_download():
+    from flask import send_file
+    import io
+    try:
+        from services.age_analysis_service import generate_age_analysis_excel_bytes
+        excel_bytes = generate_age_analysis_excel_bytes()
+        return send_file(
+            io.BytesIO(excel_bytes),
+            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            as_attachment=True,
+            download_name=f"ICF_Live_Coaches_Age_Analysis_{datetime.now().strftime('%Y%m%d')}.xlsx"
+        )
+    except Exception as e:
+        traceback.print_exc()
+        return f"Error: {e}", 500
+
+
+
 @app.route("/api/query", methods=["POST"])
 def api_natural_language_query():
     try:
@@ -883,13 +992,21 @@ def api_natural_language_query():
 # MAIN
 # =====================================================
 
+
 if __name__ == "__main__":
     print("=" * 50)
     print("  LW/PER Loco Works Dashboard")
     print(f"  Starting on http://{FLASK_HOST}:{FLASK_PORT}")
     print("=" * 50)
+
+    from services.type_wise_holding_service import fetch_live_keycloak_demands
+    import threading
+    threading.Thread(target=fetch_live_keycloak_demands, daemon=True).start()
+
     app.run(
         host=FLASK_HOST,
         port=FLASK_PORT,
         debug=FLASK_DEBUG,
+        threaded=True
     )
+

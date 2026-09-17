@@ -4,252 +4,101 @@
 # =====================================================
 
 import logging
-from datetime import datetime
-
-from services.erp_service import fetch_master, fetch_single, fetch_year_built, _parse_date
+from services.audit_service import get_audit_data, _load_all_records
 from services.decoders import decode_family, decode_repair, decode_all
-from services.corrosion_service import extract_year_built_from_no
+from services.erp_service import _parse_date
 
 logger = logging.getLogger(__name__)
 
-# Standard LHB schedule mappings
-LHB_SS1_CODES = {"104"}
-LHB_SS2_CODES = {"121", "243", "244"}
-LHB_SS3_CODES = {"122", "241", "242"}
-CONV_POH_CODES = {"1", "5", "6", "7", "141"}
-
 def get_standard_lhb_schedule(repair_code):
-    """Map repair code to standardized LHB schedule."""
-    rc = str(repair_code).strip().upper()
-    if rc in LHB_SS1_CODES or "SS1" in rc:
+    rc = str(repair_code or "").strip().upper()
+    if "SS1" in rc or "SS-1" in rc or rc == "104":
         return "SS1"
-    elif rc in LHB_SS2_CODES or "SS2" in rc:
+    elif "SS2" in rc or "SS-2" in rc or rc in {"121", "243", "244"}:
         return "SS2"
-    elif rc in LHB_SS3_CODES or "SS3" in rc:
+    elif "SS3" in rc or "SS-3" in rc or rc in {"122", "241", "242"}:
         return "SS3"
-    elif rc in CONV_POH_CODES or "POH" in rc:
+    elif "POH" in rc or rc in {"1", "5", "6", "7", "141"}:
         return "CONV_POH"
     return "OTHER"
 
-def get_weight_band(hrs):
-    if hrs is None or hrs <= 0:
-        return "Not Filled"
-    elif hrs <= 200:
-        return "Light"
-    elif hrs <= 500:
-        return "Medium Light"
-    elif hrs <= 1000:
-        return "Medium Heavy"
-    else:
-        return "Very Heavy"
-
-def analyze_poh_performance(fy=None):
+def analyze_poh_performance(fy=None, family="ALL"):
     """
-    Perform POH analytics:
-    1. Previous workshop performance (man-hours and premature return rates, with detailed coach lists)
-    2. LHB schedule histories and misclassification checks (yearly schedule metrics)
+    Perform POH analytics with 100% unified mathematical consistency with Audit & Analysis.
     """
-    master = fetch_master()
-    if not master:
-        return {"workshops": {}, "lhb_analysis": {"by_fy": {}, "by_type": {}, "coaches": []}}
-        
-    now = datetime.now()
-    wks_data = {} # workshop_code -> statistics
+    audit_res = get_audit_data(fy_filter=fy, family_filter=family, type_filter="ALL")
     
-    # Restrict previous workshop analysis to coaches received in the selected financial year
-    if fy:
-        try:
-            start_year = int(fy.split("-")[0])
-            start_date = datetime(start_year, 4, 1)
-            end_date = datetime(start_year + 1, 3, 31, 23, 59, 59)
-        except Exception:
-            start_date = datetime(2025, 4, 1)
-            end_date = now
-    else:
-        start_date = datetime(2025, 4, 1)
-        end_date = now
+    # Format workshop map
+    wks_data = {}
+    for w in audit_res.get("workshop_rankings", []):
+        wks_name = w["workshop"]
+        wks_data[wks_name] = {
+            "workshop": wks_name,
+            "total_coaches": w["total_received"],
+            "with_hours": w["coaches_with_hours"],
+            "total_hours": round(w["avg_hours"] * w["coaches_with_hours"], 1),
+            "avg_hours": w["avg_hours"],
+            "max_hours": w["max_hours"],
+            "heavy_pct": w["heavy_pct"],
+            "coaches": w["coaches"]
+        }
         
+    # LHB Schedule analysis
+    master, cache_data = _load_all_records()
     lhb_by_fy = {}
     lhb_by_type = {}
     lhb_coaches_list = []
     
-    # Track coach details for POH and LHB analysis
-    from datetime import timedelta
-    recd_cutoff = start_date - timedelta(days=365)
-    
     for rec in master:
-        # Pre-filter by receipt date to avoid fetching details for thousands of old historic coaches
-        recd_str = rec.get("recd_date") or rec.get("recddate")
-        recd_dt = _parse_date(recd_str)
-        if not recd_dt or recd_dt < recd_cutoff:
-            continue
-            
-        demandid = rec.get("demandid")
-        if not demandid:
-            continue
-            
-        try:
-            detail = fetch_single(demandid)
-        except Exception:
-            continue
-            
-        # Filter out condemned / returned status coaches
-        status = str(detail.get("status") or detail.get("pohstatus") or "").strip().upper()
-        if status in ("COND", "BHOPAL", "RETURN") or "COND" in status or "RETURN" in status:
-            continue
-            
-        desp_str = detail.get("desp_date") or detail.get("despdate") or ""
-        desp_dt = _parse_date(desp_str)
-        if not desp_dt:
-            continue
-            
-        coachno = rec.get("coachno", "")
-        coach_desc = rec.get("coach_desc", "") or rec.get("coachdesc", "")
-        rt = str(detail.get("repairid") or detail.get("repair_type") or rec.get("repairid") or rec.get("repair_type") or "").strip()
-        family = decode_family(coach_desc, rt)
+        did = str(rec.get("demandid") or rec.get("demandId") or "").strip()
+        det = cache_data.get(did, {})
+        coach_desc = rec.get("coach_desc") or rec.get("coachdesc") or det.get("coach_desc") or ""
+        family_dec = decode_family(coach_desc)
         
-        is_in_period = (start_date <= desp_dt <= end_date)
-        is_lhb = (family == "LHB")
-        
-        # Performance optimization: Skip details for old non-LHB coaches
-        if not is_in_period and not is_lhb:
-            continue
-            
-        last_poh_wks = str(detail.get("last_poh") or rec.get("last_poh") or "").strip().upper()
-        
-        # Calculate man hours
-        try:
-            pre = float(detail.get("presurveyhrs") or 0)
-        except (ValueError, TypeError):
-            pre = 0.0
-        try:
-            final = float(detail.get("finalhrs") or 0)
-        except (ValueError, TypeError):
-            final = 0.0
-        eff_hrs = final if final > 0 else pre
-        band = get_weight_band(eff_hrs)
-        
-        # Premature return: repair code is "4" (Out of Course Repair, "OR")
-        is_premature = (rt == "4" or rt.upper() == "OR" or decode_repair(rt) == "OR")
-        
-        # Group by previous workshop (only for coaches outturned in the selected period)
-        if is_in_period and last_poh_wks and last_poh_wks not in ("", "nan", "None", "0"):
-            if last_poh_wks not in wks_data:
-                wks_data[last_poh_wks] = {
-                    "total_count": 0,
-                    "premature_count": 0,
-                    "man_hours_list": [],
-                    "bands": {"Light": 0, "Medium Light": 0, "Medium Heavy": 0, "Very Heavy": 0, "Not Filled": 0},
-                    "coaches": []
-                }
-            
-            stats = wks_data[last_poh_wks]
-            stats["total_count"] += 1
-            if is_premature:
-                stats["premature_count"] += 1
-            if eff_hrs > 0:
-                stats["man_hours_list"].append(eff_hrs)
-            stats["bands"][band] += 1
-            
-            stats["coaches"].append({
-                "coachno": coachno,
-                "coach_desc": coach_desc,
-                "family": family,
-                "repair_type": decode_repair(rt),
-                "recd_date": recd_str,
-                "desp_date": desp_str,
-                "man_hours": eff_hrs,
-                "weight_band": band,
-                "is_premature": is_premature
-            })
-            
-        # 2. LHB Schedule classification and history analysis
-        if is_lhb:
+        if family_dec == "LHB":
+            recd_str = rec.get("recd_date") or rec.get("recddate") or det.get("recd_date") or ""
+            recd_dt = _parse_date(recd_str)
+            coach_fy = "UNKNOWN"
+            if recd_dt:
+                y, m = recd_dt.year, recd_dt.month
+                coach_fy = f"{y}-{str(y+1)[2:]}" if m >= 4 else f"{y-1}-{str(y)[2:]}"
+            elif len(recd_str) >= 4:
+                try:
+                    parts = recd_str.replace("-", "/").split("/")
+                    yr = int(parts[0]) if len(parts[0]) == 4 else (int(parts[2]) if len(parts) > 2 and len(parts[2]) == 4 else (2000 + int(parts[2]) if len(parts) > 2 else 0))
+                    mo = int(parts[1]) if len(parts) > 1 else 1
+                    if yr >= 2018:
+                        coach_fy = f"{yr}-{str(yr+1)[2:]}" if mo >= 4 else f"{yr-1}-{str(yr)[2:]}"
+                except Exception:
+                    pass
+                
+            rt = str(det.get("repair_type") or det.get("repairid") or rec.get("repair_type") or "").strip()
             sched = get_standard_lhb_schedule(rt)
             
-            # Check year built to compute physical age
-            cm = fetch_year_built(coachno)
-            yb_raw = str(cm.get("year_built", "") or detail.get("year_built", "") or rec.get("year_built", "")).strip()
+            if coach_fy not in lhb_by_fy:
+                lhb_by_fy[coach_fy] = {"SS1": 0, "SS2": 0, "SS3": 0, "CONV_POH": 0, "OTHER": 0, "TOTAL": 0}
+            lhb_by_fy[coach_fy][sched] = lhb_by_fy[coach_fy].get(sched, 0) + 1
+            lhb_by_fy[coach_fy]["TOTAL"] += 1
             
-            try:
-                yb = int(float(yb_raw))
-            except (ValueError, TypeError):
-                yb = extract_year_built_from_no(coachno)
-                
-            age = desp_dt.year - yb if yb and desp_dt else None
-            
-            issue = None
-            if sched == "CONV_POH":
-                issue = "LHB Coach marked with Conventional POH code (needs SS2/SS3 standard)"
-            elif sched == "OTHER" and rt not in ("", "4"): # exclude blank and OR
-                issue = f"LHB Coach marked with unknown repair code: {rt}"
-            elif age is not None:
-                # Age checks for schedule misalignment with conservative buffers
-                if age < 1 and sched in ("SS2", "SS3"):
-                    issue = f"Coach is too young ({age} years) for selected schedule: {sched}"
-                elif age > 10 and sched == "SS1":
-                    issue = f"Coach is old ({age} years) for a minor SS1 schedule"
-                    
-            # Group LHB schedule statistics by Financial Year
-            y, m = desp_dt.year, desp_dt.month
-            fy_grp = f"{y}-{str(y+1)[2:]}" if m >= 4 else f"{y-1}-{str(y)[2:]}"
-            
-            if fy_grp not in lhb_by_fy:
-                lhb_by_fy[fy_grp] = {"SS1": 0, "SS2": 0, "SS3": 0, "CONV_POH": 0, "OTHER": 0, "TOTAL": 0}
-            lhb_by_fy[fy_grp][sched] += 1
-            lhb_by_fy[fy_grp]["TOTAL"] += 1
-            
-            # Group LHB schedule statistics by coach type
             if coach_desc not in lhb_by_type:
                 lhb_by_type[coach_desc] = {"SS1": 0, "SS2": 0, "SS3": 0, "CONV_POH": 0, "OTHER": 0, "TOTAL": 0}
-            lhb_by_type[coach_desc][sched] += 1
+            lhb_by_type[coach_desc][sched] = lhb_by_type[coach_desc].get(sched, 0) + 1
             lhb_by_type[coach_desc]["TOTAL"] += 1
             
-            lhb_coaches_list.append({
-                "coachno": coachno,
-                "coach_desc": coach_desc,
-                "repair_type": decode_repair(rt),
-                "repair_code": rt,
-                "schedule": sched,
-                "year_built": yb,
-                "age": age,
-                "recd_date": recd_str,
-                "desp_date": desp_str,
-                "last_poh_wks": last_poh_wks,
-                "issue": issue,
-                "fy": fy_grp
-            })
-
-    # Summarize workshop stats
-    workshops_summary = {}
-    for wks, stats in wks_data.items():
-        total = stats["total_count"]
-        prem_cnt = stats["premature_count"]
-        hrs_list = stats["man_hours_list"]
-        
-        avg_hrs = round(sum(hrs_list) / len(hrs_list), 1) if hrs_list else 0.0
-        prem_rate = round((prem_cnt / total) * 100, 1) if total > 0 else 0.0
-        
-        # Calculate band percentages
-        band_pcts = {}
-        for b, count in stats["bands"].items():
-            band_pcts[b] = round((count / total) * 100, 1) if total > 0 else 0.0
-            
-        workshops_summary[wks] = {
-            "total_count": total,
-            "avg_man_hours": avg_hrs,
-            "premature_count": prem_cnt,
-            "premature_rate": prem_rate,
-            "bands": band_pcts,
-            "band_counts": stats["bands"],
-            "coaches": stats["coaches"]
-        }
-            
-    # Sort workshops by total count descending
-    sorted_workshops = dict(sorted(workshops_summary.items(), key=lambda x: x[1]["total_count"], reverse=True))
-
+            if fy is None or fy.upper() == "ALL" or coach_fy.upper() == fy.upper():
+                cno = rec.get("coachno") or det.get("coachno") or ""
+                last_poh_wks = str(rec.get("last_poh") or det.get("last_poh") or "").strip().upper()
+                lhb_coaches_list.append({
+                    "coachno": cno,
+                    "coach_desc": coach_desc,
+                    "recd_date": recd_str,
+                    "schedule": sched,
+                    "raw_repair_type": rt,
+                    "last_poh": last_poh_wks
+                })
+                
     return {
-        "workshops": sorted_workshops,
+        "workshops": wks_data,
         "lhb_analysis": {
             "by_fy": lhb_by_fy,
             "by_type": lhb_by_type,
@@ -257,57 +106,16 @@ def analyze_poh_performance(fy=None):
         }
     }
 
-def get_targets_vs_achievement(fy):
-    """
-    Get target vs achievement metrics for a given financial year from the database.
-    """
-    from services.db_service import get_targets_vs_achievement as rest_get_targets
+def get_targets_vs_achievement(fy=None):
     try:
-        rows = rest_get_targets(fy)
-        # Sort months chronologically by Financial Year: April (4) to March (3)
-        def sort_key(r):
-            m = r["month"]
-            m_order = (m - 4) % 12 if m > 0 else 0
-            family_name = f"{r['stock_type']} {r['schedule']} {r['ac_nac']}"
-            return (m_order, family_name)
-            
-        sorted_rows = sorted(rows, key=sort_key)
-        
-        # Map calendar months to names
-        month_names = {
-            4: "April", 5: "May", 6: "June", 7: "July", 8: "August", 9: "September",
-            10: "October", 11: "November", 12: "December", 1: "January", 2: "February", 3: "March"
-        }
-        
-        comparison = []
-        for r in sorted_rows:
-            m = r["month"]
-            st = r["stock_type"]
-            sched = r["schedule"]
-            ac_nac = r["ac_nac"]
-            
-            # Combine stock type, schedule, and class (AC/NAC) cleanly
-            parts = [st, sched]
-            if ac_nac and ac_nac.upper() != "NA":
-                parts.append(ac_nac)
-            family_name = " ".join(parts)
-                
-            t = r["target_qty"]
-            a = r["achieved_qty"]
-            wd = r["working_days"]
-            
-            comparison.append({
-                "type": "monthly" if m > 0 else "yearly",
-                "month": m,
-                "month_name": month_names.get(m, "Full Year"),
-                "family": family_name,
-                "target": t,
-                "actual": a,
-                "variance": a - t,
-                "working_days": wd
-            })
-            
-        return comparison
-    except Exception as e:
-        logger.error(f"Error fetching targets for {fy}: {e}")
-        return []
+        from services.db_service import get_db_connection
+        conn = get_db_connection()
+        cur = conn.cursor()
+        cur.execute("SELECT * FROM outturn_targets ORDER BY month_id ASC")
+        rows = [dict(r) for r in cur.fetchall()]
+        conn.close()
+        if rows:
+            return {"targets": rows}
+    except Exception:
+        pass
+    return {"targets": []}

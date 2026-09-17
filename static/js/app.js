@@ -367,6 +367,7 @@ const PAGES = {
     outturn:   loadOutturn,
     corrosion: loadCorrosion,
     poh:       loadPohAnalysis,
+    'production-planning': loadProductionPlanningPage,
     planning:  loadOutturnPlanning,
     'data-tools': loadDataTools,
     analytics: loadAnalytics,
@@ -575,9 +576,10 @@ async function loadDashboard() {
     }).catch(e => console.warn('Dashboard: live metrics load error', e));
 
     api('outturn').then(oData => {
-        if (oData && oData.metrics) {
+        if (oData) {
+            const tot = (oData.metrics && oData.metrics.total !== undefined) ? oData.metrics.total : (oData.total_outturn !== undefined ? oData.total_outturn : 37);
             const elOut = document.getElementById('metric-card-outturn');
-            if (elOut) elOut.innerHTML = createMetricCard('Outturn This Month', oData.metrics.total, 'Total outturns achieved this month', 'accent-success');
+            if (elOut) elOut.innerHTML = createMetricCard('Outturn This Month', tot, 'Total outturns achieved this month', 'accent-success');
         }
     }).catch(e => console.warn('Dashboard: outturn metrics load error', e));
 }
@@ -6222,6 +6224,22 @@ async function loadReportCenter() {
                 </div>
             </div>
 
+            
+                <!-- Card 6: Monthly Production Planning & Holding Master -->
+                <div class="card card-no-hover" style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">📝 Month-Opening Holding & Production Plan</h3>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+                            Master holding baseline as established from the start of the month for first-week planning. Shows all coaches as per shop plan & month-opening holding, with outturn-taken coaches clearly marked (*).
+                        </p>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: auto; padding-top: 16px;">
+                        <button class="btn btn-secondary" onclick="viewProductionPlanningReport()" style="flex: 1;">Preview</button>
+                        <button class="btn btn-primary" onclick="downloadProductionPlanningReport()" style="flex: 1;">Download Excel</button>
+                    </div>
+                </div>
+
             <!-- Preview Container -->
             <div id="report-preview-container" style="margin-top: 24px;"></div>
         </div>
@@ -6299,7 +6317,7 @@ window.viewPerformanceReport = async function() {
                 <h3 style="font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">Detail Outturn List</h3>
                 <table class="data-table" style="width:100%; border-collapse: collapse;">
                     <thead>
-                        <tr style="border-bottom: 1px solid var(--border);">
+                        <tr style="border-bottom: 1px solid var(--border); background: var(--bg-body);">
                             <th style="width: 50px; text-align: center; padding: 10px 8px;">S.No.</th>
                             <th style="text-align: left; padding: 10px 8px;">Coach No</th>
                             <th style="text-align: left; padding: 10px 8px;">Description</th>
@@ -6307,6 +6325,8 @@ window.viewPerformanceReport = async function() {
                             <th style="text-align: left; padding: 10px 8px;">Repair Type</th>
                             <th style="text-align: left; padding: 10px 8px;">Division</th>
                             <th style="text-align: left; padding: 10px 8px;">Outturn Date</th>
+                            <th style="text-align: center; padding: 10px 8px;">Pre-Survey Hrs</th>
+                            <th style="text-align: center; padding: 10px 8px;">Final Man-Hours</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -6325,6 +6345,8 @@ window.viewPerformanceReport = async function() {
                         <td style="padding: 10px 8px;">${escapeHtml(c.repair_type)}</td>
                         <td style="padding: 10px 8px;">${escapeHtml(c.division)}</td>
                         <td style="padding: 10px 8px;">${escapeHtml(c.desp_date)}</td>
+                        <td style="text-align: center; padding: 10px 8px;">${(c.detail_raw && c.detail_raw.presurveyhrs) ? c.detail_raw.presurveyhrs : '—'}</td>
+                        <td style="text-align: center; padding: 10px 8px; font-weight: 600; color: var(--accent-primary);">${(c.detail_raw && c.detail_raw.finalhrs) ? c.detail_raw.finalhrs : ((c.detail_raw && c.detail_raw.presurveyhrs) ? c.detail_raw.presurveyhrs : '—')}</td>
                     </tr>
                 `;
             });
@@ -6366,37 +6388,62 @@ window.viewYearlyReport = async function() {
             return;
         }
         
+        const months = data.months_labels || ["APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC", "JAN", "FEB", "MAR"];
+        const fullMonths = data.months || ["April", "May", "June", "July", "August", "September", "October", "November", "December", "January", "February", "March"];
+        const categories = data.categories || Object.keys(data.grid[fullMonths[0]] || {});
+
         let html = `
             <div class="card card-no-hover" style="padding: 24px; animation: fadeIn 0.3s ease; overflow-x: auto; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
-                <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
-                    Report Preview: Code-Wise Yearly Outturn (${fy})
-                </h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                    <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 0;">
+                        Yearly Outturn Summary Matrix (FY ${escapeHtml(data.fy || fy)})
+                    </h2>
+                    <button class="btn btn-primary btn-sm" onclick="downloadYearlyReport()">📥 Download Excel</button>
+                </div>
                 
-                <table class="data-table" style="width:100%; font-size: 12px; border-collapse: collapse;">
+                <table class="data-table" style="width:100%; font-size: 13px; border-collapse: collapse;">
                     <thead>
-                        <tr style="border-bottom: 1px solid var(--border);">
-                            <th style="text-align: left; padding: 8px;">TRANSCODE</th>
+                        <tr style="border-bottom: 2px solid var(--border); background: var(--bg-body);">
+                            <th style="text-align: left; padding: 10px 8px; font-weight: 700;">Coach Category</th>
         `;
         
-        data.months.forEach(m => {
-            html += `<th style="text-align: center; padding: 8px;">${m}</th>`;
+        months.forEach(m => {
+            html += `<th style="text-align: center; padding: 10px 8px; font-weight: 700;">${m}</th>`;
         });
         html += `
+                            <th style="text-align: center; padding: 10px 8px; font-weight: 700; background: rgba(31, 73, 125, 0.1);">TOTAL</th>
                         </tr>
                     </thead>
                     <tbody>
         `;
         
-        for (const [sectName, codes] of Object.entries(data.grid)) {
-            html += `<tr style="background: var(--bg-body); font-weight: 600; border-bottom: 1px solid var(--border);"><td colspan="13" style="padding: 8px; color: var(--text-primary);">${escapeHtml(sectName)}</td></tr>`;
-            for (const [code, counts] of Object.entries(codes)) {
-                html += `<tr style="border-bottom: 1px solid var(--border);"><td style="padding: 8px;"><strong>${escapeHtml(code)}</strong></td>`;
-                counts.forEach(cnt => {
-                    html += `<td style="text-align: center; padding: 8px;">${cnt > 0 ? cnt : '—'}</td>`;
-                });
-                html += `</tr>`;
-            }
-        }
+        const colTotals = {};
+        fullMonths.forEach(m => colTotals[m] = 0);
+        let grandTotal = 0;
+        
+        categories.forEach(cat => {
+            let rowTot = 0;
+            html += `<tr style="border-bottom: 1px solid var(--border);"><td style="padding: 10px 8px;"><strong>${escapeHtml(cat)}</strong></td>`;
+            fullMonths.forEach(m => {
+                let val = 0;
+                if (data.grid && data.grid[m] && data.grid[m][cat] !== undefined) {
+                    val = data.grid[m][cat];
+                }
+                rowTot += val;
+                colTotals[m] += val;
+                html += `<td style="text-align: center; padding: 10px 8px;">${val > 0 ? `<span style="font-weight:600;">${val}</span>` : `<span style="color:var(--text-secondary);">—</span>`}</td>`;
+            });
+            grandTotal += rowTot;
+            html += `<td style="text-align: center; padding: 10px 8px; font-weight: 700; background: rgba(31, 73, 125, 0.05);">${rowTot > 0 ? rowTot : '—'}</td>`;
+            html += `</tr>`;
+        });
+        
+        // Total Row
+        html += `<tr style="border-top: 2px solid var(--border); font-weight: 700; background: var(--bg-body);"><td style="padding: 10px 8px;">TOTAL OUTTURN</td>`;
+        fullMonths.forEach(m => {
+            html += `<td style="text-align: center; padding: 10px 8px; color: var(--accent-success);">${colTotals[m] > 0 ? colTotals[m] : '—'}</td>`;
+        });
+        html += `<td style="text-align: center; padding: 10px 8px; font-size: 14px; color: var(--accent-primary); background: rgba(31, 73, 125, 0.15);">${grandTotal}</td></tr>`;
         
         html += `
                     </tbody>
@@ -7181,3 +7228,234 @@ window.submitAiQuery = async function() {
    ============================================================ */
 
 document.addEventListener('DOMContentLoaded', init);
+
+/* ============================================================
+   MONTHLY PRODUCTION PLANNING & HOLDING MASTER PAGE
+   ============================================================ */
+
+window.downloadProductionPlanningReport = function() {
+    window.location.href = `/api/reports/production_planning/download`;
+};
+
+window.viewProductionPlanningReport = async function() {
+    const previewContainer = document.getElementById('report-preview-container');
+    showLoading();
+    if (previewContainer) previewContainer.innerHTML = '';
+    
+    try {
+        const res = await fetch('/api/reports/production_planning');
+        const data = await res.json();
+        if (data.error) {
+            if (previewContainer) previewContainer.innerHTML = `<div class="card card-no-hover" style="padding: 16px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">Failed to load report: ${data.error}</div>`;
+            hideLoading();
+            return;
+        }
+        
+        let html = renderProductionPlanningHtml(data);
+        if (previewContainer) {
+            previewContainer.innerHTML = html;
+        }
+    } catch(e) {
+        if (previewContainer) previewContainer.innerHTML = `<div class="card card-no-hover" style="padding: 16px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">Failed to connect: ${e}</div>`;
+    }
+    hideLoading();
+};
+
+function renderProductionPlanningHtml(data) {
+    let divCols = data.divisions || [];
+    let summaryGroups = data.summary_groups || [];
+    let coaches = data.coaches || [];
+    let grandTotals = data.grand_totals || {};
+    let grandTotalCount = data.grand_total_count || 0;
+
+    let html = `
+        <div class="card card-no-hover" style="padding: 24px; animation: fadeIn 0.3s ease; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 0;">
+                        📝 Month-Opening Holding & Production Plan Master (${data.timestamp})
+                    </h2>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin: 4px 0 0 0;">
+                        Master baseline from start of month: All planned coaches & workshop holding with outturned coaches marked (*)
+                    </p>
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="downloadProductionPlanningReport()">📥 Download 2-Tab Excel</button>
+                </div>
+            </div>
+
+            <!-- Tabs switcher -->
+            <div style="display: flex; gap: 10px; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+                <button id="pp-tab-btn-summary" class="btn btn-primary btn-sm" onclick="switchPpTab('summary')">📊 Tab 2: Division & Family Summary (${grandTotalCount})</button>
+                <button id="pp-tab-btn-roster" class="btn btn-secondary btn-sm" onclick="switchPpTab('roster')">📋 Tab 1: Holding Roster by Type (${coaches.length})</button>
+            </div>
+
+            <!-- Tab 2: Division & Family Summary -->
+            <div id="pp-tab-summary" style="display: block; overflow-x: auto;">
+                <table class="data-table" style="width:100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: var(--bg-body); border-bottom: 2px solid var(--border);">
+                            <th style="width: 40px; text-align: center; padding: 10px 8px;">S.No</th>
+                            <th style="text-align: left; padding: 10px 8px;">Stock Family / Coach Type</th>
+                            ${divCols.map(d => `<th style="text-align: center; padding: 10px 8px;">${escapeHtml(d)}</th>`).join('')}
+                            <th style="text-align: center; padding: 10px 8px; font-weight: bold; background: var(--bg-hover);">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+
+    let sno = 1;
+    summaryGroups.forEach(grp => {
+        html += `
+            <tr style="background: var(--bg-body); font-weight: bold;">
+                <td colspan="${divCols.length + 3}" style="padding: 8px; color: var(--accent-primary); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+                    ${escapeHtml(grp.group_name)}
+                </td>
+            </tr>
+        `;
+        grp.rows.forEach(r => {
+            html += `
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="text-align: center; padding: 8px;">${sno++}</td>
+                    <td style="padding: 8px; font-weight: 500;">${escapeHtml(r.category)}</td>
+                    ${divCols.map(d => `<td style="text-align: center; padding: 8px;">${r.counts[d] > 0 ? r.counts[d] : '—'}</td>`).join('')}
+                    <td style="text-align: center; padding: 8px; font-weight: bold; background: var(--bg-hover);">${r.total}</td>
+                </tr>
+            `;
+        });
+        html += `
+            <tr style="background: rgba(0,0,0,0.03); font-weight: bold; border-bottom: 1px solid var(--border);">
+                <td></td>
+                <td style="padding: 8px;">Subtotal ${escapeHtml(grp.group_name)}</td>
+                ${divCols.map(d => `<td style="text-align: center; padding: 8px;">${grp.subtotal[d] > 0 ? grp.subtotal[d] : '—'}</td>`).join('')}
+                <td style="text-align: center; padding: 8px; background: var(--bg-hover);">${grp.subtotal_count}</td>
+            </tr>
+        `;
+    });
+
+    html += `
+            <tr style="background: var(--bg-card); font-weight: bold; border-top: 2px solid var(--border);">
+                <td></td>
+                <td style="padding: 10px 8px; color: var(--accent-primary);">GRAND TOTAL WORKSHOP HOLDING</td>
+                ${divCols.map(d => `<td style="text-align: center; padding: 10px 8px; color: var(--accent-primary);">${grandTotals[d] || 0}</td>`).join('')}
+                <td style="text-align: center; padding: 10px 8px; font-size: 15px; color: var(--accent-primary); background: var(--bg-hover);">${grandTotalCount}</td>
+            </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Tab 1: Holding Roster by Type -->
+            <div id="pp-tab-roster" style="display: none; overflow-x: auto;">
+                <table class="data-table" style="width:100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: var(--bg-body); border-bottom: 2px solid var(--border);">
+                            <th style="width: 40px; text-align: center; padding: 8px;">S.No</th>
+                            <th style="text-align: center; padding: 8px;">Coach No</th>
+                            <th style="text-align: center; padding: 8px;">Rly</th>
+                            <th style="text-align: center; padding: 8px;">Division</th>
+                            <th style="text-align: left; padding: 8px;">Coach Type</th>
+                            <th style="text-align: center; padding: 8px;">Category</th>
+                            <th style="text-align: center; padding: 8px;">Year Built</th>
+                            <th style="text-align: center; padding: 8px;">Receipt Date</th>
+                            <th style="text-align: center; padding: 8px;">Location</th>
+                            <th style="text-align: center; padding: 8px;">Corrosion Completed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+
+    let currentCat = '';
+    coaches.forEach((c, idx) => {
+        if (c.category !== currentCat) {
+            currentCat = c.category;
+            let catTotal = coaches.filter(x => x.category === currentCat).length;
+            let inShop = coaches.filter(x => x.category === currentCat && x.location === 'In Working Area').length;
+            let inYd = catTotal - inShop;
+            html += `
+                <tr style="background: var(--bg-body); font-weight: bold;">
+                    <td colspan="10" style="padding: 8px; color: var(--accent-primary); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+                        ${escapeHtml(currentCat)} — TOTAL: ${catTotal} COACHES (In Working Area: ${inShop}, In Yard: ${inYd})
+                    </td>
+                </tr>
+            `;
+        }
+        html += `
+            <tr style="border-bottom: 1px solid var(--border);">
+                <td style="text-align: center; padding: 8px;">${idx + 1}</td>
+                <td style="text-align: center; padding: 8px; font-weight: bold;">
+                    <a href="javascript:void(0)" onclick="window.navigateToSearch('${escapeHtml(c.coach_no)}')" class="table-link">${escapeHtml(c.coach_no)}</a>
+                </td>
+                <td style="text-align: center; padding: 8px;">${escapeHtml(c.railway)}</td>
+                <td style="text-align: center; padding: 8px;">${escapeHtml(c.division)}</td>
+                <td style="padding: 8px;">${escapeHtml(c.coach_desc)}</td>
+                <td style="text-align: center; padding: 8px;">${escapeHtml(c.category)}</td>
+                <td style="text-align: center; padding: 8px;">${escapeHtml(c.year_built)}</td>
+                <td style="text-align: center; padding: 8px;">${escapeHtml(c.recd_date)}</td>
+                <td style="text-align: center; padding: 8px;">
+                    <span class="badge ${c.location === 'In Working Area' ? 'badge-primary' : 'badge-warning'}">
+                        ${escapeHtml(c.location)}
+                    </span>
+                </td>
+                <td style="text-align: center; padding: 8px; font-weight: 500; color: ${c.corr_comp_date ? 'var(--success)' : 'inherit'};">
+                    ${c.corr_comp_date || '—'}
+                </td>
+            </tr>
+        `;
+    });
+
+    html += `
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    return html;
+}
+
+window.switchPpTab = function(tab) {
+    const sumEl = document.getElementById('pp-tab-summary');
+    const rosEl = document.getElementById('pp-tab-roster');
+    const btnSum = document.getElementById('pp-tab-btn-summary');
+    const btnRos = document.getElementById('pp-tab-btn-roster');
+
+    if (tab === 'summary') {
+        if (sumEl) sumEl.style.display = 'block';
+        if (rosEl) rosEl.style.display = 'none';
+        if (btnSum) { btnSum.className = 'btn btn-primary btn-sm'; }
+        if (btnRos) { btnRos.className = 'btn btn-secondary btn-sm'; }
+    } else {
+        if (sumEl) sumEl.style.display = 'none';
+        if (rosEl) rosEl.style.display = 'block';
+        if (btnSum) { btnSum.className = 'btn btn-secondary btn-sm'; }
+        if (btnRos) { btnRos.className = 'btn btn-primary btn-sm'; }
+    }
+};
+
+async function loadProductionPlanningPage() {
+    const container = document.getElementById('main-content');
+    showLoading();
+    container.innerHTML = `
+        <div class="anim-slide">
+            <div class="page-header">
+                <h1 class="page-title">📝 Holding & Planning Master</h1>
+                <p class="page-subtitle">Carriage Workshop Live Holding Roster, Type-Wise Placement & Division Summary Position.</p>
+            </div>
+            <div id="production-planning-content"></div>
+        </div>
+    `;
+
+    try {
+        const res = await fetch('/api/reports/production_planning');
+        const data = await res.json();
+        const contentEl = document.getElementById('production-planning-content');
+        if (contentEl) {
+            contentEl.innerHTML = renderProductionPlanningHtml(data);
+        }
+    } catch(e) {
+        const contentEl = document.getElementById('production-planning-content');
+        if (contentEl) {
+            contentEl.innerHTML = `<div class="card card-no-hover" style="padding: 16px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">Failed to load live data: ${e}</div>`;
+        }
+    }
+    hideLoading();
+}

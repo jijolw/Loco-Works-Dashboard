@@ -129,7 +129,7 @@ def fetch_local_ac_locos():
     coach_sess = requests.Session()
     coach_locos = []
     try:
-        login_url = f"{COACH_ERP_BASE_URL}/coach/login"
+        login_url = getattr(config, "COACH_ERP_SSO_URL", "http://10.185.78.45/oauth2/authorization/keycloak")
         coach_sess.post(login_url, data={
             "username": COACH_ERP_USERNAME,
             "password": COACH_ERP_PASSWORD,
@@ -281,6 +281,13 @@ def sync_cycle(full_sync=False):
 
         # Map demandid -> master record for quick noofdays lookup
         master_map = {str(rec.get("demandid")).strip(): rec for rec in master_list if rec.get("demandid")}
+        # Map coachno -> latest demandid from master list for active coaches without demandid
+        coach_to_demand = {}
+        for rec in master_list:
+            cno_rec = str(rec.get("coachno") or rec.get("coach_no") or "").strip()
+            dem_rec = rec.get("demandid")
+            if cno_rec and dem_rec:
+                coach_to_demand[cno_rec] = str(dem_rec).strip()
 
         # Load historical details cache
         cache = load_cache()
@@ -291,8 +298,9 @@ def sync_cycle(full_sync=False):
         # A. Process active coaches (always fetch details fresh to reflect live progress)
         for c in active_coaches:
             coach_desc_upper = str(c.get("coach_desc") or "").strip().upper()
+            cno = str(c.get("coachno") or "").strip()
                 
-            demandid = c.get("demandid")
+            demandid = c.get("demandid") or coach_to_demand.get(cno) or f"ACTIVE_{cno}"
             detail = {}
             presurvey = ""
             final = ""
@@ -310,7 +318,7 @@ def sync_cycle(full_sync=False):
             master_rec = master_map.get(str(demandid).strip()) if demandid else None
             noofdays = master_rec.get("noofdays") or "" if master_rec else ""
             
-            if demandid:
+            if demandid and not str(demandid).startswith("ACTIVE_"):
                 try:
                     detail = fetch_single(demandid, bypass_cache=True)
                     presurvey = detail.get("presurveyhrs") or ""
@@ -338,7 +346,7 @@ def sync_cycle(full_sync=False):
             payload.append({
                 "coachno": c.get("coachno"),
                 "coach_desc": c.get("coach_desc"),
-                "demandid": c.get("demandid"),
+                "demandid": str(demandid).strip(),
                 "pitnum": c.get("pitnum"),
                 "recd_date": recd_iso,
                 "in_days": c.get("IN_DAYS"),

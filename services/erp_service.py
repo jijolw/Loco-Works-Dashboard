@@ -26,6 +26,7 @@ import requests
 # ── Project config ────────────────────────────────────
 import sys, os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+import config
 from config import (
     COACH_ERP_BASE_URL,
     COACH_ERP_USERNAME,
@@ -37,6 +38,9 @@ from config import (
     CACHE_TTL_SINGLE,
     CACHE_TTL_STATIC,
 )
+
+COACH_ERP_SSO_URL = getattr(config, "COACH_ERP_SSO_URL", "http://10.185.78.45/oauth2/authorization/keycloak")
+COACH_ERP_API_BASE = getattr(config, "COACH_ERP_API_BASE", "http://10.185.78.45/intranet/api")
 
 logger = logging.getLogger(__name__)
 
@@ -78,29 +82,47 @@ def cache_clear(key=None):
 _sessions: dict = {}   # "coach" / "acloco" → requests.Session
 
 
+from bs4 import BeautifulSoup
+
 def get_session():
     """
-    Return a ``requests.Session`` authenticated against Coach ERP.
+    Return a ``requests.Session`` authenticated against Coach ERP via Keycloak SSO.
 
-    The session is created once and reused.  If the login fails the
+    The session is created once and reused. If the login fails the
     function raises ``RuntimeError``.
     """
     if "coach" in _sessions:
         return _sessions["coach"]
 
     sess = requests.Session()
-    login_url = f"{COACH_ERP_BASE_URL}/coach/login"
-    payload = {
-        "username": COACH_ERP_USERNAME,
-        "password": COACH_ERP_PASSWORD,
-    }
+    sess.headers.update({
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    })
     try:
-        resp = sess.post(login_url, data=payload, timeout=30)
-        resp.raise_for_status()
-        logger.info("Coach ERP login successful")
-    except requests.RequestException as exc:
-        logger.error("Coach ERP login failed: %s", exc)
-        raise RuntimeError(f"Coach ERP login failed: {exc}") from exc
+        sso_url = getattr(config, "COACH_ERP_SSO_URL", "http://10.185.78.45/oauth2/authorization/keycloak")
+        r_init = sess.get(sso_url, allow_redirects=True, timeout=10)
+        soup = BeautifulSoup(r_init.text, "html.parser")
+        form = soup.find("form", id="kc-form-login") or soup.find("form")
+        if not form:
+            raise RuntimeError(f"Could not locate SSO login form. URL: {r_init.url}")
+
+        action_url = form.get("action")
+        payload = {
+            "username": COACH_ERP_USERNAME,
+            "password": COACH_ERP_PASSWORD,
+            "credentialId": ""
+        }
+        r_post = sess.post(action_url, data=payload, allow_redirects=True, timeout=10)
+        r_post.raise_for_status()
+        
+        xsrf = sess.cookies.get("XSRF-TOKEN")
+        if xsrf:
+            sess.headers.update({"X-XSRF-TOKEN": xsrf})
+            
+        logger.info("Coach ERP Keycloak SSO login successful")
+    except Exception as exc:
+        logger.error("Coach ERP SSO login failed: %s", exc)
+        raise RuntimeError(f"Coach ERP SSO login failed: {exc}") from exc
 
     _sessions["coach"] = sess
     return sess
@@ -166,68 +188,80 @@ _XHR_HEADERS = {"X-Requested-With": "XMLHttpRequest"}
 _is_offline = False
 
 
-def fetch_master():
+def fetch_master(force_live=False):
     """
-    Fetch the full coach master list from pohmaster/listdata2.html.
-
-    Returns
-    -------
-    list[dict]
-        Raw coach records as returned by the ERP.
+    Fetch master coach records directly from live Keycloak ERP API.
+    Falls back safely to local cache when offline.
     """
     global _is_offline
     cache_key = "master_list"
     cached = _get_cached(cache_key, CACHE_TTL_MASTER)
-    if cached is not None:
+    if not force_live and cached is not None:
         return cached
 
     import json
-    cache_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "erp_master_cache.json")
+    cache_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "erp_master_cache.json")
+    if not os.path.exists(cache_file):
+        cache_file = os.path.join(os.getcwd(), "erp_master_cache.json")
 
-    if _is_offline:
-        if os.path.exists(cache_file):
-            try:
-                with open(cache_file, "r", encoding="utf-8") as f:
-                    records = json.load(f)
-                _set_cached(cache_key, records)
-                logger.info("fetch_master: loaded %d records from fallback cache (offline mode active)", len(records))
-                return records
-            except Exception as e:
-                logger.error("Failed to read fallback cache in offline mode: %s", e)
-        raise RuntimeError("fetch_master failed: offline mode active and fallback cache missing")
-
-    sess = get_session()
-    url = f"{COACH_ERP_BASE_URL}/coach/pohmaster/listdata2.html"
+    # Try live query via Keycloak SSO
     try:
-        resp = sess.post(url, data=_MASTER_PAYLOAD, headers=_XHR_HEADERS, timeout=15)
-        resp.raise_for_status()
-        data = resp.json()
-        records = data.get("data", [])
-        
-        # Save fresh copy to disk cache
-        try:
-            with open(cache_file, "w", encoding="utf-8") as f:
-                json.dump(records, f, indent=2)
-        except Exception as e:
-            logger.error("Failed to write erp_master_cache.json: %s", e)
+        sess = get_session()
+        url = f"{config.COACH_ERP_API_BASE}/locos/masters/coach-receipts"
+        resp = sess.get(url, headers=_XHR_HEADERS, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            # Standardize keys
+            records = []
+            for item in data:
+                records.append({
+                    "demandid": item.get("demandId") or item.get("demandid"),
+                    "coachno": str(item.get("coachNo") or item.get("coachno") or "").strip(),
+                    "coach_desc": item.get("coachDesc") or item.get("coach_desc") or "",
+                    "recd_date": item.get("receivedDate") or item.get("recddate") or "",
+                    "tfr": item.get("tfr") or "",
+                    "tfr_date": item.get("tfr") or "",
+                    "corr_place": item.get("corrPlace") or "",
+                    "corr_comp": item.get("corrComp") or "",
+                    "desp_date": item.get("dispatchDate") or item.get("desp_date") or "",
+                    "actualdespdate": item.get("actualDispatchDate") or item.get("actualdespdate") or "",
+                    "pit_num": item.get("pitNum") or "",
+                    "stageid": item.get("stageId") or item.get("stageid") or "",
+                    "repair_type": str(item.get("repairType") or item.get("repair_type") or "1"),
+                    "status": item.get("status") or "Running",
+                    "last_poh": item.get("lastPoh") or "",
+                    "last_pohdate": item.get("lastPohDate") or "",
+                    "presurveyhrs": item.get("preSurveyHrs") or "",
+                    "finalhrs": item.get("finalHrs") or "",
+                    "division": item.get("inDivisionId") or "MAS"
+                })
             
+            # Save fresh copy to disk cache
+            try:
+                with open(cache_file, "w", encoding="utf-8") as f:
+                    json.dump(records, f, indent=2)
+            except Exception as e:
+                pass
+                
+            _set_cached(cache_key, records)
+            _is_offline = False
+            logger.info("fetch_master: fetched %d live records from Keycloak ERP API", len(records))
+            return records
     except Exception as exc:
         _is_offline = True
-        logger.error("fetch_master live query failed (switching to offline mode): %s", exc)
-        if os.path.exists(cache_file):
-            try:
-                with open(cache_file, "r", encoding="utf-8") as f:
-                    records = json.load(f)
-                logger.info("fetch_master: loaded %d records from fallback cache", len(records))
-            except Exception as e:
-                logger.error("Failed to read erp_master_cache.json: %s", e)
-                raise RuntimeError(f"fetch_master failed and fallback unavailable: {exc}") from exc
-        else:
-            raise RuntimeError(f"fetch_master failed and fallback cache missing: {exc}") from exc
+        logger.warning("Live ERP query failed, using fallback cache: %s", exc)
 
-    _set_cached(cache_key, records)
-    logger.info("fetch_master: %d records", len(records))
-    return records
+    # Fallback to local cache
+    if os.path.exists(cache_file):
+        try:
+            with open(cache_file, "r", encoding="utf-8") as f:
+                records = json.load(f)
+            _set_cached(cache_key, records)
+            return records
+        except Exception as e:
+            pass
+
+    return []
 
 
 def _merge_manual_updates(data):
@@ -270,103 +304,201 @@ def _merge_manual_updates(data):
     return data
 
 
-def fetch_single(demandid, bypass_cache=False):
+def _get_cache_filepath():
+    candidates = [
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "erp_coaches_cache.json"),
+        os.path.join(os.getcwd(), "erp_coaches_cache.json"),
+        "erp_coaches_cache.json"
+    ]
+    if getattr(sys, "frozen", False):
+        exe_dir = os.path.dirname(os.path.abspath(sys.executable))
+        candidates.insert(0, os.path.join(exe_dir, "erp_coaches_cache.json"))
+        meipass = getattr(sys, "_MEIPASS", "")
+        if meipass:
+            candidates.insert(0, os.path.join(meipass, "erp_coaches_cache.json"))
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return candidates[0]
+
+
+_disk_coaches_cache = None
+
+def _load_disk_coaches_cache():
+    global _disk_coaches_cache
+    if _disk_coaches_cache is not None:
+        return _disk_coaches_cache
+    cache_file = _get_cache_filepath()
+    if os.path.exists(cache_file):
+        try:
+            import json
+            with open(cache_file, "r", encoding="utf-8") as f:
+                _disk_coaches_cache = json.load(f)
+            return _disk_coaches_cache
+        except Exception as ce:
+            logger.error("Failed to read erp_coaches_cache.json: %s", ce)
+    return {}
+
+
+def _format_iso_to_dmy(iso_str):
+    if not iso_str:
+        return ""
+    iso_str = str(iso_str).strip()
+    if "/" in iso_str:
+        return iso_str
+    try:
+        dt = datetime.strptime(iso_str[:10], "%Y-%m-%d")
+        return dt.strftime("%d/%m/%Y")
+    except Exception:
+        return iso_str
+
+
+def fetch_coach_history(coachno):
     """
-    Fetch detailed data for a single coach by its demand ID.
+    Fetch live receipt history for a coach from the new ERP:
+    GET /intranet/api/locos/masters/coach-receipts/history/{coachno}
+    """
+    coachno = str(coachno).strip()
+    cache_key = f"hist_{coachno}"
+    cached = _get_cached(cache_key, CACHE_TTL_SINGLE)
+    if cached is not None:
+        return cached
 
-    Parameters
-    ----------
-    demandid : str | int
-        The ERP demand ID.
-    bypass_cache : bool, optional
-        Bypass in-memory cache and fetch from live ERP directly, by default False.
+    try:
+        sess = get_session()
+        api_base = getattr(config, "COACH_ERP_API_BASE", "http://10.185.78.45/intranet/api")
+        url = f"{api_base}/locos/masters/coach-receipts/history/{coachno}"
+        resp = sess.get(url, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            _set_cached(cache_key, data)
+            return data
+    except Exception as exc:
+        logger.warning("fetch_coach_history live query failed for %s: %s", coachno, exc)
+    return []
 
-    Returns
-    -------
-    dict
-        Coach detail record, or empty dict on failure.
+
+def fetch_coach_meta(coachno):
+    """
+    Fetch coach metadata from the new ERP:
+    GET /intranet/api/locos/masters/coaches/{coachno}
+    """
+    coachno = str(coachno).strip()
+    cache_key = f"meta_{coachno}"
+    cached = _get_cached(cache_key, CACHE_TTL_STATIC)
+    if cached is not None:
+        return cached
+
+    try:
+        sess = get_session()
+        api_base = getattr(config, "COACH_ERP_API_BASE", "http://10.185.78.45/intranet/api")
+        url = f"{api_base}/locos/masters/coaches/{coachno}"
+        resp = sess.get(url, timeout=10)
+        if resp.status_code == 200:
+            data = resp.json()
+            _set_cached(cache_key, data)
+            return data
+    except Exception as exc:
+        logger.warning("fetch_coach_meta live query failed for %s: %s", coachno, exc)
+    return {}
+
+
+def fetch_single(demandid_or_coachno, bypass_cache=False):
+    """
+    Fetch detailed data for a coach by demand ID or coach number from the new ERP.
     """
     global _is_offline
-    demandid = str(demandid).strip()
-    cache_key = f"single_{demandid}"
+    key_str = str(demandid_or_coachno).strip()
+    cache_key = f"single_{key_str}"
     if not bypass_cache:
         cached = _get_cached(cache_key, CACHE_TTL_SINGLE)
         if cached is not None:
             return cached
 
-    sess = get_session()
-    url = f"{COACH_ERP_BASE_URL}/coach/pohmaster/singledata.html"
-    payload = {"demandid": demandid}
+    # Try live query from new ERP
     try:
-        if _is_offline:
-            raise RuntimeError("Offline mode is active")
-        resp = sess.post(url, data=payload, headers=_XHR_HEADERS, timeout=15)
-        resp.raise_for_status()
-        data = resp.json()
+        if not _is_offline:
+            hist = fetch_coach_history(key_str)
+            meta = fetch_coach_meta(key_str)
+            if hist and isinstance(hist, list) and len(hist) > 0:
+                latest = hist[-1]
+                data = {
+                    "demandid": latest.get("demandId"),
+                    "coachno": latest.get("coachNo") or key_str,
+                    "status": latest.get("status") or "Running",
+                    "pohstatus": latest.get("status") or "Running",
+                    "repair_type": str(latest.get("repairType") or ""),
+                    "repairid": str(latest.get("repairType") or ""),
+                    "division": meta.get("divisionName") or meta.get("divisionId") or "",
+                    "dvnid": meta.get("divisionId") or "",
+                    "year_built": str(meta.get("yearBuilt") or ""),
+                    "make": meta.get("makeId") or "",
+                    "presurveyhrs": str(latest.get("preSurveyHrs") or ""),
+                    "finalhrs": str(latest.get("finalHrs") or ""),
+                    "last_poh": latest.get("lastPoh") or "",
+                    "last_pohdate": _format_iso_to_dmy(latest.get("lastPohDate")),
+                    "tfrdate": _format_iso_to_dmy(latest.get("tfr")),
+                    "tfr_date": _format_iso_to_dmy(latest.get("tfr")),
+                    "corr_place": _format_iso_to_dmy(latest.get("corrPlace")),
+                    "corr_comp": _format_iso_to_dmy(latest.get("corrComp")),
+                    "despdate": _format_iso_to_dmy(latest.get("dispatchDate")),
+                    "desp_date": _format_iso_to_dmy(latest.get("dispatchDate")),
+                    "actualdespdate": _format_iso_to_dmy(latest.get("actualDispatchDate")),
+                    "pohdays": "",
+                    "remarks": latest.get("remarks") or "",
+                    "corrosion": latest.get("corrComp") or "",
+                    "plan_date": _format_iso_to_dmy(latest.get("planDate")),
+                    "plandate": _format_iso_to_dmy(latest.get("planDate")),
+                    "stageid": str(latest.get("stageId") or "")
+                }
+                data = _merge_manual_updates(data)
+                _set_cached(cache_key, data)
+                return data
     except Exception as exc:
-        logger.warning("fetch_single(%s) live fetch failed (trying cache fallback): %s", demandid, exc)
-        # Try to load from erp_coaches_cache.json disk cache fallback
-        cache_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "erp_coaches_cache.json")
-        if os.path.exists(cache_file):
-            try:
-                import json
-                with open(cache_file, "r", encoding="utf-8") as f:
-                    cache_data = json.load(f)
-                if demandid in cache_data:
-                    c = cache_data[demandid]
-                    data = {
-                        "demandid": demandid,
-                        "coachno": c.get("coachno", ""),
-                        "status": c.get("status", ""),
-                        "pohstatus": c.get("status", ""),
-                        "repair_type": c.get("repair_type", ""),
-                        "repairid": c.get("repair_type", ""),
-                        "division": c.get("division", ""),
-                        "dvnid": c.get("division", ""),
-                        "year_built": c.get("year_built", ""),
-                        "make": c.get("make", ""),
-                        "presurveyhrs": c.get("presurvey", ""),
-                        "finalhrs": c.get("final", ""),
-                        "last_poh": c.get("last_poh", ""),
-                        "last_pohdate": c.get("last_pohdate", ""),
-                        "tfrdate": c.get("tfr_date", ""),
-                        "tfr_date": c.get("tfr_date", ""),
-                        "corr_place": c.get("corr_place", ""),
-                        "corr_comp": c.get("corr_comp", ""),
-                        "despdate": c.get("desp_date", ""),
-                        "desp_date": c.get("desp_date", ""),
-                        "actualdespdate": c.get("actualdespdate", ""),
-                        "pohdays": c.get("pohdays", ""),
-                        "remarks": c.get("remarks", ""),
-                        "corrosion": c.get("corrosion", ""),
-                        "plan_date": c.get("plandate", ""),
-                        "plandate": c.get("plandate", "")
-                    }
-                    data = _merge_manual_updates(data)
-                    _set_cached(cache_key, data)
-                    return data
-            except Exception as ce:
-                logger.error("Failed to read erp_coaches_cache.json: %s", ce)
-        return {}
+        logger.debug("Live fetch_single failed, falling back to cache: %s", exc)
 
-    data = _merge_manual_updates(data)
-    _set_cached(cache_key, data)
-    return data
+    # Fallback to local cache
+    cache_data = _load_disk_coaches_cache()
+    if key_str in cache_data:
+        c = cache_data[key_str]
+        data = {
+            "demandid": key_str,
+            "coachno": c.get("coachno", ""),
+            "status": c.get("status", ""),
+            "pohstatus": c.get("status", ""),
+            "repair_type": c.get("repair_type", ""),
+            "repairid": c.get("repair_type", ""),
+            "division": c.get("division", ""),
+            "dvnid": c.get("division", ""),
+            "year_built": c.get("year_built", ""),
+            "make": c.get("make", ""),
+            "presurveyhrs": c.get("presurvey", ""),
+            "finalhrs": c.get("final", ""),
+            "last_poh": c.get("last_poh", ""),
+            "last_pohdate": c.get("last_pohdate", ""),
+            "tfrdate": c.get("tfr_date", ""),
+            "tfr_date": c.get("tfr_date", ""),
+            "corr_place": c.get("corr_place", ""),
+            "corr_comp": c.get("corr_comp", ""),
+            "despdate": c.get("desp_date", ""),
+            "desp_date": c.get("desp_date", ""),
+            "actualdespdate": c.get("actualdespdate", ""),
+            "pohdays": c.get("pohdays", ""),
+            "remarks": c.get("remarks", ""),
+            "corrosion": c.get("corrosion", ""),
+            "plan_date": c.get("plandate", ""),
+            "plandate": c.get("plandate", ""),
+            "stageid": c.get("stageid", "")
+        }
+        data = _merge_manual_updates(data)
+        _set_cached(cache_key, data)
+        return data
+    return {}
 
 
 def fetch_year_built(coachno):
     """
-    Fetch year-built and manufacturing data from coachmaster.
-
-    Parameters
-    ----------
-    coachno : str
-        The coach number (e.g. '07178 SER CN').
-
-    Returns
-    -------
-    dict
-        Keys: year_built, make, manufacturing_date, or empty dict.
+    Fetch year-built and manufacturing data from the new ERP coachmaster.
     """
     global _is_offline
     coachno = str(coachno).strip()
@@ -375,54 +507,49 @@ def fetch_year_built(coachno):
     if cached is not None:
         return cached
 
-    sess = get_session()
-    url = f"{COACH_ERP_BASE_URL}/coach/coachmaster/singledata.html"
-    payload = {"coachno": coachno}
     try:
-        if _is_offline:
-            raise RuntimeError("Offline mode is active")
-        resp = sess.post(url, data=payload, headers=_XHR_HEADERS, timeout=15)
-        resp.raise_for_status()
-        raw = resp.json()
-        result = {
-            "year_built": raw.get("year_built", ""),
-            "make": raw.get("make", ""),
-            "manufacturing_date": raw.get("manufacturing_date", ""),
-            "dvnid": raw.get("dvnid", ""),
-        }
+        if not _is_offline:
+            meta = fetch_coach_meta(coachno)
+            if meta:
+                result = {
+                    "year_built": str(meta.get("yearBuilt") or ""),
+                    "make": meta.get("makeId") or "",
+                    "manufacturing_date": "",
+                    "dvnid": meta.get("divisionId") or "",
+                }
+                _set_cached(cache_key, result)
+                return result
     except Exception as exc:
-        logger.warning("fetch_year_built(%s) live query failed (trying cache fallback): %s", coachno, exc)
-        cache_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "erp_coaches_cache.json")
-        if os.path.exists(cache_file):
-            try:
-                import json
-                with open(cache_file, "r", encoding="utf-8") as f:
-                    cache_data = json.load(f)
-                master_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "erp_master_cache.json")
-                if os.path.exists(master_file):
-                    with open(master_file, "r", encoding="utf-8") as mf:
-                        master_records = json.load(mf)
-                    for rec in master_records:
-                        if str(rec.get("coachno")).strip() == coachno:
-                            d_id = rec.get("demandid")
-                            if d_id in cache_data:
-                                c = cache_data[d_id]
-                                result = {
-                                    "year_built": c.get("year_built", ""),
-                                    "make": c.get("make", ""),
-                                    "manufacturing_date": "",
-                                    "dvnid": rec.get("dvnid", "")
-                                }
-                                _set_cached(cache_key, result)
-                                return result
-            except Exception as ce:
-                logger.error("Failed to read fallback for fetch_year_built: %s", ce)
-        result = {
-            "year_built": "",
-            "make": "",
-            "manufacturing_date": "",
-            "dvnid": "",
-        }
+        pass
+
+    cache_data = _load_disk_coaches_cache()
+    master_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "erp_master_cache.json")
+    if os.path.exists(master_file):
+        try:
+            import json
+            with open(master_file, "r", encoding="utf-8") as mf:
+                master_records = json.load(mf)
+            for rec in master_records:
+                if str(rec.get("coachno")).strip() == coachno:
+                    d_id = rec.get("demandid")
+                    if d_id in cache_data:
+                        c = cache_data[d_id]
+                        result = {
+                            "year_built": c.get("year_built", ""),
+                            "make": c.get("make", ""),
+                            "manufacturing_date": "",
+                            "dvnid": rec.get("dvnid", "")
+                        }
+                        _set_cached(cache_key, result)
+                        return result
+        except Exception as ce:
+            pass
+    result = {
+        "year_built": "",
+        "make": "",
+        "manufacturing_date": "",
+        "dvnid": "",
+    }
 
     _set_cached(cache_key, result)
     return result
@@ -542,8 +669,19 @@ def fetch_clean():
         if has_actual_desp:
             continue
 
-        # Skip stale (>365 days) unless it is manually pending
-        if recd_dt < cutoff and not is_manually_pending:
+        # Smart Active / Long Stay Filter:
+        # Keep if:
+        # 1. Received within 365 days, OR
+        # 2. Marked manually pending, OR
+        # 3. Genuine long stay within 730 days having an active workshop stage and valid shop location (e.g. 192080 at LBR/L3_2)
+        stage_str = str(item.get("stageid") or "").strip()
+        pit_str = str(item.get("pitnumber") or item.get("pitnum") or "").strip().upper()
+        is_active_long_stay = (
+            recd_dt >= (now - timedelta(days=730)) and
+            stage_str in ('1001', '1002', '1003', '1004', '1005', '1006') and
+            pit_str and pit_str not in ('', '0', 'N/A', 'NONE', 'YD', 'OT/YD')
+        )
+        if recd_dt < cutoff and not is_manually_pending and not is_active_long_stay:
             continue
 
         # Check paper despatch threshold: if desp_date is set and older than 15 days, treat as physically despatched!
@@ -657,7 +795,30 @@ def fetch_clean():
 # Status helpers
 # =====================================================
 
-_INACTIVE_STATUSES = {"COND", "BHOPAL", "RETURN"}
+_INACTIVE_STATUSES = {
+    "COND", "CONDEMNED", "CONDEMNDED",
+    "BHOPAL", "TO BHOPAL", "BPL",
+    "RETURN", "RETURNED",
+    "SCRAP", "SCRAPPED",
+    "PFC", "161",
+    "DESPATCHED", "OUTTURN", "OUTTURNED", "COMPLETED", "INACTIVE"
+}
+
+
+def is_excluded_status(status_str):
+    """
+    Check if a status string represents an inactive / non-holding coach:
+    (Return, Condemned, Bhopal, Scrap, PFC/161, Despatched).
+    """
+    if not status_str:
+        return False
+    s = str(status_str).strip().upper()
+    if s in _INACTIVE_STATUSES:
+        return True
+    for token in ("COND", "BHOPAL", "RETURN", "SCRAP", "DESP", "OUTTURN"):
+        if token in s:
+            return True
+    return False
 
 
 def get_coach_status(demandid):
@@ -677,7 +838,51 @@ def get_coach_status(demandid):
 def is_active(demandid):
     """
     Return True if the coach is *not* in an inactive state
-    (COND / BHOPAL / RETURN).
+    (COND / BHOPAL / RETURN / SCRAP).
     """
     status = get_coach_status(demandid)
-    return status not in _INACTIVE_STATUSES
+    return not is_excluded_status(status)
+
+
+def fetch_master_live_search(coachno):
+    """
+    Search for a coach across live Keycloak ERP history and master cache.
+    """
+    coachno = str(coachno).strip()
+    if not coachno:
+        return []
+    
+    matches = []
+    
+    # 1. Try Live API history endpoint
+    try:
+        hist = fetch_coach_history(coachno)
+        if hist:
+            for h in hist:
+                did = str(h.get("demandId") or h.get("demandid") or "").strip()
+                matches.append({
+                    "coachno": str(h.get("coachNo") or coachno).strip(),
+                    "coach_desc": h.get("coachTypeDesc") or h.get("coach_desc") or "",
+                    "demandid": did,
+                    "pitnum": h.get("pitNumber") or h.get("pit_num") or "",
+                    "recd_date": _format_iso_to_dmy(h.get("receiptDate") or h.get("recd_date")),
+                    "recddate": _format_iso_to_dmy(h.get("receiptDate") or h.get("recd_date")),
+                    "status": h.get("status") or "Running",
+                    "division": h.get("owningRailway") or h.get("division") or "MAS",
+                    "tfr": _format_iso_to_dmy(h.get("transferDate") or h.get("tfr_date")),
+                    "noofdays": h.get("inDays") or ""
+                })
+    except Exception as e:
+        logger.warning("fetch_master_live_search API error: %s", e)
+        
+    # 2. Search local master cache for any matches or partial matches
+    master = fetch_master()
+    for row in master:
+        rn = str(row.get("coachno", "")).strip()
+        if coachno.lower() in rn.lower():
+            # Check if demandid already in matches
+            did = str(row.get("demandid", "")).strip()
+            if not any(m.get("demandid") == did for m in matches if did):
+                matches.append(row)
+                
+    return matches

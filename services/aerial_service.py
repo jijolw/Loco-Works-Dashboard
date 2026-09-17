@@ -17,7 +17,7 @@ from services.erp_service import (
     fetch_single,
     fetch_year_built,
     _parse_date,
-    _LIVE_INACTIVE_STATUSES,
+    _INACTIVE_STATUSES,
 )
 from services.decoders import (
     decode_repair,
@@ -106,7 +106,7 @@ def _process_aerial_coach(rec, now):
     status = str(rec.get("status", "") or rec.get("pohstatus", "")).strip().upper()
     
     # RULE 3: Exclude Return coaches completely!
-    if status in _LIVE_INACTIVE_STATUSES or status in ("DESPATCHED", "OUTTURN", "COMPLETED", "INACTIVE") or "RETURN" in status or status == "161":
+    if status in _INACTIVE_STATUSES or status in ("DESPATCHED", "OUTTURN", "COMPLETED", "INACTIVE") or "RETURN" in status or status == "161":
         return None
 
     coachno = rec.get("coachno", "")

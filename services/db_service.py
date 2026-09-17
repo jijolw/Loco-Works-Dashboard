@@ -8,13 +8,20 @@ import json
 import os
 import logging
 import re
-import time
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
-from config import SUPABASE_URL, SUPABASE_KEY
+DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "db.sqlite")
 
+def _get_conn():
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+SUPABASE_URL = "https://ykksfdiyczolhqnduwkh.supabase.co/rest/v1"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlra3NmZGl5Y3pvbGhxbmR1d2toIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTA3ODk0OCwiZXhwIjoyMDk2NjU0OTQ4fQ.67jORriOLnHf0WGcYtxr4dQkgFPw7JZEJm8xlfysWFM"
 
 def get_headers(prefer=None):
     """Return headers required for Supabase REST requests."""
@@ -28,8 +35,30 @@ def get_headers(prefer=None):
     return headers
 
 def init_db():
-    """No-op for HTTP-based Supabase setup since schema is created in SQL editor."""
-    logger.info("Supabase database REST layers initialized successfully.")
+    """Create local_coach_updates table in SQLite if not exists."""
+    try:
+        conn = _get_conn()
+        cursor = conn.cursor()
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS local_coach_updates (
+                coachno TEXT PRIMARY KEY,
+                plan_date TEXT,
+                corrosion_hours REAL,
+                corr_in_date TEXT,
+                corr_comp TEXT,
+                pdc TEXT,
+                remarks TEXT,
+                vg_status TEXT,
+                vg_date TEXT,
+                physical_status TEXT,
+                physical_date TEXT
+            )
+        """)
+        conn.commit()
+        conn.close()
+        logger.info("Local SQLite database table local_coach_updates initialized successfully.")
+    except Exception as e:
+        logger.error(f"Error initializing SQLite database: {e}")
 
 # --- outturn_targets ---
 
@@ -72,52 +101,106 @@ def upsert_google_corrosion_bulk(payload):
     resp = requests.post(url, data=json.dumps(payload), headers=get_headers(prefer="resolution=merge-duplicates"))
     resp.raise_for_status()
 
-_corrosion_cache = {}
+def save_google_corrosion_local(payload):
+    """Write/merge corrosion records into the local SQLite database."""
+    conn = _get_conn()
+    cursor = conn.cursor()
+    try:
+        # Create table if not exists (to be safe!)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS google_corrosion (
+                coachno TEXT PRIMARY KEY,
+                corr_in_date TEXT,
+                corrosion_status TEXT,
+                bio_tank_status TEXT,
+                lowering_status TEXT,
+                furnishing_status TEXT,
+                despatch_status TEXT,
+                pdc TEXT,
+                desp_date TEXT,
+                remarks TEXT,
+                source_tab TEXT
+            )
+        """)
+        for item in payload:
+            cursor.execute("""
+                INSERT INTO google_corrosion (
+                    coachno, corr_in_date, corrosion_status, bio_tank_status,
+                    lowering_status, furnishing_status, despatch_status, pdc,
+                    desp_date, remarks, source_tab
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(coachno) DO UPDATE SET
+                    corr_in_date=excluded.corr_in_date,
+                    corrosion_status=excluded.corrosion_status,
+                    bio_tank_status=excluded.bio_tank_status,
+                    lowering_status=excluded.lowering_status,
+                    furnishing_status=excluded.furnishing_status,
+                    despatch_status=excluded.despatch_status,
+                    pdc=excluded.pdc,
+                    desp_date=excluded.desp_date,
+                    remarks=excluded.remarks,
+                    source_tab=excluded.source_tab
+            """, (
+                str(item.get("coachno", "")).strip(),
+                str(item.get("corr_in_date", "")).strip(),
+                str(item.get("corrosion_status", "")).strip(),
+                str(item.get("bio_tank_status", "")).strip(),
+                str(item.get("lowering_status", "")).strip(),
+                str(item.get("furnishing_status", "")).strip(),
+                str(item.get("despatch_status", "")).strip(),
+                str(item.get("pdc", "")).strip(),
+                str(item.get("desp_date", "")).strip(),
+                str(item.get("remarks", "")).strip(),
+                str(item.get("source_tab", "")).strip()
+            ))
+        conn.commit()
+        logger.info("Saved %d corrosion records to local SQLite.", len(payload))
+    except Exception as e:
+        logger.error(f"Error saving corrosion records to local SQLite: {e}")
+    finally:
+        conn.close()
 
 def get_google_corrosion(coachno):
-    """Fetch corrosion details for a coach from Supabase (optimized caching)."""
+    """Fetch corrosion details for a coach from local SQLite, merging local overrides."""
     coachno = str(coachno).strip()
-    
-    # Check if cache is expired or not populated
-    cache_entry = _corrosion_cache.get("all_corrosion")
-    now_ts = time.time()
-    
-    if not cache_entry or (now_ts - cache_entry["ts"] > 120): # 2 min TTL
-        try:
-            url = f"{SUPABASE_URL}/google_corrosion?select=*"
-            resp = requests.get(url, headers=get_headers(), timeout=30)
-            resp.raise_for_status()
-            rows = resp.json()
-            
-            # Map by coachno
-            corrosion_map = {}
-            for r in rows:
-                cno = str(r.get("coachno") or "").strip()
-                if cno:
-                    corrosion_map[cno] = r
-            
-            _corrosion_cache["all_corrosion"] = {
-                "ts": now_ts,
-                "map": corrosion_map
-            }
-        except Exception as e:
-            logger.error(f"Error pre-fetching all google corrosion records: {e}")
-            # Keep cached version even if expired if fetch fails
-            if not cache_entry:
-                return None
-            
-    # Lookup in cache
-    cache_entry = _corrosion_cache.get("all_corrosion")
-    if cache_entry and coachno in cache_entry["map"]:
-        return cache_entry["map"][coachno]
-        
-    # Digits fallback lookup in cached map
     digits = "".join(re.findall(r"\d+", coachno))
-    if digits and cache_entry:
-        for cno, r in cache_entry["map"].items():
-            if digits in cno:
-                return r
-                
+    
+    # 1. Fetch from local overrides
+    local_upd = get_manual_coach_update(coachno)
+    
+    # 2. Fetch from local google_corrosion table
+    g_corr = {}
+    try:
+        conn = _get_conn()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM google_corrosion WHERE coachno = ?", (coachno,))
+        row = cursor.fetchone()
+        if not row and digits:
+            cursor.execute("SELECT * FROM google_corrosion WHERE coachno LIKE ?", (f"%{digits}%",))
+            row = cursor.fetchone()
+        conn.close()
+        if row:
+            g_corr = dict(row)
+    except Exception as e:
+        logger.error(f"Error fetching google_corrosion from SQLite for {coachno}: {e}")
+        
+    # If we have local overrides, overlay them on top of GSheet data
+    if local_upd:
+        if local_upd.get("corr_in_date") is not None and local_upd.get("corr_in_date") != "":
+            g_corr["corr_in_date"] = local_upd["corr_in_date"]
+        if local_upd.get("corr_comp") is not None and local_upd.get("corr_comp") != "":
+            g_corr["corrosion_status"] = local_upd["corr_comp"]
+        if local_upd.get("pdc") is not None and local_upd.get("pdc") != "":
+            g_corr["pdc"] = local_upd["pdc"]
+        if local_upd.get("remarks") is not None and local_upd.get("remarks") != "":
+            g_corr["remarks"] = local_upd["remarks"]
+        if local_upd.get("physical_status") is not None and local_upd.get("physical_status") != "":
+            g_corr["despatch_status"] = local_upd["physical_status"]
+        if local_upd.get("physical_date") is not None and local_upd.get("physical_date") != "":
+            g_corr["desp_date"] = local_upd["physical_date"]
+            
+    if g_corr:
+        return g_corr
     return None
 
 def get_not_despatched_corrosion():
@@ -138,45 +221,13 @@ def get_not_despatched_corrosion():
 
 # --- coach_movements ---
 
-_movements_cache = {}
-
-def prefetch_last_movements():
-    """Prefetch the last movement for all coaches in one query and cache them."""
-    now_ts = time.time()
-    cache_entry = _movements_cache.get("all_movements")
-    if cache_entry and (now_ts - cache_entry["ts"] < 60):  # 60s TTL
-        return cache_entry["map"]
-
-    try:
-        # Fetch the latest 3000 movements in descending order to avoid pagination cutoff
-        url = f"{SUPABASE_URL}/coach_movements?select=coachno,from_location,to_location,timestamp&order=id.desc&limit=3000"
-        resp = requests.get(url, headers=get_headers(), timeout=30)
-        resp.raise_for_status()
-        rows = resp.json()
-
-        movements_map = {}
-        for r in rows:
-            cno = str(r.get("coachno") or "").strip()
-            if cno and cno not in movements_map:
-                # Keep the first seen (latest) record for each coach
-                movements_map[cno] = r
-
-        _movements_cache["all_movements"] = {
-            "ts": now_ts,
-            "map": movements_map
-        }
-        return movements_map
-    except Exception as e:
-        logger.error(f"Error pre-fetching coach movements: {e}")
-        if cache_entry:
-            return cache_entry["map"]
-        return {}
-
 def get_last_coach_movement(coachno):
-    """Fetch the last movement entry for a coach from cached prefetched movements."""
-    coachno = str(coachno).strip()
-    movements_map = prefetch_last_movements()
-    return movements_map.get(coachno)
+    """Fetch the last movement entry for a coach from Supabase."""
+    url = f"{SUPABASE_URL}/coach_movements?coachno=eq.{coachno}&order=id.desc&limit=1"
+    resp = requests.get(url, headers=get_headers())
+    resp.raise_for_status()
+    data = resp.json()
+    return data[0] if data else None
 
 def insert_coach_movement(coachno, from_loc, to_loc, timestamp):
     """Insert a coach movement entry to Supabase."""
@@ -200,39 +251,77 @@ def get_coach_movements_history(coachno):
 # --- manual_coach_updates ---
 
 def get_manual_coach_update(coachno):
-    """Fetch manually updated coach fields (VG & physical despatch details) from Supabase."""
+    """Fetch manually updated coach fields (VG & physical despatch details) from local SQLite."""
     coachno = str(coachno).strip()
-    url = f"{SUPABASE_URL}/manual_coach_updates?coachno=eq.{coachno}&select=vg_status,vg_date,physical_status,physical_date"
+    digits = "".join(re.findall(r"\d+", coachno))
     try:
-        resp = requests.get(url, headers=get_headers())
-        resp.raise_for_status()
-        rows = resp.json()
-        return rows[0] if rows else None
+        conn = _get_conn()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM local_coach_updates WHERE coachno = ?", (coachno,))
+        row = cursor.fetchone()
+        if not row and digits:
+            cursor.execute("SELECT * FROM local_coach_updates WHERE coachno LIKE ?", (f"%{digits}%",))
+            row = cursor.fetchone()
+        conn.close()
+        if row:
+            return dict(row)
     except Exception as e:
-        logger.error(f"Error fetching manual updates for coach {coachno}: {e}")
-        return None
+        logger.error(f"Error fetching manual updates from SQLite for {coachno}: {e}")
+    return None
 
-def upsert_manual_coach_update(coachno, vg_status, vg_date, physical_status, physical_date):
-    """Upsert manually updated coach fields to Supabase."""
-    url = f"{SUPABASE_URL}/manual_coach_updates"
-    payload = {
-        "coachno": str(coachno).strip(),
-        "vg_status": vg_status,
-        "vg_date": vg_date,
-        "physical_status": physical_status,
-        "physical_date": physical_date
-    }
-    resp = requests.post(url, data=json.dumps(payload), headers=get_headers(prefer="resolution=merge-duplicates"))
-    resp.raise_for_status()
-    return True
-
-def upsert_manual_coach_updates_bulk(payload):
-    """Upsert multiple manual coach updates to Supabase in a single batch."""
-    url = f"{SUPABASE_URL}/manual_coach_updates"
-    resp = requests.post(url, data=json.dumps(payload), headers=get_headers(prefer="resolution=merge-duplicates"))
-    resp.raise_for_status()
-    return True
-
+def upsert_manual_coach_update(coachno, vg_status, vg_date, physical_status, physical_date,
+                               plan_date=None, corrosion_hours=None, corr_in_date=None,
+                               corr_comp=None, pdc=None, remarks=None):
+    """Upsert manually updated coach fields to local SQLite database."""
+    coachno = str(coachno).strip()
+    try:
+        conn = _get_conn()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM local_coach_updates WHERE coachno = ?", (coachno,))
+        row = cursor.fetchone()
+        
+        if row:
+            p_date = plan_date if plan_date is not None else row["plan_date"]
+            c_hours = corrosion_hours if corrosion_hours is not None else row["corrosion_hours"]
+            c_in = corr_in_date if corr_in_date is not None else row["corr_in_date"]
+            c_comp = corr_comp if corr_comp is not None else row["corr_comp"]
+            p_dc = pdc if pdc is not None else row["pdc"]
+            rem = remarks if remarks is not None else row["remarks"]
+            
+            vg_s = vg_status if vg_status is not None else row["vg_status"]
+            vg_d = vg_date if vg_date is not None else row["vg_date"]
+            phys_s = physical_status if physical_status is not None else row["physical_status"]
+            phys_d = physical_date if physical_date is not None else row["physical_date"]
+            
+            cursor.execute("""
+                UPDATE local_coach_updates
+                SET plan_date = ?, corrosion_hours = ?, corr_in_date = ?, corr_comp = ?,
+                    pdc = ?, remarks = ?, vg_status = ?, vg_date = ?,
+                    physical_status = ?, physical_date = ?
+                WHERE coachno = ?
+            """, (p_date, c_hours, c_in, c_comp, p_dc, rem, vg_s, vg_d, phys_s, phys_d, coachno))
+        else:
+            cursor.execute("""
+                INSERT INTO local_coach_updates (
+                    coachno, plan_date, corrosion_hours, corr_in_date, corr_comp,
+                    pdc, remarks, vg_status, vg_date, physical_status, physical_date
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (coachno, plan_date, corrosion_hours, corr_in_date, corr_comp,
+                  pdc, remarks, vg_status, vg_date, physical_status, physical_date))
+        conn.commit()
+        conn.close()
+        
+        # Clear local cache in erp_service
+        try:
+            from services.erp_service import cache_clear
+            cache_clear()
+        except Exception as ex:
+            logger.error("Error clearing erp cache: %s", ex)
+            
+        return True
+    except Exception as e:
+        logger.error(f"Error upserting manual updates to SQLite for {coachno}: {e}")
+        raise e
 
 # --- erp_active_coaches ---
 
@@ -240,29 +329,15 @@ def sync_active_coaches_to_supabase(coaches_list, clear_table=True):
     """Sync active ERP coaches to Supabase (clear or upsert in chunks)."""
     # 1. Clear old entries only if requested (full sync)
     if clear_table:
-        logger.info("Clearing erp_active_coaches table for full sync in chunks...")
+        logger.info("Clearing erp_active_coaches table for full sync...")
         try:
-            url_fetch = f"{SUPABASE_URL}/erp_active_coaches?select=demandid"
-            resp = requests.get(url_fetch, headers=get_headers())
-            resp.raise_for_status()
-            existing_rows = resp.json()
-            existing_ids = [r["demandid"] for r in existing_rows if r.get("demandid")]
-            
-            if existing_ids:
-                logger.info("Deleting %d existing records in chunks...", len(existing_ids))
-                delete_chunk_size = 500
-                for k in range(0, len(existing_ids), delete_chunk_size):
-                    chunk_ids = existing_ids[k : k + delete_chunk_size]
-                    ids_str = ",".join([str(id_).strip() for id_ in chunk_ids])
-                    url_delete = f"{SUPABASE_URL}/erp_active_coaches?demandid=in.({ids_str})"
-                    resp = requests.delete(url_delete, headers=get_headers())
-                    resp.raise_for_status()
-                logger.info("Successfully cleared existing records in chunks.")
-        except Exception as delete_ex:
-            logger.warning("Chunked delete failed, falling back to delete all query: %s", delete_ex)
             url_delete = f"{SUPABASE_URL}/erp_active_coaches?coachno=neq."
             resp = requests.delete(url_delete, headers=get_headers())
             resp.raise_for_status()
+            logger.info("Successfully cleared all existing records.")
+        except Exception as delete_ex:
+            logger.error("Failed to clear erp_active_coaches table: %s", delete_ex)
+            raise delete_ex
     else:
         logger.info("Incremental sync: keeping existing table, upserting recent records...")
     
@@ -274,46 +349,30 @@ def sync_active_coaches_to_supabase(coaches_list, clear_table=True):
         for i in range(0, len(coaches_list), chunk_size):
             chunk = coaches_list[i : i + chunk_size]
             resp = requests.post(url_insert, data=json.dumps(chunk), headers=headers)
+            if resp.status_code >= 400:
+                logger.error("Supabase returned %d: %s", resp.status_code, resp.text)
             resp.raise_for_status()
             logger.info("Uploaded chunk of %d records (total synced: %d/%d)", len(chunk), min(i + chunk_size, len(coaches_list)), len(coaches_list))
 
-# --- historical_poh_records ---
-
-def get_historical_poh_records(coachno):
-    """Fetch manual historical POH records for a coach from Supabase."""
-    coachno = str(coachno).strip()
-    url = f"{SUPABASE_URL}/historical_poh_records?coachno=eq.{coachno}&select=*&order=poh_date.desc"
-    try:
-        resp = requests.get(url, headers=get_headers())
-        resp.raise_for_status()
-        return resp.json()
-    except Exception as e:
-        logger.error(f"Error fetching historical POH records for coach {coachno}: {e}")
-        return []
-
-def add_historical_poh_record(coachno, poh_date, workshop, corrosion_hours, remarks):
-    """Insert a new manual historical POH record to Supabase."""
-    url = f"{SUPABASE_URL}/historical_poh_records"
-    payload = {
-        "coachno": str(coachno).strip(),
-        "poh_date": poh_date,
-        "workshop": str(workshop).strip(),
-        "corrosion_hours": float(corrosion_hours),
-        "remarks": str(remarks or "").strip()
-    }
-    resp = requests.post(url, data=json.dumps(payload), headers=get_headers(prefer="return=representation"))
-    resp.raise_for_status()
-    res_data = resp.json()
-    if isinstance(res_data, list) and len(res_data) > 0:
-        return res_data[0]
-    return res_data
-
-def delete_historical_poh_record(record_id):
-    """Delete a manual historical POH record from Supabase."""
-    url = f"{SUPABASE_URL}/historical_poh_records?id=eq.{record_id}"
-    resp = requests.delete(url, headers=get_headers())
-    resp.raise_for_status()
-    return True
-
 # Initialize database checks
 init_db()
+
+
+def get_historical_poh_records(coachno):
+    """Fetch manual POH history records for a coach from Supabase or local cache."""
+    try:
+        import config
+        import requests
+        headers = {
+            "apikey": getattr(config, "SUPABASE_KEY", ""),
+            "Authorization": f"Bearer {getattr(config, 'SUPABASE_KEY', '')}"
+        }
+        sb_url = getattr(config, "SUPABASE_URL", "")
+        if sb_url and headers["apikey"]:
+            url = f"{sb_url}/historical_poh_records?coachno=eq.{coachno}&select=*"
+            res = requests.get(url, headers=headers, timeout=5)
+            if res.status_code == 200:
+                return res.json()
+    except Exception:
+        pass
+    return []
