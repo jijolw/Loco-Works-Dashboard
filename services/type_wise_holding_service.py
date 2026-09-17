@@ -124,10 +124,72 @@ _LIVE_DEMANDS_CACHE = {}
 _LAST_CACHE_TIME = None
 _DEMANDS_LOCK = threading.Lock()
 
+def fetch_demands_from_supabase():
+    """
+    Fetch coaches directly from Supabase erp_active_coaches table.
+    Used when running off-site, working from home, or in cloud deployment (Render).
+    """
+    import requests
+    headers = {
+        "apikey": config.SUPABASE_KEY,
+        "Authorization": f"Bearer {config.SUPABASE_KEY}"
+    }
+    demands = {}
+    try:
+        # Fetch current and surrounding years outturns
+        for yr in ("2026", "2027", "2025"):
+            url = f"{config.SUPABASE_URL}/erp_active_coaches?make=like.*{yr}*&select=*"
+            r = requests.get(url, headers=headers, timeout=15)
+            if r.status_code == 200:
+                for c in r.json():
+                    did = str(c.get("demandid") or c.get("coachno")).strip()
+                    if did:
+                        demands[did] = c
+
+        # Fetch active coaches in shop / yard
+        for url in [
+            f"{config.SUPABASE_URL}/erp_active_coaches?pitnum=not.eq.&select=*",
+            f"{config.SUPABASE_URL}/erp_active_coaches?status=in.(Work%20Area,In%20Yard,FND,Running,SHOP)&order=updated_at.desc&limit=500"
+        ]:
+            r = requests.get(url, headers=headers, timeout=15)
+            if r.status_code == 200:
+                for c in r.json():
+                    did = str(c.get("demandid") or c.get("coachno")).strip()
+                    if did and did not in demands:
+                        demands[did] = c
+    except Exception as e:
+        print(f"Warning: Failed to fetch demands from Supabase: {e}")
+
+    formatted = {}
+    for did, c in demands.items():
+        cno = str(c.get("coachno") or "").strip()
+        parts = (c.get("make") or "").split("||")
+        tfr_date = parts[5] if len(parts) > 5 else ""
+        corr_comp = parts[7] if len(parts) > 7 else ""
+        desp_date = parts[8] if len(parts) > 8 else ""
+        actualdespdate = parts[9] if len(parts) > 9 else ""
+
+        formatted[did] = {
+            "coachNo": cno, "coachno": cno,
+            "coachDesc": c.get("coach_desc") or "", "coach_desc": c.get("coach_desc") or "",
+            "demandId": did, "demandid": did,
+            "pitNum": c.get("pitnum") or "", "pit_num": c.get("pitnum") or "",
+            "receivedDate": c.get("recd_date") or "", "recd_date": c.get("recd_date") or "",
+            "status": c.get("status") or "Running",
+            "division": c.get("division") or "",
+            "repairType": c.get("repair_type") or "1", "repair_type": c.get("repair_type") or "1",
+            "tfr": tfr_date, "tfr_date": tfr_date,
+            "corrComp": corr_comp, "corr_comp": corr_comp,
+            "dispatchDate": desp_date, "desp_date": desp_date,
+            "actualDispatchDate": actualdespdate, "actualdespdate": actualdespdate,
+        }
+    return formatted
+
+
 def fetch_live_keycloak_demands(bypass_cache=False):
     """
-    100% PURE LIVE KEYCLOAK ERP QUERY:
-    Direct live HTTP stream from Keycloak REST API with 300s memory TTL for instant report responsiveness.
+    Direct live HTTP stream from Keycloak REST API when on local workshop intranet,
+    or instant fallback to remote Supabase when off-site/cloud.
     """
     global _LIVE_DEMANDS_CACHE, _LAST_CACHE_TIME
     now = datetime.now()
@@ -139,8 +201,14 @@ def fetch_live_keycloak_demands(bypass_cache=False):
             return _LIVE_DEMANDS_CACHE
 
         sess = get_session()
+        if not sess:
+            # Running off-site / in cloud: fetch from Supabase
+            live_demands = fetch_demands_from_supabase()
+            _LIVE_DEMANDS_CACHE = live_demands
+            _LAST_CACHE_TIME = datetime.now()
+            return live_demands
+
         api_base = config.COACH_ERP_API_BASE
-        
         live_demands = {}
         max_did = 76700
         
@@ -183,6 +251,10 @@ def fetch_live_keycloak_demands(bypass_cache=False):
                     live_demands[did] = data
         except Exception as e:
             print(f"Warning: Parallel demand fetch error: {e}")
+
+        # If live scan returned nothing, fallback to Supabase
+        if not live_demands:
+            live_demands = fetch_demands_from_supabase()
 
         _LIVE_DEMANDS_CACHE = live_demands
         _LAST_CACHE_TIME = datetime.now()
@@ -232,6 +304,18 @@ def get_type_wise_holding_report_data(month_name="September", year_val=2026, byp
         }
         for cat in STANDARD_WORKSHOP_CATEGORIES
     }
+
+    # Load targets from Supabase if available
+    try:
+        from services.query_service import fetch_supabase_targets_for_month, map_targets_to_categories
+        sb_targets = fetch_supabase_targets_for_month(month_name, year_val)
+        if sb_targets:
+            cat_targets = map_targets_to_categories(sb_targets)
+            for cat, tgt_val in cat_targets.items():
+                if cat in target_categories_map:
+                    target_categories_map[cat]["target"] = tgt_val
+    except Exception:
+        pass
 
     live_demands = fetch_live_keycloak_demands(bypass_cache=bypass_cache)
 

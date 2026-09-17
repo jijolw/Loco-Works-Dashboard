@@ -83,43 +83,53 @@ def get_outturn_data(start_date=None, end_date=None):
         with open(m_path, "r", encoding="utf-8") as f: master_data = json.load(f)
     except: pass
 
-    # Merge fresh live Keycloak demands (essential for current month like September 2026)
+    # Merge live demands (from Keycloak on LAN or Supabase on cloud)
     try:
         from services.type_wise_holding_service import fetch_live_keycloak_demands, fetch_coach_meta
         live_demands = fetch_live_keycloak_demands()
         known_demands = set(str(m.get("demandid") or "").strip() for m in master_data)
         
         for did_s, itm in live_demands.items():
-            disp_raw = itm.get("dispatchDate")
-            cno = str(itm.get("coachNo") or "").strip()
-            
-            # Always ensure live dispatchDate is recorded in cache_data
-            if disp_raw and cno:
-                desp_str = str(disp_raw).split("T")[0]
-                act_str = str(itm.get("actualDispatchDate") or "").split("T")[0] if itm.get("actualDispatchDate") else ""
-                
-                if did_s not in cache_data:
-                    cache_data[did_s] = {}
-                cache_data[did_s]["coachno"] = cno
-                cache_data[did_s]["desp_date"] = desp_str
-                cache_data[did_s]["actualdespdate"] = act_str
-                cache_data[did_s]["status"] = itm.get("status") or "Running"
-                cache_data[did_s]["repair_type"] = str(itm.get("repairType") or "1")
-                
-                if str(did_s) not in known_demands:
-                    meta = fetch_coach_meta(cno)
-                    desc = meta.get("coachTypeDescription") or itm.get("coachDesc") or "GS"
-                    divn = meta.get("divisionName") or meta.get("divisionId") or "PGT"
-                    master_data.append({
-                        "coachno": cno,
-                        "demandid": did_s,
-                        "coach_desc": desc,
-                        "division": divn,
-                        "repair_type": str(itm.get("repairType") or "1"),
-                        "status": itm.get("status") or "Running"
-                    })
-                    cache_data[did_s]["coach_desc"] = desc
-                    cache_data[did_s]["division"] = divn
+            cno = str(itm.get("coachNo") or itm.get("coachno") or "").strip()
+            if not cno:
+                continue
+
+            desp_str = str(itm.get("dispatchDate") or itm.get("desp_date") or "").strip()
+            if "T" in desp_str:
+                desp_str = desp_str.split("T")[0]
+            act_str = str(itm.get("actualDispatchDate") or itm.get("actualdespdate") or "").strip()
+            if "T" in act_str:
+                act_str = act_str.split("T")[0]
+
+            desc = itm.get("coachDesc") or itm.get("coach_desc") or "GS"
+            divn = itm.get("division") or "MAS"
+            rep = str(itm.get("repairType") or itm.get("repair_type") or "1")
+            st = itm.get("status") or "Running"
+            pit = itm.get("pitNum") or itm.get("pit_num") or "SHOP"
+            corr = itm.get("corrComp") or itm.get("corr_comp") or ""
+
+            if did_s not in cache_data:
+                cache_data[did_s] = {}
+            cache_data[did_s]["coachno"] = cno
+            cache_data[did_s]["coach_desc"] = desc
+            cache_data[did_s]["division"] = divn
+            cache_data[did_s]["desp_date"] = desp_str
+            cache_data[did_s]["actualdespdate"] = act_str
+            cache_data[did_s]["status"] = st
+            cache_data[did_s]["repair_type"] = rep
+            cache_data[did_s]["pit_num"] = pit
+            cache_data[did_s]["corr_comp"] = corr
+
+            if did_s not in known_demands:
+                master_data.append({
+                    "coachno": cno,
+                    "demandid": did_s,
+                    "coach_desc": desc,
+                    "division": divn,
+                    "repair_type": rep,
+                    "status": st
+                })
+                known_demands.add(did_s)
     except Exception as e:
         pass
 
@@ -186,7 +196,13 @@ def get_outturn_data(start_date=None, end_date=None):
             division_counts[divn] = division_counts.get(divn, 0) + 1
 
     total_outturn = len(coaches_list)
-    rep_meta = get_type_wise_holding_report_data(month_name, year_val)
+    try:
+        rep_meta = get_type_wise_holding_report_data(month_name, year_val)
+    except Exception as e:
+        rep_meta = {
+            "total": {"target": 0},
+            "data": []
+        }
 
     return {
         "coaches": coaches_list,

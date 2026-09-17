@@ -80,6 +80,40 @@ def cache_clear(key=None):
 # =====================================================
 
 _sessions: dict = {}   # "coach" / "acloco" → requests.Session
+_local_erp_status = None  # (timestamp, bool)
+
+
+def is_local_erp_available():
+    """
+    Fast, non-blocking check whether Coach ERP (10.185.78.45:80) is reachable.
+    Caches the result for 60 seconds to avoid repeated socket handshakes.
+    Can be forced to False by setting environment variable SUPABASE_MODE=1 or DISABLE_LOCAL_ERP=1.
+    """
+    global _local_erp_status
+    if os.environ.get("SUPABASE_MODE") in ("1", "true", "True") or os.environ.get("DISABLE_LOCAL_ERP") in ("1", "true", "True"):
+        return False
+
+    now = time.time()
+    if _local_erp_status is not None:
+        ts, available = _local_erp_status
+        if now - ts < 60:
+            return available
+
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.settimeout(1.0)
+    try:
+        err = s.connect_ex(("10.185.78.45", 80))
+        available = (err == 0)
+    except Exception:
+        available = False
+    finally:
+        s.close()
+
+    _local_erp_status = (now, available)
+    if not available:
+        logger.info("Local Coach ERP (10.185.78.45) is not reachable. Operating in Autonomous Supabase Mode.")
+    return available
 
 
 from bs4 import BeautifulSoup
@@ -87,12 +121,13 @@ from bs4 import BeautifulSoup
 def get_session():
     """
     Return a ``requests.Session`` authenticated against Coach ERP via Keycloak SSO.
-
-    The session is created once and reused. If the login fails the
-    function raises ``RuntimeError``.
+    If local ERP is unreachable (e.g. running on cloud / off-site), returns None.
     """
     if "coach" in _sessions:
         return _sessions["coach"]
+
+    if not is_local_erp_available():
+        return None
 
     sess = requests.Session()
     sess.headers.update({
@@ -100,11 +135,12 @@ def get_session():
     })
     try:
         sso_url = getattr(config, "COACH_ERP_SSO_URL", "http://10.185.78.45/oauth2/authorization/keycloak")
-        r_init = sess.get(sso_url, allow_redirects=True, timeout=10)
+        r_init = sess.get(sso_url, allow_redirects=True, timeout=5)
         soup = BeautifulSoup(r_init.text, "html.parser")
         form = soup.find("form", id="kc-form-login") or soup.find("form")
         if not form:
-            raise RuntimeError(f"Could not locate SSO login form. URL: {r_init.url}")
+            logger.warning(f"Could not locate SSO login form at {r_init.url}")
+            return None
 
         action_url = form.get("action")
         payload = {
@@ -112,7 +148,7 @@ def get_session():
             "password": COACH_ERP_PASSWORD,
             "credentialId": ""
         }
-        r_post = sess.post(action_url, data=payload, allow_redirects=True, timeout=10)
+        r_post = sess.post(action_url, data=payload, allow_redirects=True, timeout=5)
         r_post.raise_for_status()
         
         xsrf = sess.cookies.get("XSRF-TOKEN")
@@ -120,20 +156,25 @@ def get_session():
             sess.headers.update({"X-XSRF-TOKEN": xsrf})
             
         logger.info("Coach ERP Keycloak SSO login successful")
+        _sessions["coach"] = sess
+        return sess
     except Exception as exc:
-        logger.error("Coach ERP SSO login failed: %s", exc)
-        raise RuntimeError(f"Coach ERP SSO login failed: {exc}") from exc
-
-    _sessions["coach"] = sess
-    return sess
+        global _local_erp_status
+        _local_erp_status = (time.time(), False)
+        logger.warning("Coach ERP SSO login failed: %s. Falling back to Supabase mode.", exc)
+        return None
 
 
 def get_ac_session():
     """
     Return a ``requests.Session`` authenticated against AC Loco ERP.
+    If unreachable, returns None.
     """
     if "acloco" in _sessions:
         return _sessions["acloco"]
+
+    if not is_local_erp_available():
+        return None
 
     sess = requests.Session()
     login_url = f"{ACLOCO_ERP_BASE_URL}/login"
@@ -142,15 +183,14 @@ def get_ac_session():
         "password": ACLOCO_ERP_PASSWORD,
     }
     try:
-        resp = sess.post(login_url, data=payload, timeout=30)
+        resp = sess.post(login_url, data=payload, timeout=5)
         resp.raise_for_status()
         logger.info("AC Loco ERP login successful")
-    except requests.RequestException as exc:
-        logger.error("AC Loco ERP login failed: %s", exc)
-        raise RuntimeError(f"AC Loco ERP login failed: {exc}") from exc
-
-    _sessions["acloco"] = sess
-    return sess
+        _sessions["acloco"] = sess
+        return sess
+    except Exception as exc:
+        logger.warning("AC Loco ERP login failed: %s", exc)
+        return None
 
 
 def reset_sessions():
@@ -207,6 +247,8 @@ def fetch_master(force_live=False):
     # Try live query via Keycloak SSO
     try:
         sess = get_session()
+        if not sess:
+            raise RuntimeError("Local ERP session unavailable")
         url = f"{config.COACH_ERP_API_BASE}/locos/masters/coach-receipts"
         resp = sess.get(url, headers=_XHR_HEADERS, timeout=10)
         if resp.status_code == 200:
@@ -366,13 +408,14 @@ def fetch_coach_history(coachno):
 
     try:
         sess = get_session()
-        api_base = getattr(config, "COACH_ERP_API_BASE", "http://10.185.78.45/intranet/api")
-        url = f"{api_base}/locos/masters/coach-receipts/history/{coachno}"
-        resp = sess.get(url, timeout=10)
-        if resp.status_code == 200:
-            data = resp.json()
-            _set_cached(cache_key, data)
-            return data
+        if sess:
+            api_base = getattr(config, "COACH_ERP_API_BASE", "http://10.185.78.45/intranet/api")
+            url = f"{api_base}/locos/masters/coach-receipts/history/{coachno}"
+            resp = sess.get(url, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                _set_cached(cache_key, data)
+                return data
     except Exception as exc:
         logger.warning("fetch_coach_history live query failed for %s: %s", coachno, exc)
     return []
@@ -391,13 +434,14 @@ def fetch_coach_meta(coachno):
 
     try:
         sess = get_session()
-        api_base = getattr(config, "COACH_ERP_API_BASE", "http://10.185.78.45/intranet/api")
-        url = f"{api_base}/locos/masters/coaches/{coachno}"
-        resp = sess.get(url, timeout=10)
-        if resp.status_code == 200:
-            data = resp.json()
-            _set_cached(cache_key, data)
-            return data
+        if sess:
+            api_base = getattr(config, "COACH_ERP_API_BASE", "http://10.185.78.45/intranet/api")
+            url = f"{api_base}/locos/masters/coaches/{coachno}"
+            resp = sess.get(url, timeout=10)
+            if resp.status_code == 200:
+                data = resp.json()
+                _set_cached(cache_key, data)
+                return data
     except Exception as exc:
         logger.warning("fetch_coach_meta live query failed for %s: %s", coachno, exc)
     return {}

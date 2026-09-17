@@ -49,6 +49,17 @@ def get_inside_shop_data(month="August", year=2026):
         if cno:
             coach_details_by_no[cno] = det
 
+    if not coach_details_by_no:
+        try:
+            from services.type_wise_holding_service import fetch_live_keycloak_demands
+            demands = fetch_live_keycloak_demands()
+            for did, det in demands.items():
+                cno = str(det.get("coachno") or det.get("coachNo") or "").strip()
+                if cno:
+                    coach_details_by_no[cno] = det
+        except Exception:
+            pass
+
     icf_list = []
     lhb_list = []
     emu_list = []

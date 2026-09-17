@@ -357,8 +357,8 @@ def sync_cycle(full_sync=False):
                 "make": make_packed
             })
 
-        # B. Process historical coaches (received since 2026-04-01 for current financial year)
-        cutoff = datetime(1990, 4, 1) if full_sync else datetime(2026, 4, 1)
+        # B. Process historical coaches (received since late 2025 or outturned in FY 2026-27)
+        cutoff = datetime(1990, 4, 1) if full_sync else datetime(2025, 10, 1)
         logger.info("Processing historical/despatched coaches received since: %s", cutoff.strftime("%Y-%m-%d"))
         historical_count = 0
         
