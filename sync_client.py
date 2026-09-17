@@ -357,7 +357,44 @@ def sync_cycle(full_sync=False):
                 "make": make_packed
             })
 
-        # B. Process historical coaches (received since late 2025 or outturned in FY 2026-27)
+        # B. Capture fresh live Keycloak demands (to capture current month outturns and dispatches)
+        try:
+            from services.type_wise_holding_service import fetch_live_keycloak_demands
+            live_erp = fetch_live_keycloak_demands(bypass_cache=True)
+            logger.info(f"Captured {len(live_erp)} live/recent demands from Keycloak ERP.")
+            for did_s, itm in live_erp.items():
+                cno = str(itm.get("coachNo") or itm.get("coachno") or "").strip()
+                if not cno or did_s in active_demandids:
+                    continue
+                disp = str(itm.get("dispatchDate") or itm.get("desp_date") or "").split("T")[0] if itm.get("dispatchDate") else ""
+                act_disp = str(itm.get("actualDispatchDate") or itm.get("actualdespdate") or "").split("T")[0] if itm.get("actualDispatchDate") else ""
+                recd = str(itm.get("receivedDate") or itm.get("recd_date") or "").split("T")[0] if itm.get("receivedDate") else ""
+                corr = str(itm.get("corrComp") or itm.get("corr_comp") or "").split("T")[0] if itm.get("corrComp") else ""
+                tfr = str(itm.get("tfr") or itm.get("tfr_date") or "").split("T")[0] if itm.get("tfr") else ""
+                meta = fetch_coach_meta(cno)
+                desc = meta.get("coachTypeDescription") or itm.get("coachDesc") or "GS"
+                divn = meta.get("divisionName") or meta.get("divisionId") or "MAS"
+                rep = decode_repair(str(itm.get("repairType") or "1"))
+                st = "DESPATCHED" if disp else (itm.get("status") or "Running")
+                pit = itm.get("pitNum") or ""
+                
+                make_p = f"||||||||||{tfr}||||{corr}||{disp}||{act_disp}||||||||||||"
+                payload.append({
+                    "coachno": cno,
+                    "coach_desc": desc,
+                    "demandid": did_s,
+                    "pitnum": pit,
+                    "recd_date": recd,
+                    "status": st,
+                    "division": divn,
+                    "repair_type": rep,
+                    "make": make_p
+                })
+                active_demandids.add(did_s)
+        except Exception as e:
+            logger.warning(f"Live Keycloak scan during sync failed: {e}")
+
+        # C. Process historical coaches (received since late 2025 or outturned in FY 2026-27)
         cutoff = datetime(1990, 4, 1) if full_sync else datetime(2025, 10, 1)
         logger.info("Processing historical/despatched coaches received since: %s", cutoff.strftime("%Y-%m-%d"))
         historical_count = 0
