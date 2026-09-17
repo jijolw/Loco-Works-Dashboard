@@ -6240,6 +6240,22 @@ async function loadReportCenter() {
                     </div>
                 </div>
 
+                <!-- Card 7: ICF Age & Condemnation Survey (13-Year Rule) -->
+                <div class="card card-no-hover" style="padding: 20px; display: flex; flex-direction: column; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;">
+                    <div>
+                        <h3 style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">🔍 ICF Age & Condemnation Survey (13-Year Rule)</h3>
+                        <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+                            Live classification of ICF coaching stock based on manufacturing age: <strong>Built &ge; 2013 (&le; 13 Yrs Old)</strong> vs <strong>Built &lt; 2013 (&gt; 13 Yrs Old — Condemnation Survey)</strong> with corrosion man-hours and shop pit positions.
+                        </p>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: auto; padding-top: 16px;">
+                        <button class="btn btn-secondary" onclick="viewAgeAnalysisReport()" style="flex: 1;">Preview</button>
+                        <button class="btn btn-primary" onclick="downloadAgeAnalysisReport()" style="flex: 1;">Download Excel</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Preview Container -->
             <div id="report-preview-container" style="margin-top: 24px;"></div>
         </div>
@@ -7230,6 +7246,124 @@ window.submitAiQuery = async function() {
 document.addEventListener('DOMContentLoaded', init);
 
 /* ============================================================
+   ICF 13-YEAR AGE CONDITION & CONDEMNATION SURVEY
+   ============================================================ */
+
+window.downloadAgeAnalysisReport = function() {
+    window.location.href = `/api/reports/age_analysis/download`;
+};
+
+window.viewAgeAnalysisReport = async function() {
+    const previewContainer = document.getElementById('report-preview-container');
+    showLoading();
+    if (previewContainer) previewContainer.innerHTML = '';
+    
+    try {
+        const res = await fetch('/api/reports/age_analysis');
+        const data = await res.json();
+        if (data.error) {
+            if (previewContainer) previewContainer.innerHTML = `<div class="card card-no-hover" style="padding: 16px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">Failed to load report: ${data.error}</div>`;
+            hideLoading();
+            return;
+        }
+        
+        let html = renderAgeAnalysisHtml(data);
+        if (previewContainer) {
+            previewContainer.innerHTML = html;
+        }
+    } catch(e) {
+        if (previewContainer) previewContainer.innerHTML = `<div class="card card-no-hover" style="padding: 16px; color: var(--danger); border-left: 4px solid var(--danger); background: var(--bg-card);">Failed to connect: ${e}</div>`;
+    }
+    hideLoading();
+};
+
+function renderAgeAnalysisHtml(data) {
+    let breakdown = data.breakdown || [];
+    let coaches = data.coaches || [];
+
+    let html = `
+        <div class="card card-no-hover" style="padding: 24px; animation: fadeIn 0.3s ease; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; margin-top: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;">
+                <div>
+                    <h2 style="font-size: 18px; font-weight: 600; color: var(--text-primary); margin: 0;">
+                        🔍 ICF Age & Condemnation Survey Matrix (13-Year Rule) [${data.timestamp}]
+                    </h2>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin: 4px 0 0 0;">
+                        Live ICF Holding: Built &ge; 2013 (&le; 13 Yrs) vs Built &lt; 2013 (&gt; 13 Yrs Survey Candidate)
+                    </p>
+                </div>
+                <div>
+                    <button class="btn btn-primary" onclick="downloadAgeAnalysisReport()">📥 Download 4-Tab Excel</button>
+                </div>
+            </div>
+
+            <!-- KPI Cards -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px;">
+                <div style="background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 14px; text-align: center;">
+                    <div style="font-size: 12px; font-weight: 600; color: #4338ca; text-transform: uppercase;">Total Live ICF Holding</div>
+                    <div style="font-size: 24px; font-weight: 700; color: #312e81; margin-top: 4px;">${data.total_coaches} Coaches</div>
+                </div>
+                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 14px; text-align: center;">
+                    <div style="font-size: 12px; font-weight: 600; color: #1e40af; text-transform: uppercase;">Built &ge; 2013 (&le; 13 Yrs Old)</div>
+                    <div style="font-size: 24px; font-weight: 700; color: #1d4ed8; margin-top: 4px;">${data.ge_2013_count} (${data.ge_2013_pct}%)</div>
+                </div>
+                <div style="background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; padding: 14px; text-align: center;">
+                    <div style="font-size: 12px; font-weight: 600; color: #be123c; text-transform: uppercase;">Built &lt; 2013 (&gt; 13 Yrs - Survey)</div>
+                    <div style="font-size: 24px; font-weight: 700; color: #e11d48; margin-top: 4px;">${data.lt_2013_count} (${data.lt_2013_pct}%)</div>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; text-align: center;">
+                    <div style="font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase;">Total Man-Hours</div>
+                    <div style="font-size: 24px; font-weight: 700; color: #0f172a; margin-top: 4px;">${Number(data.total_man_hours).toLocaleString()} Hrs</div>
+                </div>
+            </div>
+
+            <!-- Type-Wise Summary Table -->
+            <div style="overflow-x: auto;">
+                <table class="data-table" style="width:100%; border-collapse: collapse; font-size: 13px;">
+                    <thead>
+                        <tr style="background: var(--bg-body); border-bottom: 2px solid var(--border);">
+                            <th style="width: 50px; text-align: center; padding: 10px 8px;">S.No</th>
+                            <th style="text-align: left; padding: 10px 8px;">Coach Type</th>
+                            <th style="text-align: left; padding: 10px 8px;">Type Description</th>
+                            <th style="text-align: center; padding: 10px 8px; background: #eff6ff; color: #1e40af;">Built &ge; 2013 (&le; 13 Yrs)</th>
+                            <th style="text-align: center; padding: 10px 8px; background: #fff1f2; color: #be123c;">Built &lt; 2013 (&gt; 13 Yrs Survey)</th>
+                            <th style="text-align: center; padding: 10px 8px; font-weight: bold;">Total Coaches</th>
+                            <th style="text-align: center; padding: 10px 8px;">Total Man-Hours</th>
+                            <th style="text-align: center; padding: 10px 8px;">% Share (&ge; 2013)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${breakdown.map((r, i) => `
+                            <tr style="border-bottom: 1px solid var(--border);">
+                                <td style="text-align: center; padding: 8px;">${i + 1}</td>
+                                <td style="padding: 8px; font-weight: 600;">${escapeHtml(r.type)}</td>
+                                <td style="padding: 8px;">${escapeHtml(r.description)}</td>
+                                <td style="text-align: center; padding: 8px; font-weight: bold; background: #f0f9ff; color: #0369a1;">${r.ge_2013}</td>
+                                <td style="text-align: center; padding: 8px; font-weight: bold; background: #fff1f2; color: #be123c;">${r.lt_2013}</td>
+                                <td style="text-align: center; padding: 8px; font-weight: bold;">${r.total}</td>
+                                <td style="text-align: center; padding: 8px; font-weight: 600;">${r.man_hours > 0 ? Number(r.man_hours).toLocaleString() : '-'}</td>
+                                <td style="text-align: center; padding: 8px; font-weight: 600;">${r.pct_ge_2013}%</td>
+                            </tr>
+                        `).join('')}
+                        <tr style="background: var(--bg-hover); font-weight: bold; border-top: 2px solid var(--border);">
+                            <td style="text-align: center; padding: 10px 8px;"></td>
+                            <td style="padding: 10px 8px; color: var(--accent-primary);">TOTAL</td>
+                            <td style="padding: 10px 8px;">All Live ICF Coaches</td>
+                            <td style="text-align: center; padding: 10px 8px; color: #1e40af; font-size: 14px;">${data.ge_2013_count}</td>
+                            <td style="text-align: center; padding: 10px 8px; color: #be123c; font-size: 14px;">${data.lt_2013_count}</td>
+                            <td style="text-align: center; padding: 10px 8px; font-size: 14px;">${data.total_coaches}</td>
+                            <td style="text-align: center; padding: 10px 8px; font-size: 14px;">${Number(data.total_man_hours).toLocaleString()}</td>
+                            <td style="text-align: center; padding: 10px 8px; font-size: 14px;">${data.ge_2013_pct}%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    return html;
+}
+
+/* ============================================================
    MONTHLY PRODUCTION PLANNING & HOLDING MASTER PAGE
    ============================================================ */
 
@@ -7344,7 +7478,7 @@ function renderProductionPlanningHtml(data) {
                 </table>
             </div>
 
-            <!-- Tab 1: Holding Roster by Type -->
+            <!-- Tab 1: Holding List by Type -->
             <div id="pp-tab-roster" style="display: none; overflow-x: auto;">
                 <table class="data-table" style="width:100%; border-collapse: collapse; font-size: 13px;">
                     <thead>
@@ -7356,6 +7490,7 @@ function renderProductionPlanningHtml(data) {
                             <th style="text-align: left; padding: 8px;">Coach Type</th>
                             <th style="text-align: center; padding: 8px;">Category</th>
                             <th style="text-align: center; padding: 8px;">Year Built</th>
+                            <th style="text-align: center; padding: 8px;">13-Yr Condition</th>
                             <th style="text-align: center; padding: 8px;">Receipt Date</th>
                             <th style="text-align: center; padding: 8px;">Location</th>
                             <th style="text-align: center; padding: 8px;">Corrosion Completed</th>
@@ -7373,7 +7508,7 @@ function renderProductionPlanningHtml(data) {
             let inYd = catTotal - inShop;
             html += `
                 <tr style="background: var(--bg-body); font-weight: bold;">
-                    <td colspan="10" style="padding: 8px; color: var(--accent-primary); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+                    <td colspan="11" style="padding: 8px; color: var(--accent-primary); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
                         ${escapeHtml(currentCat)} — TOTAL: ${catTotal} COACHES (In Working Area: ${inShop}, In Yard: ${inYd})
                     </td>
                 </tr>
@@ -7390,6 +7525,9 @@ function renderProductionPlanningHtml(data) {
                 <td style="padding: 8px;">${escapeHtml(c.coach_desc)}</td>
                 <td style="text-align: center; padding: 8px;">${escapeHtml(c.category)}</td>
                 <td style="text-align: center; padding: 8px;">${escapeHtml(c.year_built)}</td>
+                <td style="text-align: center; padding: 8px;">
+                    ${c.is_above_13 ? '<span class="badge" style="background:#fce4d6;color:#c00000;font-weight:bold;padding:2px 6px;border-radius:4px;">>13 Yrs (Survey)</span>' : (c.age_condition === '<= 13 Yrs' ? '<span class="badge" style="background:#d9e1f2;color:#1f497d;font-weight:bold;padding:2px 6px;border-radius:4px;">≤13 Yrs</span>' : '—')}
+                </td>
                 <td style="text-align: center; padding: 8px;">${escapeHtml(c.recd_date)}</td>
                 <td style="text-align: center; padding: 8px;">
                     <span class="badge ${c.location === 'In Working Area' ? 'badge-primary' : 'badge-warning'}">
@@ -7437,8 +7575,8 @@ async function loadProductionPlanningPage() {
     container.innerHTML = `
         <div class="anim-slide">
             <div class="page-header">
-                <h1 class="page-title">📝 Holding & Planning Master</h1>
-                <p class="page-subtitle">Carriage Workshop Live Holding Roster, Type-Wise Placement & Division Summary Position.</p>
+                <h1 class="page-title">📅 Coordination Meeting Position</h1>
+                <p class="page-subtitle">Monthly POH Coordination Meeting Position — Snapshot as on 1st of Month (Planned, Unplanned & Division Summary).</p>
             </div>
             <div id="production-planning-content"></div>
         </div>
