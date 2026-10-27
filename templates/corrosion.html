@@ -1,0 +1,24 @@
+{% extends "base.html" %}{% from "_period.html" import period, v %}
+{% block h1 %}Corrosion Cycle{% endblock %}
+{% block body %}
+<div class="cards">
+<div class="card"><b>{{ k.total.with_corr if k.total else 0 }}</b><span>Outturns with corrosion dates</span></div>
+<div class="card"><b>{{ v(k.total.corr if k.total) }}</b><span>Avg corrosion days (start → completion)</span></div>
+<div class="card"><b>{{ v(k.total.corr_med if k.total) }}</b><span>Median corrosion days</span></div>
+<div class="card"><b>{{ v(k.total.to_corr if k.total) }}</b><span>Avg days entry → corrosion start</span></div>
+<div class="card"><b>{{ v(k.total.after if k.total) }}</b><span>Avg days corrosion done → outturn</span></div>
+<div class="card"><b>{{ k.under|length }}</b><span>Under corrosion now</span></div>
+</div>
+<div class="box"><h2>By coach type (outturned in period) {{ period(d0, d1, 'corrosion') }}</h2>
+<table><tr><th>Coach Type</th><th>Outturns</th><th>With corr dates</th><th>Avg corrosion days</th><th>Median</th><th>Max</th><th>Entry → corr start</th><th>Corr done → outturn</th></tr>
+{% set ns = namespace(f=None) %}{% for r in k.rows %}{% if r.family != ns.f %}{% set ns.f = r.family %}<tr class="fam"><td colspan="8">{{ r.family }}</td></tr>{% endif %}
+<tr><td>{{ r.group }}</td><td>{{ r.n }}</td><td>{{ r.with_corr }}</td><td class="hi">{{ v(r.corr) }}</td><td>{{ v(r.corr_med) }}</td><td>{{ v(r.corr_max) }}</td><td>{{ v(r.to_corr) }}</td><td>{{ v(r.after) }}</td></tr>{% endfor %}
+{% if k.total %}<tr class="tot"><td>TOTAL</td><td>{{ k.total.n }}</td><td>{{ k.total.with_corr }}</td><td>{{ v(k.total.corr) }}</td><td>{{ v(k.total.corr_med) }}</td><td>{{ v(k.total.corr_max) }}</td><td>{{ v(k.total.to_corr) }}</td><td>{{ v(k.total.after) }}</td></tr>{% endif %}</table>
+<p class="note">Corrosion start = ERP corr placement; completion = corr comp.</p></div>
+<div class="box"><h2>{{ k.month.strftime('%B %Y') }} – corrosion position</h2>
+<table><tr><th>Coach Type</th><th>Completed this month</th><th>Carry forward (completed earlier, outturned this month)</th><th>Under corrosion now</th></tr>
+{% for r in k.month_rows %}<tr><td>{{ r.group }}</td><td class="{{ 'z' if not r.done }}">{{ r.done }}</td><td class="{{ 'z' if not r.carry }}">{{ r.carry }}</td><td class="{{ 'z' if not r.under }}">{{ r.under }}</td></tr>{% endfor %}</table></div>
+<div class="box"><details><summary>Under corrosion now ({{ k.under|length }})</summary>
+<table style="margin-top:8px"><tr><th>Coach Type</th><th>Coach No</th><th>Received</th><th>Corr start</th><th>Days in corrosion</th><th>Pit</th></tr>
+{% for u in k.under %}<tr><td>{{ u._group }}</td><td>{{ u.coachNo }}</td><td>{{ fmt(pdate(u.receivedDate)) }}</td><td>{{ fmt(u._cs) }}</td><td class="{{ 'hi' if u._cdays > 20 }}">{{ u._cdays }}</td><td>{{ u.pitNum or '' }}</td></tr>{% endfor %}</table></details></div>
+{% endblock %}

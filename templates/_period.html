@@ -1,0 +1,5 @@
+{% macro period(d0, d1, what, extra='') %}<form class="inline" style="float:right" method="get">
+From <input type="date" name="from" value="{{ d0.isoformat() }}"> to <input type="date" name="to" value="{{ d1.isoformat() }}">{{ extra|safe }}
+<button class="btn light">Show</button>
+<a class="btn light" href="{{ url_for('download', what=what, **{'from': d0.isoformat(), 'to': d1.isoformat()}) }}">Excel</a></form>{% endmacro %}
+{% macro v(x, suf='') %}{{ '—' if x is none else (x ~ suf) }}{% endmacro %}

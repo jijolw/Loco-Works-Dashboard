@@ -1,0 +1,5 @@
+{# macro: rows grouped by family #}
+{% macro famrows(rows, cols, ncols) %}{% set ns = namespace(f=None) %}
+{% for r in rows %}{% if r.family != ns.f %}{% set ns.f = r.family %}<tr class="fam"><td colspan="{{ ncols }}">{{ r.family }}</td></tr>{% endif %}
+<tr><td{% if r.fnd is defined and r.fnd %} class="hi"{% endif %}>{{ r.group }}</td>{% for c in cols %}{% set v = r[c] %}<td class="{{ 'z' if v == 0 }}{{ ' hi' if c=='fnd' and v }}">{{ v }}</td>{% endfor %}</tr>
+{% endfor %}{% endmacro %}

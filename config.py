@@ -1,41 +1,57 @@
-# =====================================================
-# config.py
-# LW/PER Workshop Intelligence System
-# Centralized configuration — edit ONLY this file
-# =====================================================
+"""
+config.py - settings come from the .env file next to this file (never committed to Git)
+or from environment variables (Render dashboard). No passwords or keys are written in code.
 
-# ── Coach ERP (New Keycloak SSO Gateway) ─────────────
-COACH_ERP_BASE_URL = "http://10.185.78.45"
-COACH_ERP_SSO_URL  = "http://10.185.78.45/oauth2/authorization/keycloak"
-COACH_ERP_API_BASE = "http://10.185.78.45/intranet/api"
-COACH_ERP_USERNAME = "15713080065"
-COACH_ERP_PASSWORD = "80065@jijo"
-
-# ── AC Loco ERP ──────────────────────────────────────
-ACLOCO_ERP_BASE_URL = "http://locoworks/acloco"
-ACLOCO_ERP_USERNAME = "07602546"
-ACLOCO_ERP_PASSWORD = "08041977"
-
-# ── Cache TTL (seconds) ──────────────────────────────
-CACHE_TTL_MASTER   = 300    # 5 min — master list
-CACHE_TTL_SINGLE   = 300    # 5 min — single coach details
-CACHE_TTL_AERIAL   = 120    # 2 min — aerial/AC loco
-CACHE_TTL_STATIC   = 3600   # 1 hr  — year_built, coachmaster
-
-# ── Gemini AI ─────────────────────────────────────────
+APP_MODE = local   -> office PC: reads the ERP export, can refresh from ERP and push to Supabase
+APP_MODE = online  -> Render: view only, reads the last snapshot from Supabase
+"""
 import os
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "AIzaSyACFwclOTLOALZv9MLgrG7OvI8RG0nNNi4")
 
-# ── Supabase ─────────────────────────────────────────
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://ykksfdiyczolhqnduwkh.supabase.co/rest/v1")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inlra3NmZGl5Y3pvbGhxbmR1d2toIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4MTA3ODk0OCwiZXhwIjoyMDk2NjU0OTQ4fQ.67jORriOLnHf0WGcYtxr4dQkgFPw7JZEJm8xlfysWFM")
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+ENV_FILE = os.path.join(APP_DIR, ".env")
 
-# ── Google Sheets ────────────────────────────────────
-GOOGLE_SHEET_KEY = os.environ.get("GOOGLE_SHEET_KEY", "17_yzOhhdSy0EQAqLpfuXMPJazsgtlW7QspNvYJLI2Qk")
-GOOGLE_CREDENTIALS_PATH = os.environ.get("GOOGLE_CREDENTIALS_PATH", r"D:\JIJO\information\Coach Position\credentials.json")
 
-# ── Flask ────────────────────────────────────────────
-FLASK_HOST = "0.0.0.0"
-FLASK_PORT = 5001
-FLASK_DEBUG = True
+def _load_env_file(path=ENV_FILE):
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            os.environ.setdefault(k.strip(), v.strip().strip('"').strip("'"))
 
+
+_load_env_file()
+
+
+def get(key, default=""):
+    return os.environ.get(key, default)
+
+
+APP_MODE = get("APP_MODE", "local").strip().lower()
+IS_LOCAL = APP_MODE != "online"
+
+# New Carriage ERP (railway intranet only)
+ERP_BASE = get("ERP_BASE", "http://10.185.78.45")
+ERP_API = get("ERP_API", ERP_BASE + "/intranet/api")
+ERP_SSO = get("ERP_SSO", ERP_BASE + "/oauth2/authorization/keycloak")
+ERP_USERNAME = get("ERP_USERNAME")
+ERP_PASSWORD = get("ERP_PASSWORD")
+
+# The ERP export file - the same file Claude reads (08_Claude_ERP_Export)
+EXPORT_PATH = get("EXPORT_PATH", os.path.normpath(os.path.join(
+    APP_DIR, "..", "..", "08_Claude_ERP_Export", "data", "erp_demands_latest.json")))
+
+# Supabase (online copy). SUPABASE_URL = https://<project>.supabase.co  (no /rest/v1)
+SUPABASE_URL = get("SUPABASE_URL").replace("/rest/v1", "").rstrip("/")
+SUPABASE_KEY = get("SUPABASE_KEY")
+SUPABASE_BUCKET = get("SUPABASE_BUCKET", "lwper")
+
+# Google Sheets (targets / Kumbh Mela) - read through public gviz CSV
+POSITION_SHEET_KEY = get("POSITION_SHEET_KEY", "17_yzOhhdSy0EQAqLpfuXMPJazsgtlW7QspNvYJLI2Qk")
+HQ_KM_SHEET_KEY = get("HQ_KM_SHEET_KEY", "1M3eSBWsa4Lp4NzQhEqRNGiCIxNgmSmdHIW-0N8IhUxk")   # READ ONLY
+
+HOST = get("HOST", "127.0.0.1" if IS_LOCAL else "0.0.0.0")
+PORT = int(get("PORT", "5000"))

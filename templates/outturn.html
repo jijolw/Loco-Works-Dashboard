@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block h1 %}Month-wise Outturn {{ x.fy }}{% endblock %}
+{% block body %}
+<div class="box"><h2>Outturn by desp date
+<form class="inline" style="float:right" method="get"><select name="fy" onchange="this.form.submit()">{% for f in fys %}<option {{ 'selected' if f==x.fy }}>{{ f }}</option>{% endfor %}</select>
+<a class="btn light" href="{{ url_for('download', what='outturn', fy=x.fy) }}">Excel</a></form></h2>
+<table><tr><th>Coach Type</th>{% for m in x.months %}<th>{{ m.strftime('%b-%y') }}</th>{% endfor %}<th>Total</th></tr>
+{% set ns = namespace(f=None) %}{% for r in x.rows %}{% if r.family != ns.f %}{% set ns.f = r.family %}<tr class="fam"><td colspan="14">{{ r.family }}</td></tr>{% endif %}
+<tr><td>{{ r.group }}</td>{% for v in r.vals %}<td class="{{ 'z' if v==0 }}">{{ v }}</td>{% endfor %}<td class="hi">{{ r.total }}</td></tr>{% endfor %}
+<tr class="tot"><td>TOTAL</td>{% for v in x.totals %}<td>{{ v }}</td>{% endfor %}<td>{{ x.grand }}</td></tr></table>
+<p class="note">Return / condemned / Bhopal / repair type 161 excluded. Physical despatch is not used for outturn.</p></div>
+{% endblock %}

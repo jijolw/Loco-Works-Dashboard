@@ -1,0 +1,26 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}LW/PER Coach POH{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
+<body><div class="wrap">
+<nav><div class="brand">LW/PER Coach POH<small>{{ 'Office PC' if IS_LOCAL else 'Online (view only)' }}</small></div>
+{% for sec, items in NAV %}<h4>{{ sec }}</h4>
+{% for ep, label in items %}{% if ep in READY %}<a href="{{ url_for(ep) }}" class="{{ 'on' if page==ep }}">{{ label }}</a>
+{% else %}<a class="off" href="{{ url_for('soon', name=ep) }}">{{ label }}</a>{% endif %}{% endfor %}{% endfor %}
+</nav>
+<main>
+<div class="top"><h1>{% block h1 %}{% endblock %}</h1>
+<span class="asof">ERP data as on {{ as_on.strftime('%d-%m-%Y %H:%M') if as_on else '—' }}</span>
+{% if IS_LOCAL %}<button class="btn" id="updbtn" onclick="doUpdate()">Update from ERP</button><span id="upd"></span>{% endif %}
+</div>
+{% block body %}{% endblock %}
+</main></div>
+{% if IS_LOCAL %}<script>
+function poll(){fetch('/update/status').then(r=>r.json()).then(s=>{
+ const el=document.getElementById('upd'),b=document.getElementById('updbtn');
+ if(s.running){b.disabled=true;el.textContent=s.step;setTimeout(poll,3000);}
+ else{b.disabled=false;if(s.error){el.innerHTML='<span class="warn">'+s.error+'</span>';}
+ else if(s.done_at&&sessionStorage.getItem('upd')){sessionStorage.removeItem('upd');location.reload();}}});}
+function doUpdate(){try{sessionStorage.setItem('upd','1')}catch(e){};fetch('/update',{method:'POST'}).then(()=>poll());}
+poll();
+</script>{% endif %}
+</body></html>

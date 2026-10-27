@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block h1 %}Coach Search{% endblock %}
+{% block body %}
+<div class="box"><form class="inline" method="get"><input name="q" value="{{ q }}" placeholder="Coach number" autofocus><button class="btn">Search</button></form></div>
+{% if q %}<div class="box"><h2>{{ q }} – {{ visits|length }} visit(s) in ERP</h2>
+{% if visits %}<table><tr><th>Type</th><th>Repair</th><th>Received</th><th>TFR</th><th>Corr start</th><th>Corr comp</th><th>Desp (outturn)</th><th>Actual desp</th><th>Days</th><th>Pre / Final hrs</th><th>Last POH</th><th>Pit / Location</th><th>Status</th></tr>
+{% for d in visits %}{% set rd = pdate(d.receivedDate) %}{% set dd = pdate(d.dispatchDate) %}
+<tr><td>{{ d._group }}</td><td>{{ d.repairDesc or d.repair or d.repairType }}</td><td>{{ fmt(rd) }}</td><td>{{ fmt(pdate(d.tfr)) }}</td><td>{{ fmt(pdate(d.corrPlace)) }}</td><td>{{ fmt(pdate(d.corrComp)) }}</td>
+<td>{{ fmt(dd) }}</td><td>{{ fmt(pdate(d.actualDispatchDate)) }}</td><td>{{ (dd - rd).days if dd and rd else (((as_on.date() - rd).days ~ ' (inside)') if rd and not dd else '') }}</td>
+<td>{{ d.preSurveyHrs or '' }} / {{ d.finalHrs or '' }}</td><td>{{ d.lastPoh or '' }} {{ fmt(pdate(d.lastPohDate)) }}</td>
+<td>{{ (d.pitNum or '') ~ ' · ' ~ location(d) if not dd else '' }}</td><td class="{{ 'warn' if is_excluded(d) }}">{{ d.status or '' }}{{ ' (excluded)' if is_excluded(d) }}</td></tr>{% endfor %}</table>
+{% else %}<p>No visit found.</p>{% endif %}</div>{% endif %}
+{% endblock %}

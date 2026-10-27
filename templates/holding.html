@@ -1,0 +1,21 @@
+{% extends "base.html" %}{% from "_grouptable.html" import famrows %}
+{% block h1 %}Type-wise POH Holding{% endblock %}
+{% block body %}
+<div class="cards">
+<div class="card"><b>{{ h.total.total }}</b><span>Holding (received, not outturned)</span></div>
+<div class="card"><b>{{ h.total.yard }}</b><span>In yard</span></div>
+<div class="card"><b>{{ h.total.work }}</b><span>In work area</span></div>
+<div class="card"><b>{{ h.total['>30'] }}</b><span>Held more than 30 days</span></div>
+</div>
+<div class="box"><h2>By coach type <a class="btn light" style="float:right" href="{{ url_for('download', what='holding') }}">Excel</a></h2>
+<table><tr><th rowspan="2">Coach Type</th><th colspan="3">Location</th><th colspan="3">Days held</th><th colspan="2">Pre-survey hours</th><th rowspan="2">Max days</th></tr>
+<tr><th>Yard</th><th>Work area</th><th>Total</th><th>0-20</th><th>21-30</th><th>&gt;30</th><th>Light &lt;500</th><th>Heavy ≥500</th></tr>
+{{ famrows(h.rows, ['yard','work','total','0-20','21-30','>30','LIGHT','HEAVY','max'], 10) }}
+<tr class="tot"><td>TOTAL</td>{% for c in ['yard','work','total','0-20','21-30','>30','LIGHT','HEAVY','max'] %}<td>{{ h.total[c] }}</td>{% endfor %}</tr></table>
+<p class="note">Light/heavy only where pre-survey hours are entered in ERP.</p></div>
+<div class="box"><details><summary>Coach list ({{ h.coaches|length }})</summary>
+<table style="margin-top:8px"><tr><th>Coach Type</th><th>Coach No</th><th>Received</th><th>Days</th><th>Location</th><th>Pit</th><th>Pre hrs</th><th>Corrosion</th><th>PDC</th></tr>
+{% for c in h.coaches %}<tr><td>{{ c._group }}</td><td>{{ c.coachNo }}</td><td>{{ fmt(pdate(c.receivedDate)) }}</td><td class="{{ 'hi' if (c._days or 0) > 30 }}">{{ c._days }}</td>
+<td>{{ c._loc }}</td><td>{{ c.pitNum or '' }}</td><td>{{ c.preSurveyHrs or '' }}</td>
+<td>{{ 'Completed ' + fmt(pdate(c.corrComp)) if c.corrComp else ('Under progress' if c.corrPlace else '') }}</td><td>{{ fmt(pdate(c.pdcDate)) }}</td></tr>{% endfor %}</table></details></div>
+{% endblock %}

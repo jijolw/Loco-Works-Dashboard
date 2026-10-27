@@ -1,1012 +1,228 @@
-# =====================================================
-# app.py
-# LW/PER Workshop Intelligence System
-# Flask application — serves API + frontend
-# =====================================================
+"""
+app.py - LW/PER Coach POH Workshop app (one codebase, local PC and online).
 
-from flask import Flask, jsonify, request, render_template, send_from_directory
-import os, traceback, threading
-from datetime import datetime
+Local  (office PC) : python Run_App.py  -> http://127.0.0.1:5000
+Online (Render)    : gunicorn app:app   with APP_MODE=online
+"""
+from datetime import date, datetime
 
-from config import FLASK_HOST, FLASK_PORT, FLASK_DEBUG
+from flask import Flask, jsonify, redirect, render_template, request, send_file, url_for, abort
 
-app = Flask(
-    __name__,
-    static_folder="static",
-    template_folder="templates",
-)
+import config
+from analysis import position as P
+from core import data, rules as R
+
+app = Flask(__name__)
+
+NAV = [
+    ("Position", [("dashboard", "Month Position"), ("holding", "Holding"), ("outturn", "Outturn")]),
+    ("Analysis", [("cycle", "Cycle Time"), ("corrosion", "Corrosion Cycle"), ("hours", "Man-hours"),
+                  ("prev_poh", "Previous POH"), ("targets", "Target vs Actual")]),
+    ("Workshop", [("aerial", "Aerial View"), ("coach", "Coach Search"), ("reports", "Report Centre")]),
+]
+READY = {"dashboard", "holding", "outturn", "coach", "cycle", "corrosion", "hours", "prev_poh", "targets", "reports", "aerial"}
 
 
+@app.context_processor
+def _ctx():
+    _, ex = data.load()
+    return dict(NAV=NAV, READY=READY, IS_LOCAL=config.IS_LOCAL, as_on=ex,
+                fmt=R.fmt, pdate=R.pdate, page=request.endpoint)
+
+
+def _as_on():
+    D, ex = data.load()
+    if not D:
+        abort(503, "No ERP data yet - press 'Update from ERP' (office PC).")
+    return D, (ex.date() if ex else date.today())
+
+
+# ---------------------------------------------------------------- pages
 @app.route("/")
-def landing():
-    """Serve the central welcome landing portal."""
-    return render_template("landing.html")
-
-
-@app.route("/cr")
-def index():
-    """Serve the Carriage Repair (CR) Shop SPA dashboard."""
-    return render_template("index.html")
-
-
-
-@app.route("/coach/reports/aerialview/print.html")
-@app.route("/reports/aerialview/print.html")
-@app.route("/report/aerial")
-@app.route("/api/pdf/aerial")
-def serve_aerial_pdf():
-    from services.pdf_service import generate_pdf_bytes
-    from flask import make_response, request
-    try:
-        today_plan = request.args.get("today_plan", "")
-        tmrw_plan = request.args.get("tmrw_plan", "")
-        today_out = request.args.get("today_out", "")
-        wise_desp = request.args.get("wise_desp", "")
-        
-        pdf_data = generate_pdf_bytes(
-            today_plan=today_plan,
-            tmrw_plan=tmrw_plan,
-            today_out=today_out,
-            wise_desp=wise_desp
-        )
-        response = make_response(pdf_data)
-        response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = 'inline; filename=aerial_snapshot.pdf'
-        return response
-    except Exception as e:
-        app.logger.exception("Error generating PDF report")
-        return f"Error generating PDF report: {e}", 500
-
-
-@app.route("/coach/reports/aerialview/print2.html")
-@app.route("/reports/aerialview/print2.html")
-@app.route("/report/aerial2")
-def serve_aerial_pdf2():
-    from services.pdf_service import generate_pdf_bytes
-    from flask import make_response, request
-    try:
-        today_plan = request.args.get("today_plan", "")
-        tmrw_plan = request.args.get("tmrw_plan", "")
-        today_out = request.args.get("today_out", "")
-        wise_desp = request.args.get("wise_desp", "")
-        
-        pdf_data = generate_pdf_bytes(
-            today_plan=today_plan,
-            tmrw_plan=tmrw_plan,
-            today_out=today_out,
-            wise_desp=wise_desp
-        )
-        response = make_response(pdf_data)
-        response.headers['Content-Type'] = 'application/pdf'
-        response.headers['Content-Disposition'] = 'inline; filename=aerial_view2_snapshot.pdf'
-        return response
-    except Exception as e:
-        app.logger.exception("Error generating Aerial View 2 PDF report")
-        return f"Error generating Aerial View 2 PDF report: {e}", 500
-
-
-# =====================================================
-# API — Aerial View
-# =====================================================
-
-@app.route("/api/aerial")
-def api_aerial():
-    """Return aerial view data: coaches on pits + topology."""
-    try:
-        from services.aerial_service import get_aerial_data
-        data = get_aerial_data()
-        
-        # Track active coach movements dynamically in background thread
-        try:
-            from services.sync_service import track_coach_movements
-            threading.Thread(target=track_coach_movements, daemon=True).start()
-        except Exception as se:
-            print("Background movement tracking thread start error:", se)
-            
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-# =====================================================
-# API — Live Position
-# =====================================================
-
-@app.route("/api/live")
-def api_live():
-    """Return live position data for all coaches in workshop."""
-    try:
-        from services.live_service import get_live_data
-        data = get_live_data()
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/coaches/progress")
-def api_coaches_progress():
-    """Return progress tracker data for coaches under repair."""
-    try:
-        from services.live_service import get_coaches_progress
-        data = get_coaches_progress()
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-# =====================================================
-# API — Coach Search
-# =====================================================
-
-@app.route("/api/coach/<coachno>")
-def api_coach_search(coachno):
-    """Search for a specific coach by number."""
-    try:
-        from services.erp_service import fetch_master_live_search, fetch_single, fetch_year_built, _parse_date
-        from services.decoders import (
-            decode_repair, decode_division, decode_workshop,
-            decode_family, decode_corrosion, decode_all,
-        )
-        from services.live_service import _resolve_division
-        from services.aerial_service import _compute_aerial_status
-        from datetime import datetime
-
-        coachno = str(coachno).strip()
-        # Query live intranet ERP directly using the search filter
-        matches = fetch_master_live_search(coachno)
-
-        # Fallback to Supabase cache master if live search returned nothing
-        if not matches:
-            from services.erp_service import fetch_master
-            master = fetch_master()
-            for row in master:
-                rn = str(row.get("coachno", "")).strip()
-                if coachno.lower() in rn.lower():
-                    matches.append(row)
-
-        if not matches:
-            return jsonify({"matches": [], "count": 0})
-
-        # Enrich each match with singledata
-        enriched = []
-        for row in matches[:20]:  # limit to 20 matches
-            demandid = str(row.get("demandid", "")).strip()
-            if not demandid or demandid == "nan":
-                continue
-
-            d = fetch_single(demandid)
-            decoded = decode_all(
-                d,
-                summary_coachno=str(row.get("coachno", "")),
-                summary_desc=str(row.get("coach_desc", "")),
-            )
-
-            # Add fields from master
-            decoded["demandid"] = demandid
-            row_coachno = str(row.get("coachno", "")).strip()
-            pitnum = str(row.get("pitnum", "")).strip()
-            decoded["pitnum"] = pitnum
-            decoded["noofdays"] = row.get("noofdays", "")
-
-            # Calculate IN_DAYS
-            recd_str = row.get("recd_date", "") or row.get("recddate", "") or d.get("recd_date", "") or d.get("recddate", "")
-            recd_dt = _parse_date(recd_str)
-            decoded["IN_DAYS"] = (datetime.now() - recd_dt).days if recd_dt else None
-            decoded["recd_date"] = recd_str
-            decoded["recddate"] = recd_str
-
-            actual_desp = d.get("actualdespdate") or ""
-            actual_desp_dt = _parse_date(actual_desp) if actual_desp else None
-            if actual_desp_dt and recd_dt and actual_desp_dt < recd_dt:
-                actual_desp = ""
-            desp_str = row.get("desp_date") or row.get("despdate") or d.get("desp_date") or d.get("despdate") or actual_desp or ""
-            decoded["desp_date"] = desp_str
-            decoded["despdate"] = desp_str
-
-            # Add year_built from coachmaster
-            cm = fetch_year_built(coachno)
-            decoded["year_built"] = cm.get("year_built", "")
-            decoded["make"] = cm.get("make", "")
-
-            # Enrich with Google Sheets corrosion data if vacant in ERP
-            from services.db_service import get_google_corrosion
-            google_corr = get_google_corrosion(row_coachno)
-            if google_corr:
-                g_corr_in = google_corr.get("corr_in_date") or ""
-                g_corr_status = google_corr.get("corrosion_status") or ""
-                
-                if (not decoded.get("corr_place") or str(decoded.get("corr_place")).strip() in ("", "None", "null")) and g_corr_in:
-                    decoded["corr_place"] = "GSheet: " + g_corr_in
-                if (not decoded.get("corr_comp") or str(decoded.get("corr_comp")).strip() in ("", "None", "null")) and g_corr_status:
-                    if "completed" in g_corr_status.lower() or "/" in g_corr_status or "-" in g_corr_status:
-                        decoded["corr_comp"] = g_corr_status if ("/" in g_corr_status or "-" in g_corr_status) else "Completed"
-                
-                decoded["bio_tank_status"] = google_corr.get("bio_tank_status", "")
-                decoded["lowering_status"] = google_corr.get("lowering_status", "")
-                decoded["furnishing_status"] = google_corr.get("furnishing_status", "")
-                decoded["despatch_status"] = google_corr.get("despatch_status", "")
-                decoded["google_pdc"] = google_corr.get("pdc", "")
-                decoded["google_remarks"] = google_corr.get("remarks", "")
-                
-                if not decoded.get("corrosion_label") or decoded["corrosion_label"] == "":
-                    decoded["corrosion_label"] = g_corr_status
-
-            # Manual updates are bypassed to photocopy ERP exactly
-            decoded["vg_status"] = ""
-            decoded["vg_date"] = ""
-            decoded["physical_status"] = ""
-            decoded["physical_date"] = ""
-
-            # Resolve division, repair_type, and status to match frontend keys
-            decoded["division"] = _resolve_division(row, d)
-            decoded["repair_type"] = decoded.get("repair_label", "")
-            decoded["AERIAL_STATUS"] = _compute_aerial_status(decoded)
-
-            enriched.append(decoded)
-
-        # Sort matches by received date descending (latest first)
-        def get_sort_key(item):
-            recd_str = item.get("recd_date") or ""
-            dt = _parse_date(recd_str)
-            return dt if dt else datetime.min
-            
-        enriched.sort(key=get_sort_key, reverse=True)
-
-        return jsonify({"matches": enriched, "count": len(enriched)})
-
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-# =====================================================
-# API — Outturn (Phase 2 — placeholder)
-# =====================================================
-
-@app.route("/api/outturn")
-def api_outturn():
-    """Return outturn data for a specific date range."""
-    try:
-        from services.outturn_service import get_outturn_data
-        start_date = request.args.get("start_date")
-        end_date = request.args.get("end_date")
-        data = get_outturn_data(start_date, end_date)
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-# =====================================================
-# API — Corrosion Analysis
-# =====================================================
-
-@app.route("/api/corrosion/analysis")
-def api_corrosion_analysis():
-    """Return corrosion analysis data for selected financial years and coach families."""
-    try:
-        from services.corrosion_service import get_corrosion_analysis
-        
-        fys_param = request.args.get("fys", "")
-        family = request.args.get("family", "ALL")
-        
-        fy_list = [f.strip() for f in fys_param.split(",") if f.strip()] if fys_param else None
-        
-        data = get_corrosion_analysis(fy_list=fy_list, family_filter=family)
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-# =====================================================
-# API — Analytics (Phase 2 — placeholder)
-# =====================================================
-
-@app.route("/api/analytics")
-def api_analytics():
-    """Analytics data — Phase 2."""
-    return jsonify({"status": "coming_soon", "module": "Analytics"})
-
-
-# =====================================================
-# API — Corrosion Analysis (Phase 3 — placeholder)
-# =====================================================
-
-@app.route("/api/corrosion")
-def api_corrosion():
-    """Corrosion analysis — Phase 3."""
-    return jsonify({"status": "coming_soon", "module": "Corrosion Analysis"})
-
-
-# =====================================================
-# API — POH Analysis & Targets
-# =====================================================
-
-@app.route("/api/poh/analysis")
-def api_poh_analysis():
-    """Return POH performance and schedule misclassifications."""
-    try:
-        from services.poh_service import analyze_poh_performance
-        fy = request.args.get("fy")
-        family = request.args.get("family", "ALL")
-        data = analyze_poh_performance(fy=fy, family=family)
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/poh/targets")
-def api_poh_targets():
-    """Return target vs actual outturn comparisons for a given FY."""
-    try:
-        from services.poh_service import get_targets_vs_achievement
-        fy = request.args.get("fy", "2026-27")
-        data = get_targets_vs_achievement(fy)
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/coach/<coachno>/movements")
-def api_coach_movements(coachno):
-    """Return location history timeline for a specific coach."""
-    try:
-        from services.sync_service import get_coach_movements_history
-        data = get_coach_movements_history(coachno)
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-
-
-@app.route("/api/audit/data")
-def api_audit_data():
-    """Return corrosion and despatch audit rankings, missing hours, and FND list."""
-    try:
-        fy = request.args.get("fy", "ALL")
-        family = request.args.get("family", "ALL")
-        coach_type = request.args.get("type", "ALL")
-        
-        from services.audit_service import get_audit_data
-        data = get_audit_data(fy_filter=fy, family_filter=family, type_filter=coach_type)
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-
-
-@app.route("/api/targets/sync")
-def api_targets_sync():
-    """Sync targets from Google Sheets."""
-    try:
-        from services.sync_service import sync_targets
-        res = sync_targets()
-        return jsonify(res)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-# =====================================================
-# API — AC Loco (Phase 3 — placeholder)
-# =====================================================
-
-@app.route("/api/acloco/position")
-def api_acloco_position():
-    """Return AC Loco live position data."""
-    try:
-        from services.aerial_service import _fetch_ac_locos
-        locos = _fetch_ac_locos()
-        return jsonify({"coaches": locos, "count": len(locos)})
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/acloco/outturn")
-def api_acloco_outturn():
-    """AC Loco outturn — Phase 3."""
-    return jsonify({"status": "coming_soon", "module": "AC Loco Outturn"})
-
-
-@app.route("/api/acloco/program")
-def api_acloco_program():
-    """AC Loco program — Phase 3."""
-    return jsonify({"status": "coming_soon", "module": "AC Loco Program"})
-
-
-# =====================================================
-# API — Historical POH & Corrosion Hours
-# =====================================================
-
-@app.route("/api/coach/<coachno>/historical_poh")
-@app.route("/api/coach/history/<coachno>")
-def api_coach_historical_poh(coachno):
-    """Fetch merged POH history and manual records for a coach."""
-    try:
-        from services.db_service import get_historical_poh_records
-        from services.erp_service import fetch_master, fetch_master_live_search, fetch_single, _parse_date
-        
-        coachno = str(coachno).strip()
-        
-        # 1. Fetch manual records from Supabase
-        manual_records = get_historical_poh_records(coachno)
-        
-        # 2. Fetch ERP records
-        erp_visits = []
-        matches = fetch_master_live_search(coachno)
-        if not matches:
-            master = fetch_master()
-            matches = [row for row in master if str(row.get("coachno", "")).strip() == coachno]
-        
-        for m in matches[:10]: # limit to 10 ERP visits
-            demandid = m.get("demandid")
-            if not demandid:
-                continue
-            d = fetch_single(demandid)
-            
-            # A. Current/Last ERP visit
-            recd_str = d.get("recd_date") or d.get("recddate")
-            recd_dt = _parse_date(recd_str)
-            actual_desp = d.get("actualdespdate") or ""
-            actual_desp_dt = _parse_date(actual_desp) if actual_desp else None
-            if actual_desp_dt and recd_dt and actual_desp_dt < recd_dt:
-                actual_desp = ""
-            desp_str = d.get("desp_date") or d.get("despdate") or actual_desp
-            poh_date_dt = _parse_date(desp_str) if desp_str else recd_dt
-            poh_date_str = poh_date_dt.strftime("%Y-%m-%d") if poh_date_dt else None
-            
-            corr_hrs = d.get("finalhrs") or d.get("presurveyhrs") or 0
-            try:
-                corr_hrs = float(corr_hrs) if corr_hrs else 0
-            except:
-                corr_hrs = 0
-                
-            if poh_date_str:
-                erp_visits.append({
-                    "id": None,
-                    "coachno": coachno,
-                    "poh_date": poh_date_str,
-                    "workshop": "LW/PER",
-                    "corrosion_hours": corr_hrs,
-                    "remarks": f"POH Visit (Demand ID: {demandid})",
-                    "source": "ERP"
-                })
-                
-            # B. Last POH info registered in this ERP visit
-            prev_poh_date_str = d.get("last_pohdate")
-            prev_poh_ws = d.get("last_poh")
-            prev_dt = _parse_date(prev_poh_date_str) if prev_poh_date_str else None
-            prev_date_str = prev_dt.strftime("%Y-%m-%d") if prev_dt else None
-            
-            if prev_date_str and prev_poh_ws:
-                # Entry error override for coach 126416: 23/11/2021 was actually 23/11/2020
-                if coachno == "126416" and prev_date_str == "2021-11-23":
-                    prev_date_str = "2020-11-23"
-                    
-                from services.decoders import decode_workshop
-                ws_decoded = decode_workshop(prev_poh_ws)
-                
-                # Determine remarks based on where POH was done
-                if ws_decoded != "LW/PER":
-                    remarks_str = f"POH done at {ws_decoded}"
-                else:
-                    remarks_str = "Previous POH at LW/PER"
-                    
-                erp_visits.append({
-                    "id": None,
-                    "coachno": coachno,
-                    "poh_date": prev_date_str,
-                    "workshop": ws_decoded,
-                    "corrosion_hours": 0,
-                    "remarks": remarks_str,
-                    "source": "ERP (Previous)"
-                })
-                
-        # Combine all candidates
-        candidates = []
-        for r in manual_records:
-            candidates.append({
-                "id": r.get("id"),
-                "coachno": coachno,
-                "poh_date": r.get("poh_date"),
-                "workshop": r.get("workshop"),
-                "corrosion_hours": r.get("corrosion_hours"),
-                "remarks": r.get("remarks"),
-                "source": "Manual"
-            })
-            
-        candidates.extend(erp_visits)
-        
-        # Deduplicate records within 10 days of each other
-        valid_candidates = [c for c in candidates if c.get("poh_date")]
-        invalid_candidates = [c for c in candidates if not c.get("poh_date")]
-        
-        valid_candidates.sort(key=lambda x: x["poh_date"])
-        
-        deduped = []
-        for c in valid_candidates:
-            if not deduped:
-                deduped.append(c)
-                continue
-                
-            prev = deduped[-1]
-            try:
-                # parse YYYY-MM-DD
-                d1 = datetime.strptime(prev["poh_date"], "%Y-%m-%d")
-                d2 = datetime.strptime(c["poh_date"], "%Y-%m-%d")
-                days_diff = abs((d2 - d1).days)
-            except Exception:
-                days_diff = 999
-                
-            if days_diff <= 10:
-                # Priority: Manual (3) > ERP (2) > ERP (Previous) (1)
-                def get_priority(src):
-                    if src == "Manual": return 3
-                    if src == "ERP": return 2
-                    if src == "ERP (Previous)": return 1
-                    return 0
-                
-                p1 = get_priority(prev["source"])
-                p2 = get_priority(c["source"])
-                
-                if p2 > p1:
-                    deduped[-1] = c
-                elif p2 == p1:
-                    # Tie-breaker: keep the one with hours
-                    prev_hrs = prev.get("corrosion_hours") or 0
-                    c_hrs = c.get("corrosion_hours") or 0
-                    if c_hrs > prev_hrs:
-                        deduped[-1] = c
-            else:
-                deduped.append(c)
-                
-        merged = deduped + invalid_candidates
-        
-        # Sort by POH Date descending
-        merged.sort(key=lambda x: x["poh_date"] or "", reverse=True)
-        
-        # Clean source label for display: map "ERP (Previous)" to standard "ERP"
-        for m_rec in merged:
-            if m_rec.get("source") == "ERP (Previous)":
-                m_rec["source"] = "ERP"
-                
-        return jsonify(merged)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/coach/historical_poh", methods=["POST"])
-def api_add_historical_poh():
-    """Accepts coachno, poh_date, workshop, corrosion_hours, remarks and saves to Supabase."""
-    try:
-        from services.db_service import add_historical_poh_record
-        data = request.json or {}
-        coachno = str(data.get("coachno", "")).strip()
-        poh_date = str(data.get("poh_date", "")).strip()
-        workshop = str(data.get("workshop", "")).strip()
-        corrosion_hours = data.get("corrosion_hours", 0)
-        remarks = str(data.get("remarks", "")).strip()
-        
-        if not coachno or not poh_date or not workshop:
-            return jsonify({"error": "Coach No, POH Date and Workshop are required."}), 400
-            
-        # Parse POH date to YYYY-MM-DD
-        from services.erp_service import _parse_date
-        parsed_dt = _parse_date(poh_date)
-        if not parsed_dt:
-            try:
-                parsed_dt = datetime.strptime(poh_date, "%Y-%m-%d")
-            except:
-                pass
-                
-        if not parsed_dt:
-            return jsonify({"error": "Invalid date format. Use YYYY-MM-DD or DD/MM/YYYY."}), 400
-            
-        poh_date_str = parsed_dt.strftime("%Y-%m-%d")
-        
-        res = add_historical_poh_record(
-            coachno=coachno,
-            poh_date=poh_date_str,
-            workshop=workshop,
-            corrosion_hours=corrosion_hours,
-            remarks=remarks
-        )
-        return jsonify({"success": True, "record": res})
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/coach/historical_poh/<record_id>", methods=["DELETE"])
-def api_delete_historical_poh(record_id):
-    """Deletes a historical POH record from Supabase."""
-    try:
-        from services.db_service import delete_historical_poh_record
-        delete_historical_poh_record(int(record_id))
-        return jsonify({"success": True})
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-# =====================================================
-# API — Health Check
-# =====================================================
-
-@app.route("/api/health")
-def api_health():
-    """Health check — verify ERP connectivity."""
-    result = {"flask": "ok"}
-    try:
-        from services.erp_service import get_session
-        sess = get_session()
-        result["coach_erp"] = "ok" if sess else "failed"
-    except Exception as e:
-        result["coach_erp"] = f"error: {str(e)}"
-
-    try:
-        from services.erp_service import get_ac_session
-        sess = get_ac_session()
-        result["acloco_erp"] = "ok" if sess else "failed"
-    except Exception as e:
-        result["acloco_erp"] = f"error: {str(e)}"
-
-    return jsonify(result)
-
-@app.route("/api/planning/active")
-def api_planning_active():
-    """Fetch active coaches from Supabase."""
-    try:
-        from services.erp_service import fetch_clean
-        coaches = fetch_clean()
-        
-        active_coaches = []
-        from services.erp_service import _INACTIVE_STATUSES, _is_valid_pitnum
-        
-        for c in coaches:
-            status = str(c.get("status", "")).strip().upper()
-            pit = str(c.get("pitnum", "")).strip().upper()
-            if status in _INACTIVE_STATUSES:
-                continue
-            if not _is_valid_pitnum(pit):
-                continue
-                
-            active_coaches.append({
-                "coachno": str(c.get("coachno", "")).strip(),
-                "coach_desc": c.get("coach_desc") or "",
-                "pitnum": pit,
-                "recd_date": c.get("recd_date") or "",
-                "in_days": c.get("IN_DAYS") or "—",
-                "plan_date": c.get("plan_date") or ""
-            })
-        return jsonify(active_coaches)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/planning/save", methods=["POST"])
-def api_planning_save():
-    """Save manual outturn plan date directly to Supabase."""
-    import requests
-    from config import SUPABASE_URL, SUPABASE_KEY
-    
-    data = request.json or {}
-    coachno = str(data.get("coachno", "")).strip()
-    plan_date = str(data.get("plan_date", "")).strip()
-    
-    if not coachno:
-        return jsonify({"error": "Missing coachno"}), 400
-        
-    headers = {
-        "apikey": SUPABASE_KEY,
-        "Authorization": f"Bearer {SUPABASE_KEY}",
-        "Content-Type": "application/json"
-    }
-    
-    try:
-        # 1. Fetch current coach from Supabase to parse its packed make column
-        url = f"{SUPABASE_URL}/erp_active_coaches?coachno=eq.{coachno}"
-        res = requests.get(url, headers=headers)
-        res.raise_for_status()
-        rows = res.json()
-        if not rows:
-            return jsonify({"error": "Coach not found in active list"}), 404
-            
-        coach = rows[0]
-        make_val = coach.get("make") or ""
-        
-        # Split make_val by ||
-        parts = make_val.split("||")
-        while len(parts) < 15:
-            parts.append("")
-            
-        # Update index 14 with new plan_date
-        parts[14] = plan_date
-        new_make = "||".join(parts)
-        
-        # 2. Update make column in Supabase
-        patch_url = f"{SUPABASE_URL}/erp_active_coaches?coachno=eq.{coachno}"
-        patch_res = requests.patch(patch_url, headers=headers, json={"make": new_make})
-        patch_res.raise_for_status()
-        
-        # 3. Clear master cache
-        from services.erp_service import cache_clear
-        cache_clear("clean_master")
-        
-        return jsonify({"success": True})
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-
-# =====================================================
-# API — Report Center
-# =====================================================
-
-@app.route("/api/reports/performance")
-def api_reports_performance():
-    try:
-        month = request.args.get("month", "June")
-        year = request.args.get("year", "2026")
-        bypass = request.args.get("bypass_cache", "false").lower() == "true"
-        report_type = request.args.get("report_type", "target_achievement")
-        
-        from services.performance_service import get_performance_report_data
-        data = get_performance_report_data(month, year, bypass_cache=bypass, report_type=report_type)
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/api/reports/performance/download")
-def api_reports_performance_download():
-    from flask import send_file
-    import io
-    try:
-        month = request.args.get("month", "June")
-        year = request.args.get("year", "2026")
-        bypass = request.args.get("bypass_cache", "false").lower() == "true"
-        report_type = request.args.get("report_type", "target_achievement")
-        
-        from services.performance_service import generate_performance_excel
-        excel_bytes = generate_performance_excel(month, year, bypass_cache=bypass, report_type=report_type)
-        
-        return send_file(
-            io.BytesIO(excel_bytes),
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            as_attachment=True,
-            download_name=f"{month.lower()}_{year}_performance_report.xlsx"
-        )
-    except Exception as e:
-        traceback.print_exc()
-        return f"Error: {e}", 500
-
-@app.route("/api/reports/yearly_outturn")
-def api_reports_yearly_outturn():
-    try:
-        fy = request.args.get("fy", "2026-27")
-        bypass = request.args.get("bypass_cache", "false").lower() == "true" or request.args.get("refresh", "false").lower() == "true"
-        from services.yearly_outturn_service import get_yearly_outturn_data
-        data = get_yearly_outturn_data(fy, bypass_cache=bypass)
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/api/reports/yearly_outturn/download")
-def api_reports_yearly_outturn_download():
-    from flask import send_file
-    import io
-    try:
-        fy = request.args.get("fy", "2026-27")
-        from services.yearly_outturn_service import generate_yearly_outturn_excel
-        excel_bytes = generate_yearly_outturn_excel(fy)
-        return send_file(
-            io.BytesIO(excel_bytes),
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            as_attachment=True,
-            download_name=f"yearly_outturn_{fy}.xlsx"
-        )
-    except Exception as e:
-        traceback.print_exc()
-        return f"Error: {e}", 500
-
-@app.route("/api/reports/inside_shop")
-def api_reports_inside_shop():
-    try:
-        from services.inside_shop_service import get_inside_shop_data
-        data = get_inside_shop_data()
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-@app.route("/api/reports/inside_shop/download")
-def api_reports_inside_shop_download():
-    from flask import send_file
-    import io
-    try:
-        from services.inside_shop_service import generate_inside_shop_excel
-        excel_bytes = generate_inside_shop_excel()
-        return send_file(
-            io.BytesIO(excel_bytes),
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            as_attachment=True,
-            download_name="coaches_inside_shop.xlsx"
-        )
-    except Exception as e:
-        traceback.print_exc()
-        return f"Error: {e}", 500
-
-
-@app.route("/api/reports/type_wise")
-def api_reports_type_wise():
-    try:
-        now = datetime.now()
-        current_month = now.strftime("%B")
-        current_year = str(now.year)
-        month = request.args.get("month", current_month)
-        year = request.args.get("year", current_year)
-        bypass = request.args.get("bypass_cache", "false").lower() == "true" or request.args.get("refresh", "false").lower() == "true"
-        from services.type_wise_holding_service import get_type_wise_holding_report_data
-        data = get_type_wise_holding_report_data(month, year, bypass_cache=bypass)
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/inside_shop")
-def api_inside_shop():
-    try:
-        now = datetime.now()
-        current_month = now.strftime("%B")
-        current_year = now.year
-        month = request.args.get("month", current_month)
-        year = int(request.args.get("year", current_year))
-        from services.inside_shop_service import get_inside_shop_data
-        data = get_inside_shop_data(month, year)
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/reports/type_wise/download")
-def api_reports_type_wise_download():
-    from flask import send_file
-    import io
-    try:
-        now = datetime.now()
-        current_month = now.strftime("%B")
-        current_year = str(now.year)
-        month = request.args.get("month", current_month)
-        year = request.args.get("year", current_year)
-        from services.type_wise_holding_service import generate_type_wise_holding_excel
-        excel_bytes = generate_type_wise_holding_excel(month, year)
-        return send_file(
-            io.BytesIO(excel_bytes),
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            as_attachment=True,
-            download_name=f"{month.lower()}_{year}_type_wise_holding_report.xlsx"
-        )
-    except Exception as e:
-        traceback.print_exc()
-        return f"Error: {e}", 500
-
-
-@app.route("/api/reports/production_planning")
-@app.route("/api/reports/holding_master")
-def api_reports_production_planning():
-    try:
-        from services.production_planning_service import get_production_planning_data
-        data = get_production_planning_data()
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/reports/production_planning/download")
-@app.route("/api/reports/holding_master/download")
-def api_reports_production_planning_download():
-    from flask import send_file
-    import io
-    try:
-        from services.production_planning_service import generate_production_planning_excel
-        excel_bytes = generate_production_planning_excel()
-        return send_file(
-            io.BytesIO(excel_bytes),
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            as_attachment=True,
-            download_name=f"workshop_production_planning_holding_{datetime.now().strftime('%Y%m%d')}.xlsx"
-        )
-    except Exception as e:
-        traceback.print_exc()
-        return f"Error: {e}", 500
-
-
-@app.route("/api/reports/age_analysis")
-def api_reports_age_analysis():
-    try:
-        from services.age_analysis_service import get_age_analysis_summary
-        data = get_age_analysis_summary()
-        return jsonify(data)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-@app.route("/api/reports/age_analysis/download")
-def api_reports_age_analysis_download():
-    from flask import send_file
-    import io
-    try:
-        from services.age_analysis_service import generate_age_analysis_excel_bytes
-        excel_bytes = generate_age_analysis_excel_bytes()
-        return send_file(
-            io.BytesIO(excel_bytes),
-            mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            as_attachment=True,
-            download_name=f"ICF_Live_Coaches_Age_Analysis_{datetime.now().strftime('%Y%m%d')}.xlsx"
-        )
-    except Exception as e:
-        traceback.print_exc()
-        return f"Error: {e}", 500
-
-
-
-@app.route("/api/query", methods=["POST"])
-def api_natural_language_query():
-    try:
-        data = request.get_json() or {}
-        query_text = data.get("query", "")
-        month = data.get("month", "July")
-        year = data.get("year", 2026)
-        api_key = data.get("api_key") or request.headers.get("X-Gemini-API-Key")
-        
-        from services.query_service import QueryEngine
-        engine = QueryEngine(api_key=api_key)
-        res = engine.process_query(query_text, month=month, year=int(year))
-        return jsonify(res)
-    except Exception as e:
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
-
-
-# =====================================================
-# MAIN
-# =====================================================
+def dashboard():
+    D, a = _as_on()
+    mon = request.args.get("month")
+    m = R.pdate(mon + "-01") if mon else None
+    pos = P.month_position(D, a, m)
+    return render_template("dashboard.html", pos=pos, others=P.others_list(D, date(a.year - 1, 4, 1)))
+
+
+@app.route("/holding")
+def holding():
+    D, a = _as_on()
+    return render_template("holding.html", h=P.holding_summary(D, a), bands=P.AGE_BANDS)
+
+
+@app.route("/outturn")
+def outturn():
+    D, a = _as_on()
+    fys = P.available_fys(D)
+    fy = request.args.get("fy") or R.fy_of(a)
+    return render_template("outturn.html", x=P.outturn_matrix(D, fy), fys=fys)
+
+
+@app.route("/coach")
+def coach():
+    D, a = _as_on()
+    q = (request.args.get("q") or "").strip()
+    return render_template("coach.html", q=q, visits=P.coach_visits(D, q) if q else [],
+                           is_excluded=R.is_excluded, location=R.location)
+
+
+def _period(a):
+    d0 = R.pdate(request.args.get("from")) or R.fy_start(R.fy_of(a))
+    d1 = R.pdate(request.args.get("to")) or a
+    return d0, min(d1, a)
+
+
+@app.route("/cycle")
+def cycle():
+    from analysis import perf
+    D, a = _as_on()
+    d0, d1 = _period(a)
+    c = perf.cycle_time(D, d0, d1)
+    longest = sorted(c["items"], key=lambda i: -(i["total"] or 0))[:15]
+    return render_template("cycle.html", c=c, d0=d0, d1=d1, longest=longest)
+
+
+@app.route("/corrosion")
+def corrosion():
+    from analysis import perf
+    D, a = _as_on()
+    d0, d1 = _period(a)
+    return render_template("corrosion.html", k=perf.corrosion(D, d0, d1, a), d0=d0, d1=d1)
+
+
+@app.route("/hours")
+def hours():
+    from analysis import perf
+    D, a = _as_on()
+    d0, d1 = _period(a)
+    return render_template("hours.html", h=perf.man_hours(D, d0, d1), d0=d0, d1=d1)
+
+
+@app.route("/prev_poh")
+def prev_poh():
+    from analysis import perf
+    D, a = _as_on()
+    d0, d1 = _period(a)
+    fam = request.args.get("family", "ALL")
+    return render_template("prev_poh.html", p=perf.previous_poh(D, d0, d1, fam), d0=d0, d1=d1, family=fam,
+                           families=[f for f in R.FAMILY_ORDER if f != "Others"])
+
+
+def _targets(D, a, fy):
+    from analysis import perf
+    rows, err = perf.load_targets(config.POSITION_SHEET_KEY)
+    return perf.targets_vs_actual(D, fy, a, rows), err
+
+
+@app.route("/targets")
+def targets():
+    D, a = _as_on()
+    fy = request.args.get("fy") or R.fy_of(a)
+    t, err = _targets(D, a, fy)
+    return render_template("targets.html", t=t, err=err, fys=P.available_fys(D))
+
+
+REPORTS = [("dashboard", "Month Position (current month)"), ("holding", "Type-wise Holding"),
+           ("outturn", "Month-wise Outturn (current FY)"), ("cycle", "POH Cycle Time + coach-wise"),
+           ("corrosion", "Corrosion Cycle + month position"), ("hours", "Man-hours + final hours missing"),
+           ("prev_poh", "Previous POH analysis"), ("targets", "Target vs Actual (current FY)")]
+REPORT_DESC = {
+    "dashboard": "Outturn, despatched, FND, holding yard/work by type; FND coach list",
+    "holding": "Holding by type with yard/work, age bands and light/heavy",
+    "outturn": "Group x month outturn by desp date",
+    "cycle": "Avg/median/min/max entry->outturn, TFR->outturn, entry->physical; coach-wise sheet",
+    "corrosion": "Corrosion days by type; completed / carry forward / under corrosion this month",
+    "hours": "Pre-survey vs final hours, light/heavy, coaches with final hours missing",
+    "prev_poh": "Outturns by workshop of last POH; LHB SS1/SS2/SS3",
+    "targets": "Internal_Targets vs ERP outturn; months without target shown as '-'"}
+
+
+@app.route("/reports")
+def reports():
+    D, a = _as_on()
+    d0, d1 = _period(a)
+    from analysis import checks, perf
+    trows, _ = perf.load_targets(config.POSITION_SHEET_KEY)
+    return render_template("reports.html", items=REPORTS, desc=REPORT_DESC, d0=d0, d1=d1,
+                           checks=checks.run(D, a, trows or None))
+
+
+@app.route("/reports/go")
+def report_go():
+    return redirect(url_for("download", what=request.args.get("what", "dashboard"),
+                            **{"from": request.args.get("from", ""), "to": request.args.get("to", "")}))
+
+
+@app.route("/next/<name>")
+def soon(name):
+    return render_template("soon.html", name=dict(i for _, items in NAV for i in items).get(name, name))
+
+
+@app.route("/aerial")
+def aerial():
+    from analysis import aerial as A
+    D, a = _as_on()
+    return render_template("aerial.html", x=A.aerial(D, a, data.km_status()))
+
+
+# ---------------------------------------------------------------- Excel downloads
+@app.route("/download/<what>")
+def download(what):
+    from analysis import excel
+    D, a = _as_on()
+    if what == "dashboard":
+        mon = request.args.get("month")
+        bio, name = excel.month_position(P.month_position(D, a, R.pdate(mon + "-01") if mon else None), a)
+    elif what == "holding":
+        bio, name = excel.holding(P.holding_summary(D, a), a)
+    elif what == "outturn":
+        bio, name = excel.outturn(P.outturn_matrix(D, request.args.get("fy") or R.fy_of(a)), a)
+    elif what in ("cycle", "corrosion", "hours", "prev_poh"):
+        from analysis import perf
+        d0, d1 = _period(a)
+        if what == "cycle":
+            bio, name = excel.cycle(perf.cycle_time(D, d0, d1), d0, d1, a)
+        elif what == "corrosion":
+            bio, name = excel.corrosion(perf.corrosion(D, d0, d1, a), d0, d1, a)
+        elif what == "hours":
+            bio, name = excel.hours(perf.man_hours(D, d0, d1), d0, d1, a)
+        else:
+            bio, name = excel.prev_poh(perf.previous_poh(D, d0, d1, request.args.get("family", "ALL")), d0, d1, a)
+    elif what == "targets":
+        t, _ = _targets(D, a, request.args.get("fy") or R.fy_of(a))
+        bio, name = excel.targets(t, a)
+    else:
+        abort(404)
+    return send_file(bio, as_attachment=True, download_name=name,
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
+# ---------------------------------------------------------------- update (office PC only)
+@app.route("/update", methods=["POST"])
+def update():
+    if not config.IS_LOCAL:
+        abort(403)
+    from core import erp_client
+    started = erp_client.refresh_in_background(push_online=True)
+    return jsonify(started=started, **erp_client.status)
+
+
+@app.route("/update/status")
+def update_status():
+    if not config.IS_LOCAL:
+        return jsonify(running=False)
+    from core import erp_client
+    return jsonify(**erp_client.status)
+
+
+@app.route("/health")
+def health():
+    D, ex = data.load()
+    return jsonify(mode=config.APP_MODE, demands=len(D), as_on=str(ex))
 
 
 if __name__ == "__main__":
-    print("=" * 50)
-    print("  LW/PER Loco Works Dashboard")
-    print(f"  Starting on http://{FLASK_HOST}:{FLASK_PORT}")
-    print("=" * 50)
-
-    from services.type_wise_holding_service import fetch_live_keycloak_demands
-    import threading
-    threading.Thread(target=fetch_live_keycloak_demands, daemon=True).start()
-
-    app.run(
-        host=FLASK_HOST,
-        port=FLASK_PORT,
-        debug=FLASK_DEBUG,
-        threaded=True
-    )
-
+    app.run(host=config.HOST, port=config.PORT, debug=False, use_reloader=False)

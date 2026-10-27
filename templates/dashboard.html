@@ -1,0 +1,26 @@
+{% extends "base.html" %}{% from "_grouptable.html" import famrows %}
+{% block h1 %}Month Position – {{ pos.month.strftime('%B %Y') }}{% endblock %}
+{% block body %}
+<div class="cards">
+<div class="card"><b>{{ pos.total.outturn }}</b><span>Outturn (desp date) to {{ fmt(pos.end) }}</span></div>
+<div class="card"><b>{{ pos.total.desp }}</b><span>Physically despatched (of this outturn)</span></div>
+<div class="card"><b>{{ pos.total.fnd }}</b><span>FND – this month</span></div>
+<div class="card"><b>{{ pos.prev_fnd|length }}</b><span>FND – earlier months, still inside</span></div>
+<div class="card"><b>{{ pos.total.holding }}</b><span>Holding ({{ pos.total.yard }} yard / {{ pos.total.work }} work area)</span></div>
+<div class="card"><b>{{ pos.total.holding + pos.total.fnd + pos.prev_fnd|length }}</b><span>Physically inside (holding + FND)</span></div>
+</div>
+<div class="box"><h2>Type-wise
+ <form class="inline" style="float:right" method="get"><input type="month" name="month" value="{{ pos.month.strftime('%Y-%m') }}" onchange="this.form.submit()">
+ <a class="btn light" href="{{ url_for('download', what='dashboard', month=pos.month.strftime('%Y-%m')) }}">Excel</a></form></h2>
+<table><tr><th>Coach Type</th><th>Outturn</th><th>Despatched</th><th>FND</th><th>Holding Yard</th><th>Holding Work Area</th><th>Total Holding</th></tr>
+{{ famrows(pos.rows, ['outturn','desp','fnd','yard','work','holding'], 7) }}
+<tr class="tot"><td>TOTAL</td><td>{{ pos.total.outturn }}</td><td>{{ pos.total.desp }}</td><td>{{ pos.total.fnd }}</td><td>{{ pos.total.yard }}</td><td>{{ pos.total.work }}</td><td>{{ pos.total.holding }}</td></tr></table>
+<p class="note">Holding is always as on the ERP date. Target vs actual comes in the Analysis step.</p></div>
+{% if pos.fnd_list or pos.prev_fnd %}<div class="box"><h2>FND – outturned, not physically despatched</h2>
+<table><tr><th>Coach Type</th><th>Coach No</th><th>Desp date</th><th>Days since outturn</th></tr>
+{% for d in pos.fnd_list + pos.prev_fnd %}<tr><td>{{ d._group }}</td><td>{{ d.coachNo }}</td><td>{{ fmt(pdate(d.dispatchDate)) }}</td><td>{{ (pos.end - pdate(d.dispatchDate)).days }}</td></tr>{% endfor %}</table></div>{% endif %}
+{% if pos.prev_fnd_desp %}<p class="note">Previous-month FND physically despatched this month: {{ pos.prev_fnd_desp|length }} (not part of this month's outturn).</p>{% endif %}
+{% if others %}<div class="box"><h2 class="warn">Coach types not in coach_groups.csv</h2>
+<p class="note">Counted as OTHERS until you add the type to coach_groups.csv.</p>
+<table><tr><th>ERP type</th><th>Coaches</th></tr>{% for t, c in others.items() %}<tr><td>{{ t }}</td><td style="text-align:left">{{ c|join(', ') }}</td></tr>{% endfor %}</table></div>{% endif %}
+{% endblock %}

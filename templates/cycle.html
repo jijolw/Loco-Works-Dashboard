@@ -1,0 +1,23 @@
+{% extends "base.html" %}{% from "_period.html" import period, v %}
+{% block h1 %}POH Cycle Time{% endblock %}
+{% block body %}
+<div class="cards">
+<div class="card"><b>{{ c.total.n if c.total else 0 }}</b><span>Clean outturns {{ fmt(d0) }} – {{ fmt(d1) }}</span></div>
+<div class="card"><b>{{ v(c.total.avg if c.total) }}</b><span>Avg days, entry → outturn</span></div>
+<div class="card"><b>{{ v(c.total.med if c.total) }}</b><span>Median days, entry → outturn</span></div>
+<div class="card"><b>{{ v(c.total.physical if c.total) }}</b><span>Avg days, entry → physical despatch</span></div>
+<div class="card"><b>{{ c.total.over30 if c.total else 0 }}</b><span>Coaches over 30 days</span></div>
+</div>
+<div class="box"><h2>By coach type {{ period(d0, d1, 'cycle') }}</h2>
+<table><tr><th>Coach Type</th><th>Outturns</th><th>Avg days<br><small>entry→outturn</small></th><th>Median</th><th>Min</th><th>Max</th><th>&gt;30 days</th><th>Avg TFR→outturn</th><th>Avg entry→physical desp</th><th>Light avg</th><th>Heavy avg</th></tr>
+{% set ns = namespace(f=None) %}{% for r in c.rows %}{% if r.family != ns.f %}{% set ns.f = r.family %}<tr class="fam"><td colspan="11">{{ r.family }}</td></tr>{% endif %}
+<tr><td>{{ r.group }}</td><td>{{ r.n }}</td><td class="hi">{{ v(r.avg) }}</td><td>{{ v(r.med) }}</td><td>{{ v(r.min) }}</td><td>{{ v(r.max) }}</td><td class="{{ 'z' if not r.over30 }}">{{ r.over30 }}</td><td>{{ v(r.attn) }}</td><td>{{ v(r.physical) }}</td><td>{{ v(r.light) }}</td><td>{{ v(r.heavy) }}</td></tr>{% endfor %}
+{% if c.total %}<tr class="tot"><td>TOTAL</td><td>{{ c.total.n }}</td><td>{{ v(c.total.avg) }}</td><td>{{ v(c.total.med) }}</td><td>{{ v(c.total.min) }}</td><td>{{ v(c.total.max) }}</td><td>{{ c.total.over30 }}</td><td>{{ v(c.total.attn) }}</td><td>{{ v(c.total.physical) }}</td><td>{{ v(c.total.light) }}</td><td>{{ v(c.total.heavy) }}</td></tr>{% endif %}</table>
+<p class="note">Cycle = ERP received date → desp date (outturn); physical = received → actual despatch. Return / condemned / Bhopal / 161 excluded. Light/heavy by pre-survey hours (500). WISE figures are lower (late entry, early exit).</p></div>
+{% if c.months %}<div class="box"><h2>Month-wise average (entry → outturn)</h2>
+<table><tr><th>Family</th>{% for m in c.months %}<th>{{ m.strftime('%b-%y') }}</th>{% endfor %}</tr>
+{% for t in c.trend %}<tr><td>{{ t.family }}</td>{% for x in t.vals %}<td>{{ v(x) }}</td>{% endfor %}</tr>{% endfor %}</table></div>{% endif %}
+<div class="box"><details><summary>Longest stays (top 15)</summary>
+<table style="margin-top:8px"><tr><th>Coach Type</th><th>Coach No</th><th>Received</th><th>TFR</th><th>Outturn</th><th>Days</th></tr>
+{% for i in longest %}<tr><td>{{ i.group }}</td><td>{{ i.coach }}</td><td>{{ fmt(i.recd) }}</td><td>{{ fmt(i.tfr) }}</td><td>{{ fmt(i.desp) }}</td><td class="hi">{{ i.total }}</td></tr>{% endfor %}</table></details></div>
+{% endblock %}

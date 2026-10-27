@@ -1,0 +1,46 @@
+erp_type,match,family,group,order
+GS,exact,ICF,GS,10
+CN,exact,ICF,CN,11
+SLR,exact,ICF,SLR / GSLRD,12
+GSLRD,exact,ICF,SLR / GSLRD,12
+GSRD,exact,ICF,SLR / GSLRD,12
+CZ,exact,ICF,CZ,13
+CZJ,exact,ICF,CZ,13
+CZRJ,exact,ICF,CZ,13
+LWSCN,exact,LHB,LWSCN,20
+LWSCNA,exact,LHB,LWSCN,20
+LWS,exact,LHB,LWS,21
+LS,exact,LHB,LWS,21
+LS5,exact,LHB,LWS,21
+LWACCN,exact,LHB,LWACCN,22
+LWACCNE,exact,LHB,LWACCN,22
+LWACCW,exact,LHB,LWACCW,23
+LSLRD,exact,LHB,LSLRD,24
+LVPH,exact,LHB,LVPH,25
+LWCBAC,exact,LHB,LWCBAC (Pantry),26
+DPC,exact,DEMU Shop,DEMU DPC,30
+MEMUMC,exact,DEMU Shop,MEMU MC,31
+YZZS,exact,DEMU Shop,EMU MC,32
+SPIC,exact,DEMU Shop,SPIC,33
+TW4W,exact,DEMU Shop,TW4W,34
+TW8W,exact,DEMU Shop,TW8W,35
+SPART,exact,DEMU Shop,SPART,36
+TC,exact,TC family,DEMU TC,40
+MEMUTC,exact,TC family,MEMU TC,41
+YSY,exact,TC family,EMU TC,42
+YSD,exact,TC family,EMU TC,42
+YFSY,exact,TC family,EMU TC,42
+TSMC,prefix,Vande Bharat,TS MC (VB),45
+TSTC,prefix,Vande Bharat,TS TC (VB),46
+TSDTC,prefix,Vande Bharat,TS TC (VB),46
+TSNDTC,prefix,Vande Bharat,TS TC (VB),46
+NMG,prefix,Special,NMG POH,50
+ART,exact,Special,ART,52
+ART/C,exact,Special,ART,52
+RHV,exact,Special,ART,52
+RTRH,exact,Special,ART,52
+RR,exact,Special,ART,52
+ARMV,prefix,Special,ARMV,53
+VPH,exact,Special,VPH,55
+VPU,exact,Special,VPU,56
+VPUX,exact,Special,VPUX,57

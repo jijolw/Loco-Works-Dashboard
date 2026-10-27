@@ -1,0 +1,13 @@
+{% extends "base.html" %}{% from "_period.html" import period, v %}
+{% block h1 %}Previous POH Analysis{% endblock %}
+{% block body %}
+{% set fsel %}<select name="family">{% for f in ['ALL'] + families %}<option {{ 'selected' if f==family }}>{{ f }}</option>{% endfor %}</select>{% endset %}
+<div class="box"><h2>By workshop of last POH ({{ p.n }} outturns) {{ period(d0, d1, 'prev_poh', fsel) }}</h2>
+<table><tr><th>Last POH workshop</th><th>Coaches</th><th>Avg pre-survey hrs</th><th>Heavy % (of those with pre hrs)</th><th>Avg final hrs</th><th>Avg cycle days</th><th>Avg months since last POH</th></tr>
+{% for r in p.rows %}<tr><td>{{ r.wks }}</td><td>{{ r.n }}</td><td>{{ v(r.pre) }}</td><td>{{ v(r.heavy_pct, '%') }}</td><td>{{ v(r.final) }}</td><td>{{ v(r.cycle) }}</td><td>{{ v(r.gap) }}</td></tr>{% endfor %}</table>
+<p class="note">Workshop and date of last POH as recorded in ERP for each visit. Heavy = pre-survey ≥ 500 hrs.</p></div>
+{% if p.sched %}<div class="box"><h2>LHB schedules done (outturned in period)</h2>
+<table><tr><th>Coach Type</th><th>SS1</th><th>SS2</th><th>SS3</th><th>Other</th></tr>
+{% for g, s in p.sched.items() %}<tr><td>{{ g }}</td>{% for k, n in s.items() %}<td class="{{ 'z' if not n }}">{{ n }}</td>{% endfor %}</tr>{% endfor %}</table>
+<p class="note">Repair type 104 = SS1; 121/243/244 = SS2; 122/241/242 = SS3.</p></div>{% endif %}
+{% endblock %}

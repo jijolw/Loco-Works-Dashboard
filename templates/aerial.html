@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Aerial View – LW/PER{% endblock %}
+{% block h1 %}Aerial View{% endblock %}
+{% macro chip(c) %}<div class="chip {{ c.band }}{{ ' fnd' if c.fnd }}" title="{{ c.group }} · {{ c.pit }} · {{ c.days }} days{{ ' · ' ~ c.lh if c.lh }}">
+<b>{{ c.coach }}{% if c.km %} <small class="km">KM</small>{% endif %}</b><span>{{ c.group }}</span>
+<i>{% if c.fnd %}FND {{ fmt(c.desp)[:5] }}{% else %}{{ c.days }}d{% if c.corr == 'done' %} · CC{% elif c.corr == 'under' %} · UC{% endif %}{% endif %}</i></div>{% endmacro %}
+{% block body %}
+<div class="cards no-print-cards">
+<div class="card"><b>{{ x.total }}</b><span>Physically inside (holding {{ x.n_hold }} + FND {{ x.n_fnd }})</span></div>
+<div class="card"><b>{{ x.n_shop }}</b><span>On shop pits</span></div>
+<div class="card"><b>{{ x.n_yard }}</b><span>In yard</span></div>
+<div class="card"><b>{{ x.n_km }}</b><span>Kumbh Mela coaches inside (HQ status{{ ' ' ~ x.km_updated if x.km_updated }})</span></div>
+</div>
+<div class="aerial">
+<div class="ptitle">LW/PER – COACH POSITION (AERIAL) as on {{ as_on.strftime('%d-%m-%Y %H:%M') }} · Inside {{ x.total }} = Holding {{ x.n_hold }} (yard {{ x.n_yard }}) + FND {{ x.n_fnd }}</div>
+{% for shop, lines in x.shops.items() %}
+<div class="shop"><div class="shopname">{{ shop }}<small>{{ x.counts[shop] }}</small></div>
+<div class="lines">{% for ln, L in lines.items() %}<div class="line"><div class="lname">{{ L.label }}</div>
+{% for c in L.slots %}{% if c %}{{ chip(c) }}{% else %}<div class="chip empty"></div>{% endif %}{% endfor %}
+{% for c in L.extra %}{{ chip(c) }}{% endfor %}</div>{% endfor %}</div></div>
+{% endfor %}
+<div class="shop"><div class="shopname">Yard / Incoming<small>{{ x.yard|length }}</small></div><div class="yard">{% for c in x.yard %}{{ chip(c) }}{% endfor %}</div></div>
+{% if x.other %}<div class="shop"><div class="shopname">Other locations<small>{{ x.other|length }}</small></div><div class="yard">{% for c in x.other %}{{ chip(c) }}{% endfor %}</div></div>{% endif %}
+<div class="legend"><span class="chip d0 lg">0–20 days</span><span class="chip d20 lg">21–30 days</span><span class="chip d30 lg">&gt;30 days</span><span class="chip fnd lg">FND (outturned, inside)</span>
+<span>KM = Kumbh Mela coach (HQ status{{ ' ' ~ x.km_updated if x.km_updated }}) · CC corrosion completed · UC under corrosion · days = since received</span></div>
+</div>
+<p class="note no-print"><button class="btn" onclick="window.print()">Print A4 (black &amp; white)</button> Two-slot lines show slot 1 above slot 2. Hover a coach for type, pit and hours.</p>
+{% endblock %}

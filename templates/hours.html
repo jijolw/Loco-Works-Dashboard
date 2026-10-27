@@ -1,0 +1,12 @@
+{% extends "base.html" %}{% from "_period.html" import period, v %}
+{% block h1 %}Man-hours{% endblock %}
+{% block body %}
+<div class="box"><h2>Pre-survey vs final hours (outturned in period) {{ period(d0, d1, 'hours') }}</h2>
+<table><tr><th>Coach Type</th><th>Outturns</th><th>Pre-survey entered</th><th>Avg pre hrs</th><th>Final entered</th><th>Avg final hrs</th><th>Final vs pre</th><th>Light &lt;500</th><th>Heavy ≥500</th><th>Final hrs missing</th></tr>
+{% set ns = namespace(f=None) %}{% for r in h.rows %}{% if r.family != ns.f %}{% set ns.f = r.family %}<tr class="fam"><td colspan="10">{{ r.family }}</td></tr>{% endif %}
+<tr><td>{{ r.group }}</td><td>{{ r.n }}</td><td>{{ r.pre_n }}</td><td>{{ v(r.pre) }}</td><td>{{ r.final_n }}</td><td>{{ v(r.final) }}</td><td>{{ v(r.var, '%') }}</td><td>{{ r.light }}</td><td>{{ r.heavy }}</td><td class="{{ 'hi warn' if r.no_final else 'z' }}">{{ r.no_final }}</td></tr>{% endfor %}
+{% if h.total %}<tr class="tot"><td>TOTAL</td><td>{{ h.total.n }}</td><td>{{ h.total.pre_n }}</td><td>{{ v(h.total.pre) }}</td><td>{{ h.total.final_n }}</td><td>{{ v(h.total.final) }}</td><td>{{ v(h.total.var, '%') }}</td><td>{{ h.total.light }}</td><td>{{ h.total.heavy }}</td><td>{{ h.total.no_final }}</td></tr>{% endif %}</table></div>
+<div class="box"><details><summary>Outturned coaches without final hours ({{ h.missing|length }})</summary>
+<table style="margin-top:8px"><tr><th>Coach Type</th><th>Coach No</th><th>Outturn</th><th>Pre hrs</th></tr>
+{% for i in h.missing %}<tr><td>{{ i.group }}</td><td>{{ i.coach }}</td><td>{{ fmt(i.desp) }}</td><td>{{ v(i.pre) }}</td></tr>{% endfor %}</table></details></div>
+{% endblock %}

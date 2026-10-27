@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block h1 %}Report Centre<div class="box"><h2>Data consistency – the same figure on every page</h2>
+<table><tr><th>Check</th><th>Result</th><th>Values from each page</th></tr>
+{% for c in checks %}<tr><td>{{ c.name }}</td><td class="{{ 'hi' if c.ok else 'hi warn' }}">{{ 'OK' if c.ok else 'MISMATCH' }}</td><td style="text-align:left;white-space:normal">{{ c.detail }}</td></tr>{% endfor %}</table>
+<p class="note">Every page uses one rulebook (core/rules.py): outturn = desp date, holding = received / no desp date, FND = desp date / no actual despatch, exclusions, hours from ERP pre-survey / final fields, heavy ≥ 500 pre-survey hrs.</p></div>
+{% endblock %}
+{% block body %}
+<div class="box"><h2>Excel reports (plain format, built from the same ERP data)</h2>
+<form method="get" action="{{ url_for('report_go') }}" class="inline" style="margin-bottom:10px">
+Period for cycle / corrosion / hours / previous POH: <input type="date" name="from" value="{{ d0.isoformat() }}"> to <input type="date" name="to" value="{{ d1.isoformat() }}">
+<select name="what">{% for k, label in items %}<option value="{{ k }}">{{ label }}</option>{% endfor %}</select><button class="btn">Download</button></form>
+<table><tr><th>Report</th><th>What it contains</th></tr>
+{% for k, label in items %}<tr><td>{{ label }}</td><td style="text-align:left">{{ desc[k] }}</td></tr>{% endfor %}</table></div>
+<div class="box"><h2>Data consistency – the same figure on every page</h2>
+<table><tr><th>Check</th><th>Result</th><th>Values from each page</th></tr>
+{% for c in checks %}<tr><td>{{ c.name }}</td><td class="{{ 'hi' if c.ok else 'hi warn' }}">{{ 'OK' if c.ok else 'MISMATCH' }}</td><td style="text-align:left;white-space:normal">{{ c.detail }}</td></tr>{% endfor %}</table>
+<p class="note">Every page uses one rulebook (core/rules.py): outturn = desp date, holding = received / no desp date, FND = desp date / no actual despatch, exclusions, hours from ERP pre-survey / final fields, heavy ≥ 500 pre-survey hrs.</p></div>
+{% endblock %}
