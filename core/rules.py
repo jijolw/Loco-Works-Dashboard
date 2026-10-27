@@ -7,6 +7,7 @@ Excluded = RETURN / COND(emned/emnded) / BHOPAL in status, remarks or repairDesc
            Excluded visits are never in holding, outturn, despatch or cycle time.
 Holding  = received, no desp date, not excluded - one entry per coach (latest demand).
 Groups   = coach_groups.csv (edit that file; unknown types show as OTHERS).
+           Repair type 4 = OR; 201 = ART CONVERSION / ARMV CONVERSION (type ARMVCONV); NMG 181/281/2 or /C = NMG CONVERSION.
 AC locos are not handled anywhere.
 """
 import csv
@@ -102,8 +103,8 @@ def classify(d):
     rep = str(d.get("repairType") or "").strip()
     if rep == "4":
         return "Special", "OR", 58
-    if rep == "201":                                  # ART conversion of an SLR -> SPART
-        return "DEMU Shop", "SPART", 36
+    if rep == "201":                                  # ART / ARMV conversion (repair type 201 = ART Conv)
+        return ("Special", "ARMV CONVERSION", 54) if t.startswith("ARMV") else ("Special", "ART CONVERSION", 52.5)
     rows = _load_groups()
     hit = next((r for r in rows if r["match"] == "exact" and r["erp_type"] == t), None)
     if not hit:
