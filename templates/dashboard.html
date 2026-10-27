@@ -15,7 +15,7 @@
 <table><tr><th>Coach Type</th><th>Outturn</th><th>Despatched</th><th>FND</th><th>Holding Yard</th><th>Holding Work Area</th><th>Total Holding</th></tr>
 {{ famrows(pos.rows, ['outturn','desp','fnd','yard','work','holding'], 7) }}
 <tr class="tot"><td>TOTAL</td><td>{{ pos.total.outturn }}</td><td>{{ pos.total.desp }}</td><td>{{ pos.total.fnd }}</td><td>{{ pos.total.yard }}</td><td>{{ pos.total.work }}</td><td>{{ pos.total.holding }}</td></tr></table>
-<p class="note">Holding is always as on the ERP date. Target vs actual comes in the Analysis step.</p></div>
+<p class="note">Holding is always as on the ERP date. Targets: see Target vs Actual.</p></div>
 {% if pos.fnd_list or pos.prev_fnd %}<div class="box"><h2>FND – outturned, not physically despatched</h2>
 <table><tr><th>Coach Type</th><th>Coach No</th><th>Desp date</th><th>Days since outturn</th></tr>
 {% for d in pos.fnd_list + pos.prev_fnd %}<tr><td>{{ d._group }}</td><td>{{ d.coachNo }}</td><td>{{ fmt(pdate(d.dispatchDate)) }}</td><td>{{ (pos.end - pdate(d.dispatchDate)).days }}</td></tr>{% endfor %}</table></div>{% endif %}
