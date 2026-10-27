@@ -2,6 +2,13 @@
 {% block h1 %}Previous POH Analysis{% endblock %}
 {% block body %}
 {% set fsel %}<select name="family">{% for f in ['ALL'] + families %}<option {{ 'selected' if f==family }}>{{ f }}</option>{% endfor %}</select>{% endset %}
+{% if wm %}<div class="box"><h2>Workmanship comparison – condition on arrival by workshop of last POH</h2>
+<p class="note">Pre-survey hours on arrival show how well the PREVIOUS POH held up. Compare only within a family and at a similar time since the last POH; "hrs / month" evens out different intervals. Our shop = {{ own }} (orange). Workshops with fewer than 5 coaches are grouped as "Other workshops". Period {{ fmt(d0) }} – {{ fmt(d1) }}.</p>
+{% for w in wm %}<h3 class="sub">{{ w.family }} – {{ w.n }} coaches</h3>
+<div><div>
+<table style="width:auto"><tr><th>Last POH at</th><th>Coaches</th><th>Avg pre hrs</th><th>Median</th><th>Heavy %</th><th>Months since last POH</th><th>Pre hrs / month</th><th>Avg final hrs</th></tr>
+{% for r in w.rows %}<tr{% if r.own %} style="font-weight:700"{% endif %}><td>{{ r.wks }}{{ ' (ours)' if r.own }}</td><td>{{ r.n }}</td><td>{{ v(r.pre) }}</td><td>{{ v(r.pre_med) }}</td><td>{{ v(r.heavy_pct, '%') }}</td><td>{{ v(r.gap) }}</td><td>{{ v(r.per_month) }}</td><td>{{ v(r.final) }}</td></tr>{% endfor %}</table>
+</div><div style="margin-top:6px">{{ w.chart|safe }}</div></div>{% endfor %}</div>{% endif %}
 {% if ch.count %}<div class="box"><h2>Charts – by workshop of last POH <span class="note">(workshops with 3 or more coaches)</span></h2>
 <div class="chart-grid"><div><h3 class="sub">Coaches received (share of outturns)</h3>{{ ch.count|safe }}</div>
 <div><h3 class="sub">Average pre-survey hours (heavy %)</h3>{{ ch.hours|safe }}</div>

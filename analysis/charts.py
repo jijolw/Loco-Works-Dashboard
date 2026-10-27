@@ -10,6 +10,7 @@ Every mark carries a <title>, so hovering shows the exact numbers.
 from html import escape
 
 ACT = "#2a78d6"
+OWN = "#eb6834"          # our own shop, where a chart highlights it (palette slot 2, validated with slot 1)
 TGT = "#0b0b0b"
 BAND = "#e8e7e2"
 GRID = "#e1e0dc"
@@ -98,15 +99,16 @@ def hbars(rows, unit="", fmt=lambda v: str(v)):
     rows = [r for r in rows if r.get("value") is not None]
     if not rows:
         return ""
-    lw, bw, rh = 120, 360, 24
+    lw, bw, rh = 150, 360, 24
     vmax = max([r["value"] for r in rows] + [1])
     h = len(rows) * rh + 8
-    out = [f'<svg class="chart" viewBox="0 0 {lw + bw + 150} {h}" role="img">']
+    out = [f'<svg class="chart" viewBox="0 0 {lw + bw + 210} {h}" role="img">']
     for i, r in enumerate(rows):
         y = 4 + i * rh
         wv = max(r["value"] / vmax * bw, 1)
+        col = OWN if r.get("own") else ACT
         out.append(f'<text x="{lw - 8}" y="{y + 13}" font-size="12" fill="{INK1}" text-anchor="end">{_t(r["label"])}</text>'
-                   f'<rect x="{lw}" y="{y + 4}" width="{wv:.1f}" height="12" fill="{ACT}" rx="2">'
+                   f'<rect x="{lw}" y="{y + 4}" width="{wv:.1f}" height="12" fill="{col}" rx="2">'
                    f'<title>{_t(r["label"])}: {fmt(r["value"])}{unit}' + (f' · {r["note"]}' if r.get("note") else "") + '</title></rect>'
                    f'<text x="{lw + wv + 6:.1f}" y="{y + 13}" font-size="11" fill="{INK}">{_t(fmt(r["value"]) + unit)}'
                    + (f'  ·  {_t(r["note"])}' if r.get("note") else "") + '</text>')

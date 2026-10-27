@@ -108,13 +108,22 @@ def prev_poh():
     d0, d1 = _period(a)
     fam = request.args.get("family", "ALL")
     from analysis import charts as C
+    if not request.args.get("from"):                 # two financial years by default - bigger sample per workshop
+        d0 = R.fy_start(R.fy_of(date(a.year - 1, a.month, 1)))
     p = perf.previous_poh(D, d0, d1, fam)
+    wm = perf.workmanship(D, d0, d1)
+    if fam != "ALL":
+        wm = [w for w in wm if w["family"] == fam]
+    for w in wm:
+        w["chart"] = C.hbars([dict(label=r["wks"] + (" (ours)" if r["own"] else ""), value=r["pre"], own=r["own"],
+                                   note=f"{r['gap']} mo · heavy {r['heavy_pct']}%") for r in w["rows"] if r["pre"]],
+                             unit=" hrs")
     top = [r for r in p["rows"] if r["n"] >= 3][:12]
     ch = dict(count=C.hbars([dict(label=r["wks"], value=r["n"], note=f"{round(100 * r['n'] / p['n'])}%") for r in top]),
               hours=C.hbars([dict(label=r["wks"], value=r["pre"], note=f"heavy {r['heavy_pct']}%" if r["heavy_pct"] is not None else "")
                              for r in top if r["pre"]], unit=" hrs"),
               cycle=C.hbars([dict(label=r["wks"], value=r["cycle"]) for r in top if r["cycle"] is not None], unit=" days"))
-    return render_template("prev_poh.html", p=p, ch=ch, d0=d0, d1=d1, family=fam,
+    return render_template("prev_poh.html", p=p, ch=ch, wm=wm, own=", ".join(perf.OWN_SHOPS), d0=d0, d1=d1, family=fam,
                            families=[f for f in R.FAMILY_ORDER if f != "Others"])
 
 

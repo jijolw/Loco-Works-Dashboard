@@ -299,3 +299,39 @@ def targets_vs_actual(demands, fy, as_on, trows):
                 others[d["_group"]][i] += 1
     months_with_target = [m for m, mk in zip(months, mkeys) if any(tgt[(sp, mk)] is not None for sp in specs)]
     return dict(fy=fy, months=months, rows=rows, others=dict(others), months_with_target=months_with_target)
+
+
+# ---------------------------------------------------------------- workmanship (pre-survey hours by last-POH workshop)
+OWN_SHOPS = ("PWL",)     # LW/PER's own code in ERP "lastPoh"
+
+
+def workmanship(demands, d0, d1, min_n=5):
+    """Pre-survey hours on arrival = condition left by the PREVIOUS POH. Compared within one family and with the
+    months since that POH, so our own coaches can be compared fairly with PWP / GOC etc."""
+    fams = defaultdict(lambda: defaultdict(list))
+    for i in (visit_facts(d) for d in outturns(demands, d0, d1)):
+        w = (i["d"].get("lastPoh") or "").strip().upper() or "Not in ERP"
+        lp = R.pdate(i["d"].get("lastPohDate"))
+        i["gap"] = round((i["recd"] - lp).days / 30.4, 1) if lp and i["recd"] and i["recd"] > lp else None
+        fams[i["d"]["_family"]][w].append(i)
+    out = []
+    for fam in [f for f in R.FAMILY_ORDER if f in fams]:
+        rows, other = [], []
+        for w, L in fams[fam].items():
+            (rows if len(L) >= min_n else other).append((w, L))
+        if other:
+            rows.append(("Other workshops", [i for _, L in other for i in L]))
+        res = []
+        for w, L in rows:
+            pre = [i["pre"] for i in L if i["pre"]]
+            gaps = [i["gap"] for i in L if i["gap"]]
+            per_m = [i["pre"] / i["gap"] for i in L if i["pre"] and i["gap"]]
+            fin = [i["final"] for i in L if i["final"]]
+            res.append(dict(wks=w, own=w in OWN_SHOPS, n=len(L), with_pre=len(pre),
+                            pre=round(_avg(pre)) if pre else None, pre_med=round(_med(pre)) if pre else None,
+                            heavy_pct=round(100 * sum(p >= R.HEAVY_HOURS for p in pre) / len(pre)) if pre else None,
+                            gap=_avg(gaps), per_month=_avg(per_m), final=round(_avg(fin)) if fin else None))
+        res.sort(key=lambda r: (r["wks"] == "Other workshops", -r["n"]))
+        if any(r["with_pre"] for r in res):
+            out.append(dict(family=fam, rows=res, n=sum(r["n"] for r in res)))
+    return out
