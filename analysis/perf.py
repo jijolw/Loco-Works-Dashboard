@@ -158,69 +158,136 @@ def previous_poh(demands, d0, d1, family="ALL"):
 
 
 # ---------------------------------------------------------------- targets (Internal_Targets tab)
-# target "Coach Type" -> our groups (checked against the sheet's own Achieved column, May/Jun 2026)
-TARGET_MAP = {"CN": ["CN"], "GS": ["GS"], "CZ": ["CZ"], "SLR": ["SLR / GSLRD"], "LWSCN": ["LWSCN"],
-              "LWS": ["LWS"], "LWACCN": ["LWACCN"], "LWACCW": ["LWACCW"],
-              "3-PHASE": ["MEMU MC", "EMU MC", "MEMU TC", "EMU TC"], "DPC/DTC": ["DEMU DPC", "DEMU TC"],
-              "NMG": ["NMG POH"], "ART": ["ART"]}
+# A target "Coach Type" may name one ERP type, a group, or several joined by "/" (CZ/CZJ/CZRJ, LWS/LS5).
+# A group name counts every ERP type of that group (CZ = CZ, CZJ, CZRJ), EXCEPT a type that has its own target
+# row in the same month (e.g. LWACCNE given separately in Oct-26 is then not counted under LWACCN).
+# Only POH visits: OR and conversions are never counted against these targets.
+ALIAS_GROUPS = {"3-PHASE": ["MEMU MC", "EMU MC", "MEMU TC", "EMU TC"], "DPC/DTC": ["DEMU DPC", "DEMU TC"],
+                "NMG": ["NMG POH"], "ART": ["ART"], "SLR": ["SLR / GSLRD"]}
+NOT_POH = {"OR", "ART CONVERSION", "ARMV CONVERSION", "NMG CONVERSION"}
 _tcache = {"t": 0, "rows": None, "err": None}
 
 
-def load_targets(sheet_key, csv_text=None):
-    """Read Internal_Targets (public gviz CSV), cached 30 min."""
-    if csv_text is None:
-        if _tcache["rows"] is not None and time.time() - _tcache["t"] < 1800:
-            return _tcache["rows"], _tcache["err"]
-        try:
-            import requests
-            url = (f"https://docs.google.com/spreadsheets/d/{sheet_key}/gviz/tq?tqx=out:csv"
-                   f"&sheet=Internal_Targets&t={int(time.time())}")
-            csv_text = requests.get(url, timeout=20).text
-        except Exception as e:
-            _tcache.update(t=time.time(), rows=[], err=f"Could not read targets sheet: {e}")
-            return [], _tcache["err"]
+def _group_types():
+    """group name -> set of ERP coach types (exact rows of coach_groups.csv)."""
+    g = defaultdict(set)
+    for r in R._load_groups():
+        if r["match"] == "exact":
+            g[r["group"].upper()].add(r["erp_type"])
+    return g
+
+
+def target_spec(ttype):
+    """'CZ/CZJ/CZRJ' -> (frozenset of ERP types, frozenset of groups)."""
+    t = ttype.strip().upper()
+    if t in ALIAS_GROUPS:
+        return frozenset(), frozenset(g.upper() for g in ALIAS_GROUPS[t])
+    gt = _group_types()
+    types, groups = set(), set()
+    for tok in [x.strip() for x in t.split("/") if x.strip()]:
+        if tok in ALIAS_GROUPS:
+            groups |= {g.upper() for g in ALIAS_GROUPS[tok]}
+        elif tok in gt:
+            types |= gt[tok]
+        else:
+            types.add(tok)
+    return frozenset(types), frozenset(groups)
+
+
+def _parse_month(mon):
+    mon = (mon or "").strip().upper()
+    return date(int(mon[-4:]), ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT",
+                                 "NOV", "DEC"].index(mon[:3]) + 1, 1)
+
+
+def load_targets(sheet_key=None, csv_text=None):
+    """Internal_Targets rows -> [{month, type, target, stock, nac}]. From the saved full read (targets_store);
+    csv_text only for tests."""
+    if csv_text is not None:
+        raw = list(csv.DictReader(io.StringIO(csv_text)))
+        err = None
+    else:
+        from core import targets_store
+        raw = targets_store.rows("Internal_Targets")
+        err = None if raw else "Targets not read yet - run Update_All.py or press Update from ERP (office PC)."
     rows = []
-    for r in csv.DictReader(io.StringIO(csv_text)):
+    for r in raw:
         try:
-            mon = r.get("Month", "").strip().upper()
-            m = date(int(mon[-4:]), ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT",
-                                     "NOV", "DEC"].index(mon[:3]) + 1, 1)
+            m = _parse_month(r.get("Month"))
         except (ValueError, IndexError):
             continue
         t = (r.get("Internal Target") or "").strip()
-        rows.append(dict(month=m, type=(r.get("Coach Type") or "").strip().upper(),
-                         target=int(float(t)) if t.replace(".", "", 1).isdigit() else None))
-    _tcache.update(t=time.time(), rows=rows, err=None)
-    return rows, None
+        try:
+            tv = int(float(t)) if t else None
+        except ValueError:
+            tv = None
+        rows.append(dict(month=m, type=(r.get("Coach Type") or "").strip().upper(), target=tv,
+                         stock=(r.get("Stock Type") or "").strip().upper(), nac=(r.get("NAC/AC") or "").strip().upper()))
+    _tcache.update(t=time.time(), rows=rows, err=err)
+    return rows, err
 
 
 def targets_vs_actual(demands, fy, as_on, trows):
     d0 = R.fy_start(fy)
     months = [date(d0.year + (m < 4), m, 1) for m in (4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3)]
     months = [m for m in months if m <= as_on]
-    act = defaultdict(int)
+    mkeys = [(m.year, m.month) for m in months]
+    visits = defaultdict(list)                                    # month -> outturn visits
     for d in outturns(demands, d0, min(as_on, R.fy_end(fy))):
         dd = R.pdate(d["dispatchDate"])
-        act[(d["_group"], dd.year, dd.month)] += 1
-    tgt = {(r["type"], r["month"]): r["target"] for r in trows}
-    rows = []
-    for ttype, groups in TARGET_MAP.items():
+        visits[(dd.year, dd.month)].append(d)
+
+    fy_rows = [r for r in trows if d0 <= r["month"] <= R.fy_end(fy) and r["type"]]
+    # one row per distinct expansion (CZ and CZ/CZJ/CZRJ are the same row), label = longest name used
+    specs, label = {}, {}
+    for r in fy_rows:
+        sp = target_spec(r["type"])
+        specs.setdefault(sp, len(specs))
+        if len(r["type"]) > len(label.get(sp, "")):
+            label[sp] = r["type"]
+    tgt = defaultdict(lambda: None)
+    explicit = defaultdict(set)                                   # month -> ERP types named on their own
+    for r in fy_rows:
+        sp = target_spec(r["type"])
+        if r["target"] is not None:
+            tgt[(sp, (r["month"].year, r["month"].month))] = (tgt[(sp, (r["month"].year, r["month"].month))] or 0) + r["target"]
+        if "/" not in r["type"] and r["type"] not in _group_types() and r["type"] not in ALIAS_GROUPS:
+            explicit[(r["month"].year, r["month"].month)].add(r["type"])
+
+    gnames = set(_group_types()) | set(ALIAS_GROUPS)
+    specific = {sp for sp in specs if len(sp[0]) == 1 and not sp[1] and label[sp] not in gnames}
+
+    def matches(d, sp, mk):
+        if d["_group"] in NOT_POH:
+            return False
+        types, groups = sp
+        if d["_group"].upper() in groups:
+            return True
+        ct = R.coach_type(d)
+        if ct not in types:
+            return False
+        if sp in specific:     # own row (e.g. LWACCNE): counts when it has a row that month, or no group row covers it
+            return ct in explicit[mk] or not any(ct in o[0] for o in specs if o != sp)
+        return ct not in explicit[mk]   # group row (e.g. LWACCN) leaves out a type that has its own row that month
+
+    rows, used = [], defaultdict(set)
+    for sp in sorted(specs, key=specs.get):
         cells = []
-        for m in months:
-            a = sum(act[(g, m.year, m.month)] for g in groups)
-            t = tgt.get((ttype, m))
-            cells.append(dict(t=t, a=a, pct=round(100 * a / t) if t else None))
+        for mk in mkeys:
+            hit = [d for d in visits[mk] if matches(d, sp, mk)]
+            used[mk] |= {d["demandId"] for d in hit}
+            t = tgt[(sp, mk)]
+            cells.append(dict(t=t, a=len(hit), pct=round(100 * len(hit) / t) if t else None))
         tsum = sum(c["t"] for c in cells if c["t"] is not None)
         asum_t = sum(c["a"] for c in cells if c["t"] is not None)
-        rows.append(dict(type=ttype, groups=", ".join(groups), cells=cells, tsum=tsum,
+        types, groups = sp
+        rows.append(dict(type=label[sp], groups=", ".join(sorted(types | groups)), cells=cells, tsum=tsum,
                          asum_t=asum_t, asum=sum(c["a"] for c in cells),
                          pct=round(100 * asum_t / tsum) if tsum else None))
-    covered = {g for gs in TARGET_MAP.values() for g in gs}
     others = defaultdict(lambda: [0] * len(months))
-    for (g, y, mo), n in act.items():
-        if g not in covered:
-            idx = next((i for i, m in enumerate(months) if (m.year, m.month) == (y, mo)), None)
-            if idx is not None:
-                others[g][idx] += n
-    months_with_target = [m for m in months if any(tgt.get((t, m)) is not None for t in TARGET_MAP)]
+    for i, mk in enumerate(mkeys):
+        for d in visits[mk]:
+            if d["demandId"] not in used[mk]:
+                others[d["_group"]][i] += 1
+    months_with_target = [m for m, mk in zip(months, mkeys) if any(tgt[(sp, mk)] is not None for sp in specs)]
     return dict(fy=fy, months=months, rows=rows, others=dict(others), months_with_target=months_with_target)

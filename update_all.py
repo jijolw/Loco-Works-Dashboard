@@ -142,6 +142,14 @@ def main():
         problems.append(f"PDC sheet: {e}")
         log(f"\n3c. PDC sheet NOT prepared: {e}")
 
+    # targets (all rows of Internal / HQ / RB target tabs, read only - a sheet filter does not hide rows)
+    try:
+        from core import targets_store
+        tg = targets_store.refresh()
+        log("\nTargets read (Internal / HQ / RB): " + ", ".join(f"{k} {len(v)} rows" for k, v in tg["tabs"].items()))
+    except Exception as e:
+        log(f"\nTargets NOT read: {e}")
+
     # d. online snapshot -------------------------------------------------------
     if config.SUPABASE_URL and config.SUPABASE_KEY:
         plan["online"] = True
@@ -149,7 +157,7 @@ def main():
 
     # checks -----------------------------------------------------------------
     from analysis import checks, perf
-    trows, _ = perf.load_targets(config.POSITION_SHEET_KEY)
+    trows, _ = perf.load_targets()
     bad = [c for c in checks.run(D, as_on, trows or None) if not c["ok"]]
     log("\nData consistency: " + ("all checks OK" if not bad else f"{len(bad)} MISMATCH"))
     for c in bad:
@@ -188,6 +196,8 @@ def main():
                 snap["km_status"] = json.load(f)
         except Exception:
             pass
+        from core import targets_store
+        snap["targets"] = targets_store.load()
         online_store.upload_snapshot(snap)
         log("  Online snapshot uploaded")
     log(f"\nDONE. Log: {LOG}")

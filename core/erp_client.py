@@ -215,6 +215,12 @@ def refresh_in_background(push_online=True):
         try:
             p = build_export()
             status["count"] = p["count"]
+            try:
+                status["step"] = "Reading target tabs..."
+                from core import targets_store
+                targets_store.refresh()
+            except Exception as e:                      # targets are optional for the ERP refresh
+                status["error"] = f"Targets not refreshed: {e}"
             if push_online and config.SUPABASE_URL and config.SUPABASE_KEY:
                 status["step"] = "Uploading snapshot to the online dashboard..."
                 from core import online_store
@@ -224,6 +230,8 @@ def refresh_in_background(push_online=True):
                         snap["km_status"] = json.load(f)
                 except Exception:
                     pass
+                from core import targets_store
+                snap["targets"] = targets_store.load()
                 online_store.upload_snapshot(snap)
             status["step"] = f"Done - {p['count']} demands in {time.time() - t0:.0f}s"
             status["done_at"] = datetime.now().strftime("%d-%m-%Y %H:%M")

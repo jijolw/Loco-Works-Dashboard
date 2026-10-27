@@ -14,7 +14,7 @@ import config
 from core import rules
 
 _lock = threading.Lock()
-_cache = {"stamp": None, "demands": [], "exported_at": None, "loaded": None, "km": {}}
+_cache = {"stamp": None, "demands": [], "exported_at": None, "loaded": None, "km": {}, "targets": {}}
 KM_FILE = os.path.join(config.APP_DIR, "data", "km_status.json")
 ONLINE_TTL = 600  # seconds between Supabase checks
 
@@ -54,7 +54,7 @@ def load(force=False):
                 if p:
                     _cache.update(demands=_enrich(p.get("demands", [])),
                                   exported_at=_parse_stamp(p.get("exported_at")),
-                                  km=p.get("km_status") or {})
+                                  km=p.get("km_status") or {}, targets=p.get("targets") or {})
                 _cache["loaded"] = datetime.now()
         return _cache["demands"], _cache["exported_at"]
 

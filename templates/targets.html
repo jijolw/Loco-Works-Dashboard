@@ -2,6 +2,7 @@
 {% block h1 %}Target vs Actual {{ t.fy }}{% endblock %}
 {% block body %}
 {% if err %}<div class="box warn">{{ err }}</div>{% endif %}
+<p class="note">Targets read from the sheet on {{ targets_read or "—" }} (refreshed by Update_All / Update from ERP).</p>
 <div class="box"><h2>By stock type – HQ / Internal / RB targets</h2>{% if s %}{{ stock_table(s, as_on) }}{% else %}<p class="warn">{{ s_err }}</p>{% endif %}</div>
 <div class="box"><h2>By coach type – Internal_Targets
 <form class="inline" style="float:right" method="get"><select name="fy" onchange="this.form.submit()">{% for f in fys %}<option {{ 'selected' if f==t.fy }}>{{ f }}</option>{% endfor %}</select>
@@ -10,7 +11,7 @@
 <tr>{% for m in t.months %}<th>T</th><th>A</th>{% endfor %}<th>T</th><th>A</th><th>%</th></tr>
 {% for r in t.rows %}<tr><td title="{{ r.groups }}">{{ r.type }}</td>{% for c in r.cells %}<td class="{{ 'z' if c.t is none }}">{{ '—' if c.t is none else c.t }}</td><td class="{{ 'warn' if c.t and c.a < c.t }}">{{ c.a }}</td>{% endfor %}
 <td>{{ r.tsum }}</td><td>{{ r.asum_t }}</td><td class="hi">{{ v(r.pct, '%') }}</td><td>{{ r.asum }}</td></tr>{% endfor %}</table>
-<p class="note">T = target from sheet tab Internal_Targets, A = ERP outturn (desp date). "—" = target not set for that month; such months are left out of the %. 3-PHASE = MEMU MC + EMU MC + MEMU TC + EMU TC; DPC/DTC = DEMU DPC + DEMU TC. Hover a type to see its groups.
+<p class="note">T = target from sheet tab Internal_Targets, A = ERP outturn (desp date). "—" = target not set for that month; such months are left out of the %. A coach type may be combined with "/" (CZ/CZJ/CZRJ, LWS/LS5); a group name counts all its ERP types except one that has its own row that month (e.g. LWACCNE). OR and conversions are not counted here. 3-PHASE = MEMU/EMU MC + TC; DPC/DTC = DEMU DPC + DEMU TC. Hover a type to see what is counted.
 {% if not t.months_with_target %}<br><span class="warn">No targets entered for this year yet.</span>{% else %} Targets entered for: {% for m in t.months_with_target %}{{ m.strftime('%b-%y') }}{{ ', ' if not loop.last }}{% endfor %}.{% endif %}</p></div>
 {% if t.others %}<div class="box"><h2>Outturn without a target type</h2>
 <table><tr><th>Coach Type</th>{% for m in t.months %}<th>{{ m.strftime('%b-%y') }}</th>{% endfor %}<th>Total</th></tr>

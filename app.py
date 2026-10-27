@@ -113,16 +113,17 @@ def prev_poh():
 
 def _targets(D, a, fy):
     from analysis import perf
-    rows, err = perf.load_targets(config.POSITION_SHEET_KEY)
+    rows, err = perf.load_targets()
     return perf.targets_vs_actual(D, fy, a, rows), err
 
 
 def _stock_targets(D, a, fy):
     from analysis import perf, stock_targets as S
     try:
-        hq = S.load_tab(config.POSITION_SHEET_KEY, "HQ_Targets")
-        rb = S.load_tab(config.POSITION_SHEET_KEY, "RB_Targets")
-        it, _ = perf.load_targets(config.POSITION_SHEET_KEY)
+        hq, rb = S.load_tab("HQ_Targets"), S.load_tab("RB_Targets")
+        if not hq and not rb:
+            return None, "Targets not read yet - run Update_All.py or press Update from ERP (office PC)."
+        it, _ = perf.load_targets()
         return S.build(D, fy, a, hq, rb, it), None
     except Exception as e:
         return None, f"Could not read HQ_Targets / RB_Targets: {e}"
@@ -134,7 +135,9 @@ def targets():
     fy = request.args.get("fy") or R.fy_of(a)
     t, err = _targets(D, a, fy)
     st, s_err = _stock_targets(D, a, fy)
-    return render_template("targets.html", t=t, err=err, s=st, s_err=s_err, fys=P.available_fys(D))
+    from core import targets_store
+    return render_template("targets.html", t=t, err=err, s=st, s_err=s_err, fys=P.available_fys(D),
+                           targets_read=targets_store.read_at())
 
 
 REPORTS = [("dashboard", "Month Position (current month)"), ("holding", "Type-wise Holding"),
@@ -157,7 +160,7 @@ def reports():
     D, a = _as_on()
     d0, d1 = _period(a)
     from analysis import checks, perf
-    trows, _ = perf.load_targets(config.POSITION_SHEET_KEY)
+    trows, _ = perf.load_targets()
     return render_template("reports.html", items=REPORTS, desc=REPORT_DESC, d0=d0, d1=d1,
                            checks=checks.run(D, a, trows or None))
 

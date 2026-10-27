@@ -6,7 +6,6 @@ ICF IOH, LHB SS1 and Vande Bharat are not in the coach ERP -> target shown, actu
 """
 import csv
 import io
-import time
 from collections import defaultdict
 from datetime import date
 
@@ -37,11 +36,10 @@ CATS = [
 # RB sheet names -> category key
 RB_ALIAS = {"4W TW|POH|NA": "TW 4W|POH|NA", "8W TW|POH|NA": "TW 8W|POH|NA",
             "VB SS1|POH|NA": "VB|SS1|AC", "VB SS2|POH|NA": "VB|SS2|AC"}
-# Internal target coach types -> category key (SS2/SS3 only)
-INTERNAL = {"CN": "ICF|POH|NAC", "GS": "ICF|POH|NAC", "CZ": "ICF|POH|NAC", "SLR": "ICF|POH|NAC",
-            "LWSCN": "LHB|SS2/SS3|NAC", "LWS": "LHB|SS2/SS3|NAC", "LWACCN": "LHB|SS2/SS3|AC",
-            "LWACCW": "LHB|SS2/SS3|AC", "3-PHASE": "EMU/MEMU|POH|NA", "DPC/DTC": "DEMU/DTC/TC|POH|NA",
-            "NMG": "NMGHS|CONV/POH|NA"}
+# Internal_Targets rows are rolled up by their Stock Type + NAC/AC columns (any coach-type naming works)
+INTERNAL_STOCK = {("ICF", "NAC"): "ICF|POH|NAC", ("LHB", "NAC"): "LHB|SS2/SS3|NAC", ("LHB", "AC"): "LHB|SS2/SS3|AC",
+                  ("EMU/MEMU", "NA"): "EMU/MEMU|POH|NA", ("DEMU/DTC/TC", "NA"): "DEMU/DTC/TC|POH|NA",
+                  ("NMG", "NAC"): "NMGHS|CONV/POH|NA"}
 SKIP = ("AC LOCO", "ELECTRIC LOCO")
 
 
@@ -63,22 +61,12 @@ def _month(fy, name):
     return date(y, i, 1)
 
 
-_cache = {}
-
-
-def load_tab(sheet_key, tab, csv_text=None):
-    """Public gviz CSV of one tab of OUR sheet, cached 30 min."""
-    if csv_text is None:
-        c = _cache.get(tab)
-        if c and time.time() - c[0] < 1800:
-            return c[1]
-        import requests
-        url = (f"https://docs.google.com/spreadsheets/d/{sheet_key}/gviz/tq?tqx=out:csv"
-               f"&sheet={tab}&t={int(time.time())}")
-        csv_text = requests.get(url, timeout=20).text
-    rows = list(csv.DictReader(io.StringIO(csv_text)))
-    _cache[tab] = (time.time(), rows)
-    return rows
+def load_tab(tab, csv_text=None):
+    """Rows of one target tab: the full read saved by Update_All / Update from ERP (csv_text only for tests)."""
+    if csv_text is not None:
+        return list(csv.DictReader(io.StringIO(csv_text)))
+    from core import targets_store
+    return targets_store.rows(tab)
 
 
 def build(demands, fy, as_on, hq_rows, rb_rows, internal_rows):
@@ -110,8 +98,9 @@ def build(demands, fy, as_on, hq_rows, rb_rows, internal_rows):
         rb[RB_ALIAS.get(k, k)] = (_num(r.get("RB Annual Target")), _num(r.get("RB Monthly Target")))
     internal = defaultdict(lambda: None)
     for r in internal_rows:
-        if r["month"] in months and r["target"] is not None and r["type"] in INTERNAL:
-            k = (INTERNAL[r["type"]], r["month"])
+        key = INTERNAL_STOCK.get((r.get("stock", ""), r.get("nac", "")))
+        if r["month"] in months and r["target"] is not None and key:
+            k = (key, r["month"])
             internal[k] = (internal[k] or 0) + r["target"]
 
     rows = []
