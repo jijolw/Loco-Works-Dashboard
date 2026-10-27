@@ -1,8 +1,9 @@
-{% extends "base.html" %}{% from "_period.html" import v %}
+{% extends "base.html" %}{% from "_period.html" import v %}{% from "_stock_targets.html" import stock_table %}
 {% block h1 %}Target vs Actual {{ t.fy }}{% endblock %}
 {% block body %}
 {% if err %}<div class="box warn">{{ err }}</div>{% endif %}
-<div class="box"><h2>Outturn against Internal_Targets
+<div class="box"><h2>By stock type – HQ / Internal / RB targets</h2>{% if s %}{{ stock_table(s, as_on) }}{% else %}<p class="warn">{{ s_err }}</p>{% endif %}</div>
+<div class="box"><h2>By coach type – Internal_Targets
 <form class="inline" style="float:right" method="get"><select name="fy" onchange="this.form.submit()">{% for f in fys %}<option {{ 'selected' if f==t.fy }}>{{ f }}</option>{% endfor %}</select>
 <a class="btn light" href="{{ url_for('download', what='targets', fy=t.fy) }}">Excel</a></form></h2>
 <table><tr><th rowspan="2">Target type</th>{% for m in t.months %}<th colspan="2">{{ m.strftime('%b-%y') }}</th>{% endfor %}<th colspan="3">Months with target</th><th rowspan="2">Actual all months</th></tr>

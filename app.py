@@ -117,12 +117,24 @@ def _targets(D, a, fy):
     return perf.targets_vs_actual(D, fy, a, rows), err
 
 
+def _stock_targets(D, a, fy):
+    from analysis import perf, stock_targets as S
+    try:
+        hq = S.load_tab(config.POSITION_SHEET_KEY, "HQ_Targets")
+        rb = S.load_tab(config.POSITION_SHEET_KEY, "RB_Targets")
+        it, _ = perf.load_targets(config.POSITION_SHEET_KEY)
+        return S.build(D, fy, a, hq, rb, it), None
+    except Exception as e:
+        return None, f"Could not read HQ_Targets / RB_Targets: {e}"
+
+
 @app.route("/targets")
 def targets():
     D, a = _as_on()
     fy = request.args.get("fy") or R.fy_of(a)
     t, err = _targets(D, a, fy)
-    return render_template("targets.html", t=t, err=err, fys=P.available_fys(D))
+    st, s_err = _stock_targets(D, a, fy)
+    return render_template("targets.html", t=t, err=err, s=st, s_err=s_err, fys=P.available_fys(D))
 
 
 REPORTS = [("dashboard", "Month Position (current month)"), ("holding", "Type-wise Holding"),
@@ -192,8 +204,10 @@ def download(what):
         else:
             bio, name = excel.prev_poh(perf.previous_poh(D, d0, d1, request.args.get("family", "ALL")), d0, d1, a)
     elif what == "targets":
-        t, _ = _targets(D, a, request.args.get("fy") or R.fy_of(a))
-        bio, name = excel.targets(t, a)
+        fy = request.args.get("fy") or R.fy_of(a)
+        t, _ = _targets(D, a, fy)
+        st, _ = _stock_targets(D, a, fy)
+        bio, name = excel.targets(t, a, st)
     else:
         abort(404)
     return send_file(bio, as_attachment=True, download_name=name,

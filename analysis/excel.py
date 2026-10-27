@@ -162,7 +162,7 @@ def prev_poh(p, d0, d1, as_on):
     return _finish(wb, ws, f"Previous_POH_{d0:%d%m%Y}_to_{d1:%d%m%Y}.xlsx", bold)
 
 
-def targets(t, as_on):
+def targets(t, as_on, s=None):
     hdr = ["Target type"]
     for m in t["months"]:
         hdr += [f"{m:%b-%y} T", f"{m:%b-%y} A"]
@@ -173,4 +173,18 @@ def targets(t, as_on):
         for c in r["cells"]:
             row += ["-" if c["t"] is None else c["t"], c["a"]]
         ws.append(row + [r["tsum"], r["asum_t"], r["pct"], r["asum"]])
-    return _finish(wb, ws, f"Target_vs_Actual_{t['fy']}.xlsx")
+    out = _finish(wb, ws, "", [])[0]
+    if s:
+        wb = openpyxl.load_workbook(out)
+        ws = wb.create_sheet("By stock type", 0)
+        ws.append([f"LW/PER - TARGET vs ACTUAL BY STOCK TYPE {s['fy']} (as on {as_on:%d.%m.%Y}; n/e = not in coach ERP)"])
+        ws.append(["Stock type", "HQ T to date", "Actual (HQ months)", "HQ %", "Internal T", "Actual", "Internal %",
+                   "RB annual", "RB pro-rata", "RB %", "Actual FY"])
+        for r in s["rows"]:
+            ne = "n/e"
+            ws.append([r["label"], r["hq_t"], r["hq_a"] if r["in_erp"] else ne, r["hq_pct"], r["i_t"], r["i_a"],
+                       r["i_pct"], r["rb_annual"], r["rb_todate"], r["rb_pct"], r["a_all"] if r["in_erp"] else ne])
+        for col in range(1, 12):
+            ws.column_dimensions[get_column_letter(col)].width = 16 if col > 1 else 26
+        out = io.BytesIO(); wb.save(out); out.seek(0)
+    return out, f"Target_vs_Actual_{t['fy']}.xlsx"

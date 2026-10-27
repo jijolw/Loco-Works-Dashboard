@@ -1,0 +1,18 @@
+{% from "_period.html" import v %}
+{% macro stock_table(s, as_on) %}{% set cur = s.months|length - 1 %}
+<table><tr><th rowspan="2">Stock type</th><th colspan="2">{{ s.months[cur].strftime('%b-%y') if s.months }}</th><th colspan="3">HQ target – FY to date</th><th colspan="3">Internal target – to date</th><th colspan="3">RB target</th><th rowspan="2">Actual FY to date</th></tr>
+<tr><th>T</th><th>A</th><th>T</th><th>A</th><th>%</th><th>T</th><th>A</th><th>%</th><th>Annual</th><th>Pro-rata to date</th><th>%</th></tr>
+{% for r in s.rows %}{% set c = r.cells[cur] if r.cells else none %}
+<tr><td title="{{ r.groups }}">{{ r.label }}</td>
+<td>{{ v(c.t if c) }}</td><td>{{ (v(c.a) if r.in_erp else 'n/e') if c else '—' }}</td>
+<td>{{ v(r.hq_t) }}</td><td>{{ v(r.hq_a) if r.in_erp else 'n/e' }}</td><td class="hi {{ 'warn' if r.hq_pct is not none and r.hq_pct < 90 }}">{{ v(r.hq_pct, '%') }}</td>
+<td>{{ v(r.i_t) }}</td><td>{{ v(r.i_a) if r.in_erp and r.i_t is not none else '—' }}</td><td>{{ v(r.i_pct, '%') }}</td>
+<td>{{ v(r.rb_annual) }}</td><td>{{ v(r.rb_todate) }}</td><td>{{ v(r.rb_pct, '%') }}</td>
+<td class="hi">{{ v(r.a_all) if r.in_erp else 'n/e' }}</td></tr>{% endfor %}</table>
+<p class="note">T = target, A = ERP outturn (desp date). Targets from our sheet: HQ_Targets (monthly), Internal_Targets (rolled up by stock type), RB_Targets (annual; pro-rata = RB monthly × months to date). % only over months that have a target.
+n/e = not in coach ERP (ICF IOH, LHB SS1, Vande Bharat) – target shown for reference. OR coaches are counted under their own coach type, as HQ does. AC locos are not shown. Hover a row to see the coach types counted.</p>
+<details><summary>Month-wise (HQ target / actual)</summary>
+<table style="margin-top:8px"><tr><th>Stock type</th>{% for m in s.months %}<th>{{ m.strftime('%b-%y') }}</th>{% endfor %}</tr>
+{% for r in s.rows %}<tr><td>{{ r.label }}</td>{% for c in r.cells %}<td class="{{ 'warn' if r.in_erp and c.t and c.a < c.t }}">{{ v(c.t) }} / {{ (c.a if r.in_erp else 'n/e') }}</td>{% endfor %}</tr>{% endfor %}</table></details>
+{% if s.others %}<p class="note">Outturn not in any HQ stock type: {% for g, n in s.others.items() %}{{ g }} {{ n }}{{ ', ' if not loop.last }}{% endfor %}.</p>{% endif %}
+{% endmacro %}
