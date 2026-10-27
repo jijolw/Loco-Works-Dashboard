@@ -163,7 +163,8 @@ def previous_poh(demands, d0, d1, family="ALL"):
 # row in the same month (e.g. LWACCNE given separately in Oct-26 is then not counted under LWACCN).
 # Only POH visits: OR and conversions are never counted against these targets.
 ALIAS_GROUPS = {"3-PHASE": ["MEMU MC", "EMU MC", "MEMU TC", "EMU TC"], "DPC/DTC": ["DEMU DPC", "DEMU TC"],
-                "NMG": ["NMG POH"], "ART": ["ART"], "SLR": ["SLR / GSLRD"]}
+                "NMG": ["NMG POH"], "ART": ["ART"]}
+TYPE_ALIAS = {"SLR": "SLR / GSLRD", "GSLRD": "SLR / GSLRD"}     # SLR target = SLR + GSLRD + GSRD types
 NOT_POH = {"OR", "ART CONVERSION", "ARMV CONVERSION", "NMG CONVERSION"}
 _tcache = {"t": 0, "rows": None, "err": None}
 
@@ -185,7 +186,9 @@ def target_spec(ttype):
     gt = _group_types()
     types, groups = set(), set()
     for tok in [x.strip() for x in t.split("/") if x.strip()]:
-        if tok in ALIAS_GROUPS:
+        if tok in TYPE_ALIAS:
+            types |= gt[TYPE_ALIAS[tok].upper()]
+        elif tok in ALIAS_GROUPS:
             groups |= {g.upper() for g in ALIAS_GROUPS[tok]}
         elif tok in gt:
             types |= gt[tok]
@@ -251,10 +254,11 @@ def targets_vs_actual(demands, fy, as_on, trows):
         sp = target_spec(r["type"])
         if r["target"] is not None:
             tgt[(sp, (r["month"].year, r["month"].month))] = (tgt[(sp, (r["month"].year, r["month"].month))] or 0) + r["target"]
-        if "/" not in r["type"] and r["type"] not in _group_types() and r["type"] not in ALIAS_GROUPS:
+        if "/" not in r["type"] and r["type"] not in _group_types() and r["type"] not in ALIAS_GROUPS \
+                and r["type"] not in TYPE_ALIAS:
             explicit[(r["month"].year, r["month"].month)].add(r["type"])
 
-    gnames = set(_group_types()) | set(ALIAS_GROUPS)
+    gnames = set(_group_types()) | set(ALIAS_GROUPS) | set(TYPE_ALIAS)
     specific = {sp for sp in specs if len(sp[0]) == 1 and not sp[1] and label[sp] not in gnames}
 
     def matches(d, sp, mk):
