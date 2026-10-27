@@ -30,7 +30,8 @@ def get(key, default=""):
     return os.environ.get(key, default)
 
 
-APP_MODE = get("APP_MODE", "local").strip().lower()
+# On Render (RENDER env var is always set there) default to online; on the PC default to local
+APP_MODE = get("APP_MODE", "online" if os.environ.get("RENDER") else "local").strip().lower()
 IS_LOCAL = APP_MODE != "online"
 
 # New Carriage ERP (railway intranet only)
