@@ -10,7 +10,8 @@
 <table><tr><th rowspan="2">Target type</th>{% for m in t.months %}<th colspan="2">{{ m.strftime('%b-%y') }}</th>{% endfor %}<th colspan="3">Months with target</th><th rowspan="2">Actual all months</th></tr>
 <tr>{% for m in t.months %}<th>T</th><th>A</th>{% endfor %}<th>T</th><th>A</th><th>%</th></tr>
 {% for r in t.rows %}<tr><td title="{{ r.groups }}">{{ r.type }}</td>{% for c in r.cells %}<td class="{{ 'z' if c.t is none }}">{{ '—' if c.t is none else c.t }}</td><td class="{{ 'warn' if c.t and c.a < c.t }}">{{ c.a }}</td>{% endfor %}
-<td>{{ r.tsum }}</td><td>{{ r.asum_t }}</td><td class="hi">{{ v(r.pct, '%') }}</td><td>{{ r.asum }}</td></tr>{% endfor %}</table>
+<td>{{ r.tsum }}</td><td>{{ r.asum_t }}</td><td class="hi">{{ v(r.pct, '%') }}</td><td>{{ r.asum }}</td></tr>
+{% for p in r.parts %}<tr class="part"><td>&nbsp;&nbsp;↳ {{ p.name }}</td>{% for x in p.vals %}<td></td><td class="{{ 'z' if not x }}">{{ x }}</td>{% endfor %}<td></td><td></td><td></td><td>{{ p.total }}</td></tr>{% endfor %}{% endfor %}</table>
 <p class="note">T = target from sheet tab Internal_Targets, A = ERP outturn (desp date). "—" = target not set for that month; such months are left out of the %. A coach type may be combined with "/" (CZ/CZJ/CZRJ, LWS/LS5); a group name counts all its ERP types except one that has its own row that month (e.g. LWACCNE). OR and conversions are not counted here. 3-PHASE = MEMU/EMU MC + TC; DPC/DTC = DEMU DPC + DEMU TC. Hover a type to see what is counted.
 {% if not t.months_with_target %}<br><span class="warn">No targets entered for this year yet.</span>{% else %} Targets entered for: {% for m in t.months_with_target %}{{ m.strftime('%b-%y') }}{{ ', ' if not loop.last }}{% endfor %}.{% endif %}</p></div>
 {% if t.others %}<div class="box"><h2>Outturn without a target type</h2>

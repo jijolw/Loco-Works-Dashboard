@@ -173,6 +173,11 @@ def targets(t, as_on, s=None):
         for c in r["cells"]:
             row += ["-" if c["t"] is None else c["t"], c["a"]]
         ws.append(row + [r["tsum"], r["asum_t"], r["pct"], r["asum"]])
+        for p in r.get("parts", []):
+            prow = ["   " + p["name"]]
+            for x in p["vals"]:
+                prow += ["", x]
+            ws.append(prow + ["", "", "", p["total"]])
     out = _finish(wb, ws, "", [])[0]
     if s:
         wb = openpyxl.load_workbook(out)

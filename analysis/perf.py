@@ -272,16 +272,20 @@ def targets_vs_actual(demands, fy, as_on, trows):
 
     rows, used = [], defaultdict(set)
     for sp in sorted(specs, key=specs.get):
-        cells = []
-        for mk in mkeys:
+        cells, parts = [], defaultdict(lambda: [0] * len(mkeys))
+        for i, mk in enumerate(mkeys):
             hit = [d for d in visits[mk] if matches(d, sp, mk)]
             used[mk] |= {d["demandId"] for d in hit}
+            for d in hit:                                    # individual count inside a combined target
+                parts[d["_group"] if sp[1] else R.coach_type(d)][i] += 1
             t = tgt[(sp, mk)]
             cells.append(dict(t=t, a=len(hit), pct=round(100 * len(hit) / t) if t else None))
         tsum = sum(c["t"] for c in cells if c["t"] is not None)
         asum_t = sum(c["a"] for c in cells if c["t"] is not None)
         types, groups = sp
-        rows.append(dict(type=label[sp], groups=", ".join(sorted(types | groups)), cells=cells, tsum=tsum,
+        part_rows = [dict(name=k, vals=v, total=sum(v)) for k, v in sorted(parts.items())] \
+            if len(types | groups) > 1 and len(parts) > 1 else []
+        rows.append(dict(type=label[sp], groups=", ".join(sorted(types | groups)), cells=cells, tsum=tsum, parts=part_rows,
                          asum_t=asum_t, asum=sum(c["a"] for c in cells),
                          pct=round(100 * asum_t / tsum) if tsum else None))
     others = defaultdict(lambda: [0] * len(months))

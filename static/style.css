@@ -70,3 +70,4 @@ details summary{cursor:pointer;color:var(--accent)}
  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 .chip .km{font-size:9px;border:1px solid #1d2430;border-radius:2px;padding:0 2px;font-weight:700}
+tr.part td{color:var(--muted);font-size:12px;background:#fbfbfc}
