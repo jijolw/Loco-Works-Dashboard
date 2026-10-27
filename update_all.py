@@ -167,6 +167,10 @@ def main():
 
     log("\n4. Writing...")
     if "km" in plan:
+        # summary rows 1-6 must not be merged (a merge across A:H hides the headers and the GS row)
+        ws_km = open_sheet(km.LOCAL_SHEET_KEY).worksheet(km.TAB)
+        ws_km.spreadsheet.batch_update({"requests": [{"unmergeCells": {"range": {
+            "sheetId": ws_km.id, "startRowIndex": 0, "endRowIndex": 6, "startColumnIndex": 0, "endColumnIndex": 15}}}]})
         ok = km.write_sheet(plan["km"])
         log(f"  Kumbh_Mela_Special_Pool - {'verified' if ok else 'CHECK: read-back differs'}")
         if not ok:
