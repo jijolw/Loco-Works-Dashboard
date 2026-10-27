@@ -1,4 +1,9 @@
 {% from "_period.html" import v %}
+{% macro stock_charts(ch) %}
+{% if ch.hq %}<h3 class="sub">HQ target – FY to date <span class="note">bar = ERP actual, black tick = HQ target</span></h3>{{ ch.hq|safe }}{% endif %}
+{% if ch.rb %}<h3 class="sub">RB target <span class="note">bar = actual FY to date, black tick = RB pro-rata to date, grey band = RB annual</span></h3>{{ ch.rb|safe }}{% endif %}
+{% if ch.monthly %}<h3 class="sub">Month-wise against HQ target <span class="note">bar = actual, tick = HQ target</span></h3>{{ ch.monthly|safe }}{% endif %}
+{% endmacro %}
 {% macro stock_table(s, as_on) %}{% set cur = s.months|length - 1 %}
 <table><tr><th rowspan="2">Stock type</th><th colspan="2">{{ s.months[cur].strftime('%b-%y') if s.months }}</th><th colspan="3">HQ target – FY to date</th><th colspan="3">Internal target – to date</th><th colspan="3">RB target</th><th rowspan="2">Actual FY to date</th></tr>
 <tr><th>T</th><th>A</th><th>T</th><th>A</th><th>%</th><th>T</th><th>A</th><th>%</th><th>Annual</th><th>Pro-rata to date</th><th>%</th></tr>

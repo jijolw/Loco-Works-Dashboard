@@ -1,8 +1,9 @@
-{% extends "base.html" %}{% from "_period.html" import v %}{% from "_stock_targets.html" import stock_table %}
+{% extends "base.html" %}{% from "_period.html" import v %}{% from "_stock_targets.html" import stock_table, stock_charts %}
 {% block h1 %}Target vs Actual {{ t.fy }}{% endblock %}
 {% block body %}
 {% if err %}<div class="box warn">{{ err }}</div>{% endif %}
 <p class="note">Targets read from the sheet on {{ targets_read or "—" }} (refreshed by Update_All / Update from ERP).</p>
+{% if ch %}<div class="box"><h2>Charts – HQ and RB targets</h2>{{ stock_charts(ch) }}</div>{% endif %}
 <div class="box"><h2>By stock type – HQ / Internal / RB targets</h2>{% if s %}{{ stock_table(s, as_on) }}{% else %}<p class="warn">{{ s_err }}</p>{% endif %}</div>
 <div class="box"><h2>By coach type – Internal_Targets
 <form class="inline" style="float:right" method="get"><select name="fy" onchange="this.form.submit()">{% for f in fys %}<option {{ 'selected' if f==t.fy }}>{{ f }}</option>{% endfor %}</select>

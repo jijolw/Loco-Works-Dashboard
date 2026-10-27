@@ -71,3 +71,11 @@ details summary{cursor:pointer;color:var(--accent)}
 }
 .chip .km{font-size:9px;border:1px solid #1d2430;border-radius:2px;padding:0 2px;font-weight:700}
 tr.part td{color:var(--muted);font-size:12px;background:#fbfbfc}
+/* ---------- charts ---------- */
+svg.chart{width:100%;height:auto;max-width:760px;display:block;font-family:inherit}
+h3.sub{font-size:13px;margin:14px 0 4px;font-weight:600}
+h3.sub .note{font-weight:400;margin-left:6px}
+.multiples{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.multiples svg.chart{max-width:none}
+.chart-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:6px 20px}
+@media print{svg.chart{max-width:100%}}

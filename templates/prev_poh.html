@@ -2,6 +2,10 @@
 {% block h1 %}Previous POH Analysis{% endblock %}
 {% block body %}
 {% set fsel %}<select name="family">{% for f in ['ALL'] + families %}<option {{ 'selected' if f==family }}>{{ f }}</option>{% endfor %}</select>{% endset %}
+{% if ch.count %}<div class="box"><h2>Charts – by workshop of last POH <span class="note">(workshops with 3 or more coaches)</span></h2>
+<div class="chart-grid"><div><h3 class="sub">Coaches received (share of outturns)</h3>{{ ch.count|safe }}</div>
+<div><h3 class="sub">Average pre-survey hours (heavy %)</h3>{{ ch.hours|safe }}</div>
+<div><h3 class="sub">Average cycle days (entry → outturn)</h3>{{ ch.cycle|safe }}</div></div></div>{% endif %}
 <div class="box"><h2>By workshop of last POH ({{ p.n }} outturns) {{ period(d0, d1, 'prev_poh', fsel) }}</h2>
 <table><tr><th>Last POH workshop</th><th>Coaches</th><th>Avg pre-survey hrs</th><th>Heavy % (of those with pre hrs)</th><th>Avg final hrs</th><th>Avg cycle days</th><th>Avg months since last POH</th></tr>
 {% for r in p.rows %}<tr><td>{{ r.wks }}</td><td>{{ r.n }}</td><td>{{ v(r.pre) }}</td><td>{{ v(r.heavy_pct, '%') }}</td><td>{{ v(r.final) }}</td><td>{{ v(r.cycle) }}</td><td>{{ v(r.gap) }}</td></tr>{% endfor %}</table>

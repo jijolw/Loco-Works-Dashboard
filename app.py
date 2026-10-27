@@ -107,7 +107,14 @@ def prev_poh():
     D, a = _as_on()
     d0, d1 = _period(a)
     fam = request.args.get("family", "ALL")
-    return render_template("prev_poh.html", p=perf.previous_poh(D, d0, d1, fam), d0=d0, d1=d1, family=fam,
+    from analysis import charts as C
+    p = perf.previous_poh(D, d0, d1, fam)
+    top = [r for r in p["rows"] if r["n"] >= 3][:12]
+    ch = dict(count=C.hbars([dict(label=r["wks"], value=r["n"], note=f"{round(100 * r['n'] / p['n'])}%") for r in top]),
+              hours=C.hbars([dict(label=r["wks"], value=r["pre"], note=f"heavy {r['heavy_pct']}%" if r["heavy_pct"] is not None else "")
+                             for r in top if r["pre"]], unit=" hrs"),
+              cycle=C.hbars([dict(label=r["wks"], value=r["cycle"]) for r in top if r["cycle"] is not None], unit=" days"))
+    return render_template("prev_poh.html", p=p, ch=ch, d0=d0, d1=d1, family=fam,
                            families=[f for f in R.FAMILY_ORDER if f != "Others"])
 
 
@@ -136,8 +143,19 @@ def targets():
     t, err = _targets(D, a, fy)
     st, s_err = _stock_targets(D, a, fy)
     from core import targets_store
+    from analysis import charts as C
+    ch = {}
+    if st:
+        erp = [r for r in st["rows"] if r["in_erp"]]
+        ch["hq"] = C.bullets([dict(label=r["label"], actual=r["hq_a"], target=r["hq_t"]) for r in erp if r["hq_t"]])
+        ch["rb"] = C.bullets([dict(label=r["label"], actual=r["a_all"], target=r["rb_todate"], band=r["rb_annual"],
+                                   note=f"(annual {r['rb_annual']})") for r in erp if r["rb_annual"]])
+        main = ["ICF|POH|NAC", "LHB|SS2/SS3|NAC", "LHB|SS2/SS3|AC", "EMU/MEMU|POH|NA", "DEMU/DTC/TC|POH|NA"]
+        ch["monthly"] = C.monthly(st["months"], [dict(label=r["label"], actual=[c["a"] for c in r["cells"]],
+                                                      target=[c["t"] for c in r["cells"]])
+                                                 for k in main for r in st["rows"] if r["key"] == k])
     return render_template("targets.html", t=t, err=err, s=st, s_err=s_err, fys=P.available_fys(D),
-                           targets_read=targets_store.read_at())
+                           targets_read=targets_store.read_at(), ch=ch)
 
 
 REPORTS = [("dashboard", "Month Position (current month)"), ("holding", "Type-wise Holding"),
