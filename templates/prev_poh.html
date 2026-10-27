@@ -3,7 +3,7 @@
 {% block body %}
 {% set fsel %}<select name="family">{% for f in ['ALL'] + families %}<option {{ 'selected' if f==family }}>{{ f }}</option>{% endfor %}</select>{% endset %}
 {% if wm %}<div class="box"><h2>Workmanship comparison – condition on arrival by workshop of last POH</h2>
-<p class="note">Pre-survey hours on arrival show how well the PREVIOUS POH held up. Compare only within a family and at a similar time since the last POH; "hrs / month" evens out different intervals. Our shop = {{ own }} (orange). Workshops with fewer than 5 coaches are grouped as "Other workshops". Period {{ fmt(d0) }} – {{ fmt(d1) }}.</p>
+<p class="note">Pre-survey hours on arrival show how well the PREVIOUS POH held up. ICF and LHB only (DEMU / TC / special stock are done only by us). Compare within a family and at a similar time since the last POH; "hrs / month" evens out different intervals. Our shop = {{ own }} (orange). Workshops with fewer than 5 coaches are grouped as "Other workshops". Period {{ fmt(d0) }} – {{ fmt(d1) }}.</p>
 {% for w in wm %}<h3 class="sub">{{ w.family }} – {{ w.n }} coaches</h3>
 <div><div>
 <table style="width:auto"><tr><th>Last POH at</th><th>Coaches</th><th>Avg pre hrs</th><th>Median</th><th>Heavy %</th><th>Months since last POH</th><th>Pre hrs / month</th><th>Avg final hrs</th></tr>

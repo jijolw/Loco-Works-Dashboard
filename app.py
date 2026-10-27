@@ -111,7 +111,7 @@ def prev_poh():
     if not request.args.get("from"):                 # two financial years by default - bigger sample per workshop
         d0 = R.fy_start(R.fy_of(date(a.year - 1, a.month, 1)))
     p = perf.previous_poh(D, d0, d1, fam)
-    wm = perf.workmanship(D, d0, d1)
+    wm = [w for w in perf.workmanship(D, d0, d1) if w["family"] in ("ICF", "LHB")]   # only these are also done elsewhere
     if fam != "ALL":
         wm = [w for w in wm if w["family"] == fam]
     for w in wm:
