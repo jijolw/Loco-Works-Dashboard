@@ -8,6 +8,7 @@ update_all.py - ONE button for the daily update (double-click Update_All.py in D
       b. OUR sheet POSITION11092026 tabs YARD / ICF NAC / LHB     (preview xlsx in 10_Claude_Reports\\output)
       c. JIJO's sheet "PDC for CN GS SLR Coaches" tabs GS / CN / GSLRD / CZ
       d. Online dashboard snapshot (Supabase)
+      e. "Achieved" column of Internal_Targets / HQ_Targets / RB_Targets from ERP (targets are typed by JIJO)
     + the app's data-consistency checks
  4. Shows everything in ONE preview -> you type YES once -> writes in that order, verifies each,
     stops at the first error, logs to 10_Claude_Reports\\output\\update_all_log_*.txt
@@ -142,6 +143,21 @@ def main():
         problems.append(f"PDC sheet: {e}")
         log(f"\n3c. PDC sheet NOT prepared: {e}")
 
+    # e. Achieved columns of the target tabs (ERP outturn; targets themselves are JIJO's)
+    try:
+        from updaters import achieved
+        from updaters.common import open_sheet as _os
+        plan["ach"] = achieved.plan(_os(config.POSITION_SHEET_KEY), D, as_on)
+        n = sum(len(v) for v in plan["ach"]["changes"].values())
+        log(f"\n3e. Target tabs - Achieved from ERP ({n} cells change; targets not touched):")
+        for line in achieved.preview_lines(plan["ach"]):
+            log(line)
+        if not n:
+            plan.pop("ach")
+    except Exception as e:
+        problems.append(f"Achieved columns: {e}")
+        log(f"\n3e. Achieved columns NOT prepared: {e}")
+
     # targets (all rows of Internal / HQ / RB target tabs, read only - a sheet filter does not hide rows)
     try:
         from core import targets_store
@@ -165,10 +181,10 @@ def main():
 
     if problems:
         log("\nNot prepared (will be skipped): " + "; ".join(problems))
-    if not any(k in plan for k in ("km", "pos", "pdc", "online")):
+    if not any(k in plan for k in ("km", "pos", "pdc", "ach", "online")):
         log("\nNothing to write.")
         return
-    log("\nNothing has been written yet. The HQ sheet is never written.")
+    log("\nNothing has been written yet. The HQ KM sheet (2026 KM SPLs) is only read, never written.")
     if input("Type YES to write all of the above: ").strip() != "YES":
         log("Cancelled - nothing written.")
         return
@@ -188,6 +204,8 @@ def main():
         log(f"  Position tabs - {n} ranges written")
     if "pdc" in plan:
         pdc_hq.apply(plan["pdc"][0], plan["pdc"][1], as_on, log)
+    if "ach" in plan:
+        achieved.apply(plan["ach"], log)
     if "online" in plan:
         from core import online_store
         snap = dict(payload)

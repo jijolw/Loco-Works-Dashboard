@@ -289,7 +289,7 @@ def targets_vs_actual(demands, fy, as_on, trows):
         types, groups = sp
         part_rows = [dict(name=k, vals=v, total=sum(v)) for k, v in sorted(parts.items())] \
             if len(types | groups) > 1 and len(parts) > 1 else []
-        rows.append(dict(type=label[sp], groups=", ".join(sorted(types | groups)), cells=cells, tsum=tsum, parts=part_rows,
+        rows.append(dict(type=label[sp], spec=sp, groups=", ".join(sorted(types | groups)), cells=cells, tsum=tsum, parts=part_rows,
                          asum_t=asum_t, asum=sum(c["a"] for c in cells),
                          pct=round(100 * asum_t / tsum) if tsum else None))
     others = defaultdict(lambda: [0] * len(months))
