@@ -79,3 +79,13 @@ h3.sub .note{font-weight:400;margin-left:6px}
 .multiples svg.chart{max-width:none}
 .chart-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(420px,1fr));gap:6px 20px}
 @media print{svg.chart{max-width:100%}}
+/* ---------- click-to-enlarge charts ---------- */
+svg.chart:not(.zoomed){cursor:zoom-in}
+svg.chart:not(.zoomed):hover{outline:1px dashed #9aa3ae;outline-offset:3px}
+.zoom{position:fixed;inset:0;background:rgba(20,24,32,.55);z-index:50;display:flex;flex-direction:column;padding:2vh 2vw}
+.zoom[hidden]{display:none}
+.zoom-bar{display:flex;gap:6px;align-items:center;background:#fff;padding:8px 12px;border-radius:6px 6px 0 0}
+.zoom-bar span{flex:1;font-weight:600}
+.zoom-body{flex:1;overflow:auto;background:#fff;border-radius:0 0 6px 6px;padding:12px}
+.zoom-body svg.chart{max-width:none;height:auto}
+@media print{.zoom{display:none!important}}

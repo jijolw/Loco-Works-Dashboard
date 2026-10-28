@@ -23,4 +23,23 @@ function poll(){fetch('/update/status').then(r=>r.json()).then(s=>{
 function doUpdate(){try{sessionStorage.setItem('upd','1')}catch(e){};fetch('/update',{method:'POST'}).then(()=>poll());}
 poll();
 </script>{% endif %}
+<div id="zoom" class="zoom" hidden><div class="zoom-bar"><span id="zoom-title"></span>
+<button class="btn light" onclick="zoomBy(1.25)">+</button><button class="btn light" onclick="zoomBy(0.8)">−</button>
+<button class="btn light" onclick="zoomBy(0)">Fit</button><button class="btn" onclick="zoomClose()">Close ✕</button></div>
+<div class="zoom-body" id="zoom-body"></div></div>
+<script>
+let zf=1;
+function chartTitle(el){let n=el;while(n&&!(n.classList&&n.classList.contains('box'))){let p=n.previousElementSibling;
+ while(p){if(p.matches&&p.matches('h3.sub,h2'))return p.innerText.replace(/\s+/g,' ').trim();p=p.previousElementSibling;}n=n.parentElement;}
+ const t=el.querySelector('text');return el.getAttribute('aria-label')||(t?t.textContent:'Chart');}
+function zoomOpen(svg){const z=document.getElementById('zoom'),b=document.getElementById('zoom-body');
+ b.innerHTML='';const c=svg.cloneNode(true);c.classList.add('zoomed');b.appendChild(c);
+ document.getElementById('zoom-title').textContent=chartTitle(svg);zf=1;c.style.width='100%';z.hidden=false;}
+function zoomBy(f){const c=document.querySelector('#zoom-body svg');if(!c)return;zf=f?zf*f:1;c.style.width=(100*zf)+'%';}
+function zoomClose(){document.getElementById('zoom').hidden=true;document.getElementById('zoom-body').innerHTML='';}
+document.addEventListener('click',e=>{const s=e.target.closest('svg.chart');
+ if(s&&!s.classList.contains('zoomed')){zoomOpen(s);return;}
+ if(e.target.id==='zoom')zoomClose();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')zoomClose();});
+</script>
 </body></html>
