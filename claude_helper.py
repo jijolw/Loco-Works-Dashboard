@@ -83,7 +83,8 @@ def setup():
     print(f"Claude Code found: {exe}\nVersion: {(r.stdout or r.stderr).strip()}")
 
     print("\nChecking sign-in with a one-line test question...")
-    r = run([exe, "-p", "Reply with the single word OK", "--disallowedTools", BLOCKED], cwd=ROOT, timeout=180)
+    r = run([exe, "-p", "Reply with the single word OK", "--disallowedTools", BLOCKED], cwd=ROOT, timeout=180,
+            stdin=subprocess.DEVNULL)
     out = (r.stdout + r.stderr).strip()
     if r.returncode == 0 and "OK" in out.upper():
         print("Signed in - working. Use the 'Ask Claude' box on the Control Panel.")
