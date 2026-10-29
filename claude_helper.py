@@ -93,7 +93,9 @@ def setup():
     print("then type /exit in that window and run this check again.")
     if input("Type YES to open the sign-in window: ").strip() == "YES":
         flags = 0x00000010 if os.name == "nt" else 0          # CREATE_NEW_CONSOLE
-        subprocess.Popen([exe], cwd=ROOT, creationflags=flags)
+        # cmd /k keeps the window open if Claude stops, so any message stays readable
+        cmd = ["cmd", "/k", exe] if os.name == "nt" else [exe]
+        subprocess.Popen(cmd, cwd=ROOT, creationflags=flags)
         print("Sign-in window opened.")
 
 
