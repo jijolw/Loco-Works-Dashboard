@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Control Panel – LW/PER{% endblock %}
+{% block h1 %}Control Panel{% endblock %}
+{% block body %}
+<p class="note">Runs the office tools from here – no Claude or Antigravity needed. Every write to ERP or a Google Sheet still shows a preview and waits for <b>YES</b> typed in the box under the console. One job at a time. This page exists only on this PC.</p>
+<div class="tools-grid">
+<div class="box"><h2>Jobs</h2>
+<table class="jobs">{% for key, (title, desc, writes, steps) in jobs.items() %}
+<tr><td style="text-align:left;white-space:normal"><b>{{ title }}</b>{% if writes %} <span class="tag">writes after YES</span>{% endif %}<br><span class="note">{{ desc }}</span>
+{% if key == 'hours_preview' %}<br><select id="hfile"><option value="">(all files in inbox)</option>{% for f in inbox %}<option>{{ f }}</option>{% endfor %}</select>
+<select id="hfield"><option value="finalhrs">Final (CORR) hours</option><option value="presurveyhrs">Pre-survey hours</option></select>{% endif %}</td>
+<td><button class="btn" onclick="runJob('{{ key }}')">Run</button></td></tr>{% endfor %}</table></div>
+<div class="box"><h2>Console <span id="jstate" class="note"></span></h2>
+<pre id="console" class="console">Choose a job.</pre>
+<div class="inline" style="display:flex;gap:6px;margin-top:6px">
+<input id="answer" placeholder="Type YES (or the answer asked) and press Send" style="flex:1" onkeydown="if(event.key==='Enter')sendAns()">
+<button class="btn" onclick="sendAns()">Send</button><button class="btn light" onclick="sendText('')">Enter</button>
+<button class="btn light" onclick="stopJob()">Stop</button></div>
+<p class="note" id="waithint"></p></div>
+</div>
+<div class="box" id="lists"><h2>Input lists</h2>
+{% for key, (hint, text) in editable.items() %}<form method="post" action="{{ url_for('tools_save', key=key) }}" style="margin-bottom:10px">
+<b>{{ key.replace('_', ' ') }}.txt</b> <span class="note">{{ hint }}</span><br>
+<textarea name="text" rows="5" style="width:100%;font-family:Consolas,monospace">{{ text }}</textarea>
+<button class="btn light">Save {{ key }}.txt</button> <span class="note">(previous version kept as .bak)</span></form>{% endfor %}
+<p class="note">Man-hours registers: copy the .xls / .xlsx into 11_Hours_Entry\inbox, then reload this page.</p></div>
+<script>
+let seen=0, timer=null;
+function runJob(k){let body=new URLSearchParams();
+ if(k==='hours_preview'){body.set('file',document.getElementById('hfile').value);body.set('field',document.getElementById('hfield').value);}
+ fetch('/tools/run/'+k,{method:'POST',body}).then(r=>r.json()).then(j=>{if(!j.ok){alert(j.msg);return;}
+  seen=0;document.getElementById('console').textContent='';tpoll();});}
+function tpoll(){fetch('/tools/status?since='+seen).then(r=>r.json()).then(s=>{
+ const c=document.getElementById('console');if(s.lines.length){c.textContent+=s.lines.join('');seen=s.total;c.scrollTop=c.scrollHeight;}
+ document.getElementById('jstate').textContent=s.title?(s.title+(s.running?' – running':' – finished')):'';
+ document.getElementById('waithint').textContent=s.running&&s.waiting?'The job is waiting for your answer (YES / NO / Enter).':'';
+ clearTimeout(timer);if(s.running)timer=setTimeout(tpoll,800);});}
+function sendText(t){fetch('/tools/input',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text:t})}).then(()=>setTimeout(tpoll,300));}
+function sendAns(){const a=document.getElementById('answer');sendText(a.value);a.value='';}
+function stopJob(){if(confirm('Stop the running job?'))fetch('/tools/stop',{method:'POST'}).then(()=>setTimeout(tpoll,500));}
+tpoll();
+</script>
+{% endblock %}

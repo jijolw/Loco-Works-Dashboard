@@ -3,9 +3,9 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"></head>
 <body><div class="wrap">
 <nav><div class="brand">LW/PER Coach POH<small>{{ 'Office PC' if IS_LOCAL else 'Online (view only)' }}</small></div>
-{% for sec, items in NAV %}<h4>{{ sec }}</h4>
+{% for sec, items in NAV %}{% if sec != "Office PC" or IS_LOCAL %}<h4>{{ sec }}</h4>
 {% for ep, label in items %}{% if ep in READY %}<a href="{{ url_for(ep) }}" class="{{ 'on' if page==ep }}">{{ label }}</a>
-{% else %}<a class="off" href="{{ url_for('soon', name=ep) }}">{{ label }}</a>{% endif %}{% endfor %}{% endfor %}
+{% else %}<a class="off" href="{{ url_for('soon', name=ep) }}">{{ label }}</a>{% endif %}{% endfor %}{% endif %}{% endfor %}
 </nav>
 <main>
 <div class="top"><h1>{% block h1 %}{% endblock %}</h1>

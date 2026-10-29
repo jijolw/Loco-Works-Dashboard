@@ -4,6 +4,7 @@ app.py - LW/PER Coach POH Workshop app (one codebase, local PC and online).
 Local  (office PC) : python Run_App.py  -> http://127.0.0.1:5000
 Online (Render)    : gunicorn app:app   with APP_MODE=online
 """
+import os
 from datetime import date, datetime
 
 from flask import Flask, jsonify, redirect, render_template, request, send_file, url_for, abort
@@ -19,8 +20,9 @@ NAV = [
     ("Analysis", [("cycle", "Cycle Time"), ("corrosion", "Corrosion Cycle"), ("hours", "Man-hours"),
                   ("prev_poh", "Previous POH"), ("targets", "Target vs Actual")]),
     ("Workshop", [("aerial", "Aerial View"), ("coach", "Coach Search"), ("reports", "Report Centre")]),
+    ("Office PC", [("tools", "Control Panel")]),
 ]
-READY = {"dashboard", "holding", "outturn", "coach", "cycle", "corrosion", "hours", "prev_poh", "targets", "reports", "aerial"}
+READY = {"dashboard", "holding", "outturn", "coach", "cycle", "corrosion", "hours", "prev_poh", "targets", "reports", "aerial", "tools"}
 
 
 @app.context_processor
@@ -260,6 +262,66 @@ def update_status():
         return jsonify(running=False)
     from core import erp_client
     return jsonify(**erp_client.status)
+
+
+# ---------------------------------------------------------------- Control Panel (office PC only)
+def _local_only():
+    if not config.IS_LOCAL or request.remote_addr not in ("127.0.0.1", "::1"):
+        abort(403)
+
+
+@app.route("/tools")
+def tools():
+    _local_only()
+    from core import jobs
+    return render_template("tools.html", jobs=jobs.JOBS, editable={k: (v[1], jobs.read_text(k)) for k, v in jobs.EDITABLE.items()},
+                           inbox=jobs.inbox_files())
+
+
+@app.route("/tools/run/<key>", methods=["POST"])
+def tools_run(key):
+    _local_only()
+    from core import jobs
+    extra = []
+    if key == "hours_preview":
+        f = (request.form.get("file") or "").strip()
+        if f and f in jobs.inbox_files():
+            extra.append(os.path.join(jobs.HOURS_INBOX, f))
+        if request.form.get("field") == "presurveyhrs":
+            extra += ["--field", "presurveyhrs"]
+    ok, msg = jobs.start(key, extra)
+    return jsonify(ok=ok, msg=msg)
+
+
+@app.route("/tools/status")
+def tools_status():
+    _local_only()
+    from core import jobs
+    return jsonify(jobs.snapshot(int(request.args.get("since", 0))))
+
+
+@app.route("/tools/input", methods=["POST"])
+def tools_input():
+    _local_only()
+    from core import jobs
+    return jsonify(ok=jobs.send((request.json or {}).get("text", "")))
+
+
+@app.route("/tools/stop", methods=["POST"])
+def tools_stop():
+    _local_only()
+    from core import jobs
+    return jsonify(ok=jobs.stop())
+
+
+@app.route("/tools/save/<key>", methods=["POST"])
+def tools_save(key):
+    _local_only()
+    from core import jobs
+    if key not in jobs.EDITABLE:
+        abort(404)
+    jobs.save_text(key, request.form.get("text", ""))
+    return redirect(url_for("tools") + "#lists")
 
 
 @app.route("/health")

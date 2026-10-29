@@ -27,18 +27,39 @@ def check_packages():
         os.system(f'"{sys.executable}" -m pip install ' + " ".join(missing))
 
 
+HIDDEN = "--hidden" in sys.argv          # started at Windows login by pythonw: no window, no browser
+
+
+def _already_running(port):
+    import socket
+    with socket.socket() as s:
+        s.settimeout(1)
+        return s.connect_ex(("127.0.0.1", port)) == 0
+
+
 if __name__ == "__main__":
+    if HIDDEN:                            # pythonw has no console - keep a log instead
+        os.makedirs(os.path.join(HERE, "data"), exist_ok=True)
+        sys.stdout = sys.stderr = open(os.path.join(HERE, "data", "run_app_hidden.log"), "a", encoding="utf-8", buffering=1)
     try:
-        check_packages()
+        if not HIDDEN:
+            check_packages()
         from core import setup_env
-        setup_env.ensure()
+        setup_env.ensure(interactive=not HIDDEN)
         import config
-        from app import app
         url = f"http://127.0.0.1:{config.PORT}"
-        print(f"LW/PER Coach POH app running at {url}  (close this window to stop)")
-        threading.Thread(target=lambda: (time.sleep(1.5), webbrowser.open(url)), daemon=True).start()
+        if _already_running(config.PORT):        # app already started (e.g. at login) - just open it
+            if not HIDDEN:
+                webbrowser.open(url)
+            sys.exit(0)
+        from app import app
+        print(f"{time.strftime('%d-%m-%Y %H:%M')} LW/PER Coach POH app running at {url}")
+        if not HIDDEN:
+            print("(close this window to stop)")
+            threading.Thread(target=lambda: (time.sleep(1.5), webbrowser.open(url)), daemon=True).start()
         app.run(host=config.HOST, port=config.PORT, debug=False, use_reloader=False)
     except Exception as e:
         import traceback
         traceback.print_exc()
-        input(f"\nERROR: {e}\nPress Enter to close.")
+        if not HIDDEN:
+            input(f"\nERROR: {e}\nPress Enter to close.")
