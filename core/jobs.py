@@ -44,7 +44,13 @@ JOBS = OrderedDict([
                         [(_p("13_Fix_Actual_Despatch"), "fix_actual_desp.py", ["--apply"])])),
     ("fix_status", ("Fix status (Return / Running)", "Reads status_list.txt (below), preview, then YES to change ERP.", True,
                     [(_p("14_Fix_Status"), "fix_status.py", [])])),
+    ("claude_setup", ("Claude - check / set up", "Checks Claude Code on this PC; installs it and opens the one-time "
+                      "sign-in after YES. Needed only for the 'Ask Claude' box.", False,
+                      [(APP, "claude_helper.py", ["--setup"])])),
+    # run from the 'Ask Claude' box, not listed in the table
+    ("ask", ("Ask Claude", "", False, [(APP, "claude_helper.py", ["--ask"])])),
 ])
+HIDDEN_JOBS = {"ask"}
 
 # text files the page may show and edit (input lists of the tools above)
 EDITABLE = OrderedDict([

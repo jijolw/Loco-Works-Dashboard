@@ -5,7 +5,7 @@
 <p class="note">Runs the office tools from here – no Claude or Antigravity needed. Every write to ERP or a Google Sheet still shows a preview and waits for <b>YES</b> typed in the box under the console. One job at a time. This page exists only on this PC.</p>
 <div class="tools-grid">
 <div class="box"><h2>Jobs</h2>
-<table class="jobs">{% for key, (title, desc, writes, steps) in jobs.items() %}
+<table class="jobs">{% for key, (title, desc, writes, steps) in jobs.items() if key not in hidden %}
 <tr><td style="text-align:left;white-space:normal"><b>{{ title }}</b>{% if writes %} <span class="tag">writes after YES</span>{% endif %}<br><span class="note">{{ desc }}</span>
 {% if key == 'hours_preview' %}<br><select id="hfile"><option value="">(all files in inbox)</option>{% for f in inbox %}<option>{{ f }}</option>{% endfor %}</select>
 <select id="hfield"><option value="finalhrs">Final (CORR) hours</option><option value="presurveyhrs">Pre-survey hours</option></select>{% endif %}</td>
@@ -16,7 +16,12 @@
 <input id="answer" placeholder="Type YES (or the answer asked) and press Send" style="flex:1" onkeydown="if(event.key==='Enter')sendAns()">
 <button class="btn" onclick="sendAns()">Send</button><button class="btn light" onclick="sendText('')">Enter</button>
 <button class="btn light" onclick="stopJob()">Stop</button></div>
-<p class="note" id="waithint"></p></div>
+<p class="note" id="waithint"></p>
+<h2 style="margin-top:14px">Ask Claude <span class="note">read-only – can read the notes, scripts and ERP export; cannot change anything</span></h2>
+<textarea id="q" rows="3" style="width:100%" placeholder="e.g. How many ICF NAC coaches were turned out in October?  /  Why is coach 076540 not in holding?"></textarea>
+<div style="display:flex;gap:10px;align-items:center;margin-top:4px"><button class="btn" onclick="askClaude()">Ask</button>
+<label class="note"><input type="checkbox" id="cont"> follow-up to the previous question</label></div>
+<p class="note">First time: run <b>Claude - check / set up</b> from the jobs list. The answer appears in the console above.</p></div>
 </div>
 <div class="box" id="lists"><h2>Input lists</h2>
 {% for key, (hint, text) in editable.items() %}<form method="post" action="{{ url_for('tools_save', key=key) }}" style="margin-bottom:10px">
@@ -30,8 +35,12 @@ function runJob(k){let body=new URLSearchParams();
  if(k==='hours_preview'){body.set('file',document.getElementById('hfile').value);body.set('field',document.getElementById('hfield').value);}
  fetch('/tools/run/'+k,{method:'POST',body}).then(r=>r.json()).then(j=>{if(!j.ok){alert(j.msg);return;}
   seen=0;document.getElementById('console').textContent='';tpoll();});}
+function askClaude(){const q=document.getElementById('q').value.trim();if(!q){alert('Type a question first.');return;}
+ let body=new URLSearchParams();body.set('q',q);body.set('cont',document.getElementById('cont').checked?'1':'0');
+ fetch('/tools/run/ask',{method:'POST',body}).then(r=>r.json()).then(j=>{if(!j.ok){alert(j.msg);return;}
+  seen=0;document.getElementById('console').textContent='';tpoll();});}
 function tpoll(){fetch('/tools/status?since='+seen).then(r=>r.json()).then(s=>{
- const c=document.getElementById('console');if(s.lines.length){c.textContent+=s.lines.join('');seen=s.total;c.scrollTop=c.scrollHeight;}
+ const c=document.getElementById('console');if(s.lines.length){if(!seen)c.textContent='';c.textContent+=s.lines.join('');seen=s.total;c.scrollTop=c.scrollHeight;}
  document.getElementById('jstate').textContent=s.title?(s.title+(s.running?' – running':' – finished')):'';
  document.getElementById('waithint').textContent=s.running&&s.waiting?'The job is waiting for your answer (YES / NO / Enter).':'';
  clearTimeout(timer);if(s.running)timer=setTimeout(tpoll,800);});}

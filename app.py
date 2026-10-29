@@ -275,7 +275,7 @@ def tools():
     _local_only()
     from core import jobs
     return render_template("tools.html", jobs=jobs.JOBS, editable={k: (v[1], jobs.read_text(k)) for k, v in jobs.EDITABLE.items()},
-                           inbox=jobs.inbox_files())
+                           inbox=jobs.inbox_files(), hidden=jobs.HIDDEN_JOBS)
 
 
 @app.route("/tools/run/<key>", methods=["POST"])
@@ -289,6 +289,11 @@ def tools_run(key):
             extra.append(os.path.join(jobs.HOURS_INBOX, f))
         if request.form.get("field") == "presurveyhrs":
             extra += ["--field", "presurveyhrs"]
+    if key == "ask":
+        q = (request.form.get("q") or "").strip()[:2000]
+        if not q:
+            return jsonify(ok=False, msg="Type a question first.")
+        extra = [q] + (["--continue"] if request.form.get("cont") == "1" else [])
     ok, msg = jobs.start(key, extra)
     return jsonify(ok=ok, msg=msg)
 
