@@ -7,7 +7,7 @@ No AC locos, no movement history.
 from collections import OrderedDict
 
 from core import rules as R
-from analysis.position import holding, fnd_now
+from analysis.position import holding, fnd_now, not_inside
 
 # shop -> pit lines west->east, (line, label, slots)
 SHOPS = OrderedDict([
@@ -91,4 +91,4 @@ def aerial(demands, as_on, km_status=None):
     return dict(shops=shops, counts=counts, km_updated=(km_status or {}).get("updated", ""),
                 n_km=sum(1 for _, c in chips if c["km"]), yard=sorted(yard, key=key), other=sorted(other, key=key),
                 n_hold=len(H), n_fnd=len(F), n_yard=len(yard), n_shop=in_shop, n_other=len(other),
-                total=len(chips))
+                total=len(chips), outside=[_chip(d, as_on) for d in not_inside(demands)])

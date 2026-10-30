@@ -6,6 +6,8 @@ FND      = desp date filled, actual desp date (actualDispatchDate) empty.
 Excluded = RETURN / COND(emned/emnded) / BHOPAL in status, remarks or repairDesc, or repair type 161.
            Excluded visits are never in holding, outturn, despatch or cycle time.
 Holding  = received, no desp date, not excluded - one entry per coach (latest demand).
+Not inside = data-entered in ERP (received date) but no pit and no status yet - coach still outside the
+           workshop (JIJO 30-10-2026). Not in holding / yard; listed separately. Joins holding once a pit is entered.
 Groups   = coach_groups.csv (edit that file; unknown types show as OTHERS).
            Repair type 4 = OR; 201 = ART CONVERSION / ARMV CONVERSION (type ARMVCONV); NMG 181/281/2 or /C = NMG CONVERSION.
 AC locos are not handled anywhere.
@@ -138,8 +140,17 @@ def latest_per_coach(demands):
     return {k: v[1] for k, v in best.items()}
 
 
+def not_yet_inside(d):
+    """Data-entered in ERP but not taken inside yet (JIJO 30-10-2026): received date filled,
+    no desp date, not excluded, but no pit AND no status. The coach is still outside the workshop.
+    It joins holding as soon as a pit (OT/YD, OT/IN or a shop pit) is entered in ERP."""
+    return (bool(d.get("receivedDate")) and not d.get("dispatchDate") and not is_excluded(d)
+            and not str(d.get("pitNum") or "").strip() and not str(d.get("status") or "").strip())
+
+
 def in_holding(d):
-    return bool(d.get("receivedDate")) and not d.get("dispatchDate") and not is_excluded(d)
+    return (bool(d.get("receivedDate")) and not d.get("dispatchDate") and not is_excluded(d)
+            and not not_yet_inside(d))
 
 
 def is_fnd(d):

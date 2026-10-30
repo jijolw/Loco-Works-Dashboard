@@ -41,6 +41,12 @@ def holding(demands, as_on):
     return rows
 
 
+def not_inside(demands):
+    """Coaches data-entered in ERP but not yet taken inside (no pit, no status) - never in holding."""
+    return sorted((d for d in R.latest_per_coach(demands).values() if R.not_yet_inside(d)),
+                  key=lambda d: (d["_order"], str(d.get("coachNo"))))
+
+
 def fnd_now(demands):
     """Coaches outturned (desp date) but not physically despatched - one per coach (latest visit).
     The single FND definition used by Month Position, Aerial View and the checks."""
@@ -84,7 +90,7 @@ def month_position(demands, as_on, month=None):
     return dict(month=m0, end=end, rows=out, total=tot,
                 fnd_list=sorted(fnd_list, key=lambda d: R.pdate(d["dispatchDate"])),
                 prev_fnd=sorted(prev_fnd, key=lambda d: R.pdate(d["dispatchDate"])),
-                prev_fnd_desp=prev_fnd_desp)
+                prev_fnd_desp=prev_fnd_desp, outside=not_inside(demands))
 
 
 AGE_BANDS = [(0, 20, "0-20"), (21, 30, "21-30"), (31, 10 ** 6, ">30")]

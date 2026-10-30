@@ -19,6 +19,10 @@
 {% if pos.fnd_list or pos.prev_fnd %}<div class="box"><h2>FND – outturned, not physically despatched</h2>
 <table><tr><th>Coach Type</th><th>Coach No</th><th>Desp date</th><th>Days since outturn</th></tr>
 {% for d in pos.fnd_list + pos.prev_fnd %}<tr><td>{{ d._group }}</td><td>{{ d.coachNo }}</td><td>{{ fmt(pdate(d.dispatchDate)) }}</td><td>{{ (pos.end - pdate(d.dispatchDate)).days }}</td></tr>{% endfor %}</table></div>{% endif %}
+{% if pos.outside %}<div class="box"><h2>Entered in ERP – not yet taken inside ({{ pos.outside|length }})</h2>
+<p class="note">Received date entered but no pit / status in ERP – coach still outside. Not counted in holding; joins holding once a pit is entered.</p>
+<table><tr><th>Coach Type</th><th>Coach No</th><th>ERP received date</th></tr>
+{% for d in pos.outside %}<tr><td>{{ d._group }}</td><td>{{ d.coachNo }}</td><td>{{ fmt(pdate(d.receivedDate)) }}</td></tr>{% endfor %}</table></div>{% endif %}
 {% if pos.prev_fnd_desp %}<p class="note">Previous-month FND physically despatched this month: {{ pos.prev_fnd_desp|length }} (not part of this month's outturn).</p>{% endif %}
 {% if others %}<div class="box"><h2 class="warn">Coach types not in coach_groups.csv</h2>
 <p class="note">Counted as OTHERS until you add the type to coach_groups.csv.</p>

@@ -21,6 +21,7 @@
 {% endfor %}
 <div class="shop"><div class="shopname">Yard / Incoming<small>{{ x.yard|length }}</small></div><div class="yard">{% for c in x.yard %}{{ chip(c) }}{% endfor %}</div></div>
 {% if x.other %}<div class="shop"><div class="shopname">Other locations<small>{{ x.other|length }}</small></div><div class="yard">{% for c in x.other %}{{ chip(c) }}{% endfor %}</div></div>{% endif %}
+{% if x.outside %}<div class="shop"><div class="shopname">Entered in ERP – still outside (not counted)<small>{{ x.outside|length }}</small></div><div class="yard">{% for c in x.outside %}{{ chip(c) }}{% endfor %}</div></div>{% endif %}
 <div class="legend"><span class="chip d0 lg">0–20 days</span><span class="chip d20 lg">21–30 days</span><span class="chip d30 lg">&gt;30 days</span><span class="chip fnd lg">FND (outturned, inside)</span>
 <span>KM = Kumbh Mela coach (HQ status{{ ' ' ~ x.km_updated if x.km_updated }}) · CC corrosion completed · UC under corrosion · days = since received</span></div>
 </div>
