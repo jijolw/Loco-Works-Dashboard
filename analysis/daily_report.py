@@ -136,6 +136,8 @@ def build(D, exported, inp, wd, condemned=(), as_on=None, report_date=None, back
         return out
 
     def shop_table(shop, title=None):
+        if shop in TWO_SLOT:
+            return shop_table2(shop, title)
         occ = shop_rows(shop)
         n = sum(1 for _, r in occ if r)
         h = [f'<div class="box"><div class="bh"><b>{esc(title or shop)}</b><span>{n} coach{"es" if n != 1 else ""}</span></div>'
@@ -148,6 +150,54 @@ def build(D, exported, inp, wd, condemned=(), as_on=None, report_date=None, back
             h.append(f'<tr><td>{esc(ln)}</td>{coach_cell(r)}<td>{esc(r["div"])}</td><td>{r["recd"]}</td>'
                      f'<td class="r">{days_cell(r)}</td><td class="r">{r["hrs"]}</td><td>{r["corr"]}</td>'
                      f'<td class="rem">{esc(r["rem"])}</td></tr>')
+        h.append("</table></div>")
+        return "".join(h)
+
+    TWO_SLOT = ("Paint Shop", "LBR Shed", "Augmentation Shop")
+
+    def slot_cell(r):
+        if r is None:
+            return '<td class="sl">–</td>'
+        cls = " ".join(c for c in ("fndc" if r["fnd"] else ("ccc" if r["cc"] else ""), "cond" if r["cond"] else "") if c)
+        hrs = f' <span class="h">{r["hrs"]}h</span>' if r["hrs"] != "" else ""
+        return f'<td class="sl"><b>{esc(r["type"])} <span class="{cls}">{esc(r["no"])}</span></b>{hrs}</td>'
+
+    def shop_table2(shop, title=None):
+        """Paint / LBR / Augmentation: each line holds 2 coaches - left (_1) and right (_2). Coach + hours only (JIJO 31-10)."""
+        lines = OrderedDict((ln, []) for ln, lab, n in SHOPS[shop])
+        labels = {ln: lab for ln, lab, n in SHOPS[shop]}
+        for d in by_area[shop]:
+            line, slot = _split_pit(d.get("pitNum"))
+            lines.setdefault(line, []).append((slot, d))
+            labels.setdefault(line, line.split("/", 1)[-1])
+        n = sum(len(v) for v in lines.values())
+        h = [f'<div class="box"><div class="bh"><b>{esc(title or shop)}</b><span>{n} coach{"es" if n != 1 else ""}</span></div>'
+             '<table class="t two"><tr><th>Line</th><th>Left</th><th>Right</th></tr>']
+        extra = [("Train Lighting", [])] if shop == "LBR Shed" else []
+        for ln, items in list(lines.items()) + extra:
+            left = right = None
+            rest = []
+            for slot, d in sorted(items, key=lambda x: (x[0] is None, x[0] or 0)):
+                if slot == 1 and left is None:
+                    left = row(d)
+                elif slot == 2 and right is None:
+                    right = row(d)
+                else:
+                    rest.append(row(d))
+            over = []
+            for r in rest:                                   # no slot given, or a third coach on the line
+                if left is None:
+                    left = r
+                elif right is None:
+                    right = r
+                else:
+                    over.append(r)
+            lab = nice(labels.get(ln, ln))
+            cls = ' class="emp"' if left is None and right is None else ""
+            h.append(f'<tr{cls}><td>{esc(lab)}</td>{slot_cell(left)}{slot_cell(right)}</tr>')
+            for i in range(0, len(over), 2):
+                pair = over[i:i + 2] + [None]
+                h.append(f'<tr><td></td>{slot_cell(pair[0])}{slot_cell(pair[1])}</tr>')
         h.append("</table></div>")
         return "".join(h)
 
@@ -485,6 +535,8 @@ tr.emp td { color: #555; font-size: 6.4pt; padding-top: 0 !important; padding-bo
 table.t td { padding: 0.6px 3px; border-bottom: 0.5px solid #bbb; vertical-align: top; white-space: nowrap; }
 table.t td.rem { font-size: 6.4pt; white-space: normal; line-height: 1.05; }
 table.t td.c { font-weight: bold; }
+table.t.two td.sl { width: 44%; white-space: normal; }
+table.t.two td.sl .h { font-size: 6.6pt; color: #333; }
 .r { text-align: right; }
 span.fndc { background: #8fe000; padding: 0 2px; }
 span.ccc { background: #ffff00; padding: 0 2px; }
