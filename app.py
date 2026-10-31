@@ -341,6 +341,52 @@ def _daily_context():
     return D, ex, report_date, DI.position_date(report_date)
 
 
+@app.route("/edit", methods=["GET", "POST"])
+def erp_edit_page():
+    """Edit one field of a coach visit in ERP - JIJO only, office PC only, not in the menu (31-10-2026)."""
+    _local_only()
+    from core import erp_edit as E
+    f = request.values
+    coach = (f.get("coach") or "").strip().upper()
+    ctx = dict(coach=coach, fields=E.FIELDS, statuses=E.STATUSES, log=E.recent_log(), msg=None, err=None,
+               preview=None, vis=[], rec=None, demand="")
+    if not coach:
+        return render_template("erp_edit.html", **ctx)
+    D, _ = data.load()
+    ctx["vis"] = vis = E.visits(D or [], coach)
+    if not vis:
+        ctx["err"] = f"{coach} not found in the ERP data - if it came in today, take the latest ERP data first."
+        return render_template("erp_edit.html", **ctx)
+    demand = (f.get("demand") or str(vis[0]["demandId"])).strip()
+    ctx["demand"] = demand
+    action = f.get("action") if request.method == "POST" else None
+    field, new, replace = f.get("field") or "corrComp", (f.get("value") or "").strip(), f.get("replace") == "1"
+    ctx.update(field=field, value=new, replace=replace)
+    try:
+        if action == "save":
+            after = E.write(demand, coach, field, new or None, replace, f.get("expect_old") or None)
+            ctx["msg"] = f"Saved in ERP and checked: {E.FIELDS[field][0]} = {after.get(field) or 'blank'}. " \
+                         "Take the latest ERP data before making reports."
+            ctx["rec"] = after
+            ctx["log"] = E.recent_log()
+            ctx.update(value="", replace=False)
+        else:
+            ctx["rec"] = rec = E.read_live(demand)
+            if action == "preview":
+                ok, why = E.check(rec, field, new or None, replace)
+                ctx["preview"] = dict(ok=ok, why=why, field=field, label=E.FIELDS[field][0],
+                                      old=rec.get(field), new=new, kind=E.FIELDS[field][1])
+    except Exception as e:
+        ctx["err"] = str(e)
+        if ctx["rec"] is None:
+            try:
+                ctx["rec"] = E.read_live(demand)
+            except Exception as e2:
+                ctx["err"] += f" (and ERP could not be read: {e2})"
+        ctx["log"] = E.recent_log()
+    return render_template("erp_edit.html", **ctx)
+
+
 @app.route("/daily", methods=["GET", "POST"])
 def daily():
     _local_only()

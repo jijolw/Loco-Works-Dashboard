@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Edit ERP – LW/PER{% endblock %}
+{% block h1 %}Edit ERP – one coach, one field{% endblock %}
+{% block body %}
+<style>
+.ed td,.ed th{padding:3px 6px}.ed .k{text-align:left;color:#555}.ok{color:#1a7f37}.big{font-size:15px}
+.pv{border:2px solid #c9a227;background:#fffbea;padding:10px;margin:8px 0}.pv.bad{border-color:#c00;background:#fff3f3}
+</style>
+<div class="box"><form class="inline" method="get"><input name="coach" value="{{ coach }}" placeholder="Coach number" autofocus>
+<button class="btn">Find</button></form>
+<p class="note">Reads the coach's visit live from ERP. Changes one field at a time; you see "from → to" before anything is written.</p></div>
+{% if err %}<div class="box"><p class="warn big">{{ err }}</p></div>{% endif %}
+{% if msg %}<div class="box"><p class="ok big">✔ {{ msg }}</p></div>{% endif %}
+
+{% if rec %}
+<div class="box ed"><h2>{{ rec.coachType or rec.coachDesc or '' }} {{ rec.coachNo }} · demand {{ demand }}</h2>
+{% if vis|length > 1 %}<form class="inline" method="get"><input type="hidden" name="coach" value="{{ coach }}">
+<span class="note">Visit:</span> <select name="demand" onchange="this.form.submit()">{% for v in vis[:6] %}
+<option value="{{ v.demandId }}" {{ 'selected' if v.demandId|string == demand }}>received {{ fmt(pdate(v.receivedDate)) }}{{ ' · outturned ' ~ fmt(pdate(v.dispatchDate)) if v.dispatchDate }} (demand {{ v.demandId }})</option>{% endfor %}</select></form>{% endif %}
+<table><tr><th class="k">Received</th><td>{{ fmt(pdate(rec.receivedDate)) }}</td><th class="k">Repair</th><td>{{ rec.repairDesc or rec.repair or rec.repairType or '' }}</td><th class="k">Division</th><td>{{ rec.divisionId or '' }}</td></tr>
+<tr>{% for k in ['corrPlace','corrComp','corrPd'] %}<th class="k">{{ fields[k][0] }}</th><td>{{ fmt(pdate(rec[k])) or '–' }}</td>{% endfor %}</tr>
+<tr>{% for k in ['pdcDate','dispatchDate','actualDispatchDate'] %}<th class="k">{{ fields[k][0] }}</th><td>{{ fmt(pdate(rec[k])) or '–' }}</td>{% endfor %}</tr>
+<tr><th class="k">Status</th><td>{{ rec.status or '–' }}</td><th class="k">Line / pit</th><td>{{ rec.pitNum or '–' }}</td><th class="k">Pre-survey hrs</th><td>{{ rec.preSurveyHrs or '–' }}</td></tr></table></div>
+
+<div class="box"><h2>Change</h2>
+<form method="post" id="ef"><input type="hidden" name="coach" value="{{ coach }}"><input type="hidden" name="demand" value="{{ demand }}">
+<select name="field" id="fsel">{% for k, fl in fields.items() %}<option value="{{ k }}" data-kind="{{ fl[1] }}" {{ 'selected' if k == field }}>{{ fl[0] }}</option>{% endfor %}</select>
+<span id="vbox"></span>
+<label title="needed only to change or clear a date that is already filled"><input type="checkbox" name="replace" value="1" {{ 'checked' if replace }}> replace existing date</label>
+<button class="btn" name="action" value="preview">Preview</button>
+{% if preview %}<div class="pv {{ '' if preview.ok else 'bad' }}"><b>{{ rec.coachNo }}</b> · {{ preview.label }}:
+<b>{{ (fmt(pdate(preview.old)) if preview.kind == 'date' else preview.old) or 'blank' }}</b> → <b>{{ (fmt(pdate(preview.new)) if preview.kind == 'date' else preview.new) or 'blank' }}</b>
+{% if preview.ok %}<input type="hidden" name="expect_old" value="{{ preview.old or '' }}">
+<br><label><input type="checkbox" id="sure"> I have checked - write this in ERP</label>
+<button class="btn" name="action" value="save" id="savebtn" disabled>Save in ERP</button>
+{% else %}<br><span class="warn">Not allowed: {{ preview.why }}</span>{% endif %}</div>{% endif %}
+</form>
+<p class="note">Blank value + 'replace existing' clears a wrong date. Dates in the future are refused (except PDCs).</p></div>
+{% endif %}
+
+<div class="box"><h2>Last changes <span class="note">(data\erp_edit_log.csv)</span></h2>
+<table><tr><th>Time</th><th>Coach</th><th>Demand</th><th>Field</th><th>Old</th><th>New</th><th>Result</th></tr>
+{% for l in log %}<tr><td>{{ l.time }}</td><td>{{ l.coach }}</td><td>{{ l.demand }}</td><td>{{ fields[l.field][0] if l.field in fields else l.field }}</td><td>{{ l.old }}</td><td>{{ l.new }}</td><td style="text-align:left">{{ l.result }}</td></tr>
+{% else %}<tr><td colspan=7>No changes yet.</td></tr>{% endfor %}</table></div>
+
+<script>
+(function(){const sel=document.getElementById('fsel');if(!sel)return;const box=document.getElementById('vbox');
+const cur={{ (value or '')|tojson }};const st={{ statuses|tojson }};let first=true;
+function draw(){const k=sel.selectedOptions[0].dataset.kind;const v=first?cur:'';first=false;
+ if(k==='date')box.innerHTML='<input type="date" name="value" value="'+v+'">';
+ else if(k==='status')box.innerHTML='<select name="value">'+st.map(s=>'<option'+(s===v?' selected':'')+'>'+s+'</option>').join('')+'</select>';
+ else box.innerHTML='<input name="value" value="'+v.replace(/"/g,'')+'" placeholder="e.g. PS/L1_1">';}
+sel.onchange=draw;draw();
+const sure=document.getElementById('sure'),sb=document.getElementById('savebtn');if(sure)sure.onchange=()=>sb.disabled=!sure.checked;
+document.getElementById('ef').addEventListener('change',e=>{if(e.target.id!=='sure'&&sb){sb.disabled=true;if(sure){sure.checked=false;sure.disabled=true;}}});
+})();
+</script>
+{% endblock %}
