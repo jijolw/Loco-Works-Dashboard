@@ -21,8 +21,8 @@ AC_LINES = ["Pit 10", "Pit 9", "Line 8", "Line 7", "Line 6", "Line 5", "Line 4",
 DEFAULT = {
     "holidays": [{"date": "2026-10-02", "name": "Gandhi Jayanthi"}],
     "saturday_half": True,
-    # typed working days (blank = counted automatically). Each value is kept only for its own period:
-    # completed -> only for the report day it was typed for (for_date), month total -> that month, year total -> that FY.
+    # typed working days (blank = counted automatically). Totals are kept for their month / FY. A typed "completed" sets
+    # the correction (typed - automatic) for that day, and the same correction is carried to the later days of the month / FY.
     "override": {"month_completed": "", "month_total": "", "year_completed": "", "year_total": "",
                  "for_date": "", "month": "", "fy": ""},
     # page-2 targets: rb = text shown, basis = number for the proportionate target, hq = monthly HQ target
@@ -191,12 +191,8 @@ def working_days(as_on, inp):
               year_completed=_sum(y0, as_on, hol, sat), year_total=_sum(y0, y1, hol, sat))
     wd["auto"] = dict(wd)
     o = inp.get("override") or {}
-    scope = {"month_completed": o.get("for_date") == as_on.isoformat(),
-             "year_completed": o.get("for_date") == as_on.isoformat(),
-             "month_total": o.get("month") == as_on.strftime("%Y-%m"),
-             "year_total": o.get("fy") == R.fy_of(as_on)}
     wd["typed"] = {}
-    for k, ok in scope.items():
+    for k, ok in (("month_total", o.get("month") == as_on.strftime("%Y-%m")), ("year_total", o.get("fy") == R.fy_of(as_on))):
         v = str(o.get(k, "")).strip()
         if ok and v:
             try:
@@ -204,5 +200,23 @@ def working_days(as_on, inp):
                 wd["typed"][k] = v
             except ValueError:
                 pass
+    # completed: the correction typed for a day (typed - automatic count of that day) is carried forward to the
+    # following days of the same month / year, so it need not be typed every day (31-10-2026)
+    fd = R.pdate(o.get("for_date"))
+    if fd and fd <= as_on:
+        for k, same, a in (("month_completed", fd.strftime("%Y-%m") == as_on.strftime("%Y-%m"), m0),
+                           ("year_completed", R.fy_of(fd) == R.fy_of(as_on), y0)):
+            v = str(o.get(k, "")).strip()
+            if not (same and v):
+                continue
+            try:
+                delta = float(v) - _sum(a, fd, hol, sat)
+            except ValueError:
+                continue
+            wd[k] = max(0.0, min(wd["auto"][k] + delta, wd[k.replace("completed", "total")]))
+            if fd == as_on:
+                wd["typed"][k] = v
+            elif delta:
+                wd.setdefault("carried", {})[k] = delta
     wd["holidays_in_year"] = sum(1 for h in hol if y0.isoformat() <= h <= y1.isoformat())
     return wd
