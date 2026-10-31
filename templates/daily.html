@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Daily Report – LW/PER{% endblock %}
+{% block h1 %}Daily Position report{% endblock %}
+{% block body %}
+<style>
+.df input[type=text],.df input:not([type]){width:100%}
+.df table td,.df table th{padding:3px 4px}
+.df .num{width:70px}
+.df .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(420px,1fr));gap:0 16px}
+.df .ok{color:#1a7f37}.df .tag{font-size:11px;border:1px solid #c8ccd2;border-radius:3px;padding:0 4px;margin-left:4px}
+.df .sticky{position:sticky;top:0;background:#f6f7f9;padding:8px 0;z-index:5;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+</style>
+<form method="post" class="df">
+<div class="sticky">
+ <button class="btn" name="action" value="report" formtarget="_blank">Save &amp; make report</button>
+ <button class="btn light" name="action" value="save">Save only</button>
+ <span class="note">Report date <b>{{ report_date.strftime('%d-%m-%Y') }}</b> · position as on <b>{{ as_on.strftime('%d-%m-%Y') }}</b> (end of day)
+ {% if inp.saved_at %}· last saved {{ inp.saved_at }}{% endif %}{% if saved %} · <span class="ok">saved</span>{% endif %}</span>
+</div>
+<p class="note">Coach figures come from the latest ERP export automatically. Type only the items below. Values stay as you left them – change only what moved.</p>
+
+<div class="grid">
+<div class="box"><h2>1. Working days</h2>
+<table><tr><th></th><th>Completed</th><th>Total</th><th>Available</th></tr>
+<tr><td style="text-align:left">{{ as_on.strftime('%B %Y') }}</td><td>{{ '%g' % wd.month_completed }}</td><td>{{ '%g' % wd.month_total }}</td><td>{{ '%g' % (wd.month_total - wd.month_completed) }}</td></tr>
+<tr><td style="text-align:left">Year {{ fy }}</td><td>{{ '%g' % wd.year_completed }}</td><td>{{ '%g' % wd.year_total }}</td><td>{{ '%g' % (wd.year_total - wd.year_completed) }}</td></tr></table>
+<p class="note">Sunday = holiday, Saturday = <label><input type="checkbox" name="saturday_half" value="1" {{ 'checked' if inp.saturday_half }}> half day</label>, minus the holidays below.
+{{ wd.holidays_in_year }} holiday(s) entered for {{ fy }}{% if wd.holidays_in_year < 16 %} – <span class="warn">the old report used 16 for the year (total 271)</span>{% endif %}.</p>
+<b>Holidays</b> <span class="note">(add a date; Sundays need not be entered)</span>
+<table id="hol">{% for h in inp.holidays %}<tr><td><input type="date" name="hol_date" value="{{ h.date }}"></td><td><input name="hol_name" value="{{ h.name }}" placeholder="name"></td></tr>{% endfor %}
+{% for i in range(4) %}<tr><td><input type="date" name="hol_date"></td><td><input name="hol_name" placeholder="name"></td></tr>{% endfor %}</table>
+<details><summary class="note">Override (only for an unusual day – leave blank normally)</summary>
+<table><tr><td>Month completed</td><td><input class="num" name="ov_month_completed" value="{{ inp.override.month_completed }}"></td>
+<td>Month total</td><td><input class="num" name="ov_month_total" value="{{ inp.override.month_total }}"></td></tr>
+<tr><td>Year completed</td><td><input class="num" name="ov_year_completed" value="{{ inp.override.year_completed }}"></td>
+<td>Year total</td><td><input class="num" name="ov_year_total" value="{{ inp.override.year_total }}"></td></tr></table></details>
+</div>
+
+<div class="box"><h2>2. Targets (page 2)</h2>
+<table><tr><th style="text-align:left">Row</th><th>RB target (as shown)</th><th>for prop. target</th><th>Monthly HQ target</th></tr>
+{% for key, label in target_rows %}{% set t = inp.targets.get(key, {}) %}<tr><td style="text-align:left">{{ label }}</td>
+<td><input name="t_{{ key }}_rb" value="{{ t.rb }}"></td><td><input class="num" name="t_{{ key }}_basis" value="{{ t.basis }}"></td>
+<td><input class="num" name="t_{{ key }}_hq" value="{{ t.hq }}"></td></tr>{% endfor %}
+<tr><td style="text-align:left">Total row text</td><td colspan=3><input name="rb_total_text" value="{{ inp.rb_total_text }}"></td></tr></table>
+<p class="note">Change the HQ targets at the start of each month.</p></div>
+</div>
+
+<div class="box"><h2>3. Items not in the coach ERP (page 2, below Total)</h2>
+<input type="hidden" name="typed_n" value="{{ inp.typed|length + 2 }}">
+<table><tr>{% for k, lab in typed_fields %}<th>{{ lab }}</th>{% endfor %}</tr>
+{% for r in inp.typed + [{}, {}] %}{% set i = loop.index0 %}<tr>{% for k, lab in typed_fields %}
+<td><input name="ty_{{ i }}_{{ k }}" value="{{ r.get(k, '') }}" {% if k != 'label' %}style="width:80px"{% endif %}></td>{% endfor %}</tr>{% endfor %}</table>
+<p class="note">Clear the Activity box to remove a row. Two empty rows are always offered for new items.</p>
+<b>NMGHS Conversion</b>
+<table><tr><td><input name="nm_label" value="{{ inp.nmghs.label }}"></td><td>Balance target <input class="num" name="nm_balance" value="{{ inp.nmghs.balance }}"></td>
+<td>Cumulative actual <input class="num" name="nm_actual" value="{{ inp.nmghs.actual }}"></td><td>Balance to achieve <input class="num" name="nm_to_achieve" value="{{ inp.nmghs.to_achieve }}"></td></tr></table>
+<b>Footnote</b> <span class="note">(one note per line)</span><br><textarea name="notes" rows="2" style="width:100%">{{ inp.notes }}</textarea>
+</div>
+
+<div class="grid">
+<div class="box"><h2>4. AC Loco Bay (page 1)</h2>
+<table><tr><th>Line</th><th>Type</th><th>Loco no.</th><th>Repair</th><th>Shed</th><th>Date</th></tr>
+{% for b in inp.ac_bay %}{% set i = loop.index0 %}<tr><td style="text-align:left">{{ b.line }}</td>
+<td><input name="ac_{{ i }}_type" value="{{ b.type or '' }}" style="width:60px"></td><td><input name="ac_{{ i }}_loco" value="{{ b.loco or '' }}" style="width:70px"></td>
+<td><input name="ac_{{ i }}_repair" value="{{ b.repair or '' }}" style="width:55px"></td><td><input name="ac_{{ i }}_shed" value="{{ b.shed or '' }}" style="width:60px"></td>
+<td><input type="date" name="ac_{{ i }}_date" value="{{ b.date or '' }}"></td></tr>{% endfor %}</table>
+<p class="note">Empty loco no. = empty line. Days are counted from the date.</p></div>
+
+<div class="box"><h2>5. Weekly plan (page 1)</h2>
+<input type="hidden" name="plan_n" value="{{ inp.plan|length + 4 }}">
+<table><tr><th>#</th><th>Coach (type + no.)</th><th>Corrosion PDC</th><th>Despatch PDC</th><th>Status today</th></tr>
+{% for p in inp.plan + [{}, {}, {}, {}] %}{% set i = loop.index0 %}<tr><td>{{ i + 1 }}</td>
+<td><input name="pl_{{ i }}_coach" value="{{ p.coach or '' }}" placeholder="e.g. GS 096409"></td>
+<td><input type="date" name="pl_{{ i }}_corr" value="{{ p.corr_pdc or '' }}"></td><td><input type="date" name="pl_{{ i }}_desp" value="{{ p.desp_pdc or '' }}"></td>
+<td class="note" style="text-align:left">{{ plan_status.get(i, '') }}</td></tr>{% endfor %}</table>
+<p class="note">Clear the coach box to remove a coach. Status comes from ERP when the report is made.</p></div>
+</div>
+</form>
+
+<div class="box"><h2>6. Proposed for condemnation <span class="note">– from the Condemnation_Pipeline tab of POSITION11092026{% if cond.read_at %}, read {{ cond.read_at }}{% endif %}</span></h2>
+{% if cond_err %}<p class="warn">{{ cond_err }}</p>{% endif %}
+<p class="note">Add or remove coaches in that tab. Coaches in it that are still in holding get a <span style="text-decoration:underline;text-decoration-color:#e00000;text-decoration-thickness:2px">red underline</span> in the report; after you set them to Return in ERP they drop off by themselves.</p>
+<table><tr><th>Coach</th><th>Type</th><th>Status in sheet</th><th>In holding now</th><th>Pre-survey hrs</th></tr>
+{% for c in cond_rows %}<tr><td>{{ c.coach }}</td><td>{{ c.type }}</td><td style="text-align:left">{{ c.status }}</td>
+<td>{{ 'Yes – underlined' if c.inside else 'No' }}</td><td>{{ c.hrs }}</td></tr>{% else %}<tr><td colspan=5>No coaches in the tab.</td></tr>{% endfor %}</table>
+<h3 style="font-size:14px;margin:12px 0 4px">ICF coaches in holding with 1000 hrs or more <span class="note">(for reference)</span></h3>
+<table><tr><th>Coach</th><th>Type</th><th>Division</th><th>Year built</th><th>Pre-survey hrs</th><th>Days in</th><th>In pipeline tab</th></tr>
+{% for c in heavy %}<tr><td>{{ c.no }}</td><td>{{ c.type }}</td><td>{{ c.div }}</td><td>{{ c.yb }}</td><td>{{ c.hrs }}</td><td>{{ c.days }}</td><td>{{ 'Yes' if c.listed else '' }}</td></tr>
+{% else %}<tr><td colspan=7>None.</td></tr>{% endfor %}</table>
+</div>
+{% endblock %}

@@ -20,9 +20,10 @@ NAV = [
     ("Analysis", [("cycle", "Cycle Time"), ("corrosion", "Corrosion Cycle"), ("hours", "Man-hours"),
                   ("prev_poh", "Previous POH"), ("targets", "Target vs Actual")]),
     ("Workshop", [("aerial", "Aerial View"), ("coach", "Coach Search"), ("reports", "Report Centre")]),
-    ("Office PC", [("tools", "Control Panel")]),
+    ("Office PC", [("daily", "Daily Report"), ("tools", "Control Panel")]),
 ]
-READY = {"dashboard", "holding", "outturn", "coach", "cycle", "corrosion", "hours", "prev_poh", "targets", "reports", "aerial", "tools"}
+READY = {"dashboard", "holding", "outturn", "coach", "cycle", "corrosion", "hours", "prev_poh", "targets", "reports", "aerial", "tools",
+         "daily"}
 
 
 @app.context_processor
@@ -327,6 +328,76 @@ def tools_save(key):
         abort(404)
     jobs.save_text(key, request.form.get("text", ""))
     return redirect(url_for("tools") + "#lists")
+
+
+# ---------------------------------------------------------------- Daily Position report (office PC only)
+def _daily_context():
+    from datetime import timedelta
+    D, ex = data.load()
+    if not D:
+        abort(503, "No ERP data yet - press 'Update from ERP'.")
+    report_date = ex.date()
+    return D, ex, report_date, report_date - timedelta(days=1)
+
+
+@app.route("/daily", methods=["GET", "POST"])
+def daily():
+    _local_only()
+    from core import condemnation, daily_inputs as DI
+    inp = DI.load()
+    if request.method == "POST":
+        inp = DI.save(DI.from_form(request.form, inp))
+        if request.form.get("action") == "report":
+            return redirect(url_for("daily_report"))
+        return redirect(url_for("daily", saved=1))
+    D, ex, report_date, as_on = _daily_context()
+    wd = DI.working_days(as_on, inp)
+    cond, cond_err = condemnation.load(live=True)
+    hold = {R.coach_key(h): h for h in P.holding(D, as_on)}
+    status_col = lambda r: next((v for k, v in r.items() if "status" in k.lower()), "")
+    cond_rows = []
+    for r in cond.get("rows", []):
+        k = R.coach_key({"coachNo": r["coach"]})
+        h = hold.get(k)
+        cond_rows.append(dict(coach=r["coach"], type=r.get("Type", ""), status=status_col(r), inside=bool(h),
+                              hrs=int(R.hours(h, "preSurveyHrs") or 0) or "" if h else ""))
+    listed = {R.coach_key({"coachNo": r["coach"]}) for r in cond.get("rows", [])}
+    heavy = []
+    for k, h in hold.items():
+        hrs = R.hours(h, "preSurveyHrs")
+        if h["_family"] == "ICF" and hrs and hrs >= 1000:
+            rd = R.pdate(h.get("receivedDate"))
+            heavy.append(dict(no=h.get("coachNo"), type=R.coach_type(h), div=h.get("divisionId") or "", yb=h.get("_yearBuilt") or "",
+                              hrs=int(hrs), days=(as_on - rd).days if rd else "", listed=k in listed))
+    heavy.sort(key=lambda c: -c["hrs"])
+    latest = R.latest_per_coach(D)
+    plan_status = {}
+    for i, p in enumerate(inp.get("plan", [])):
+        d = latest.get(R.coach_key({"coachNo": (p.get("coach") or "x").split()[-1]}))
+        if not d:
+            plan_status[i] = "not found in ERP"
+        elif d.get("actualDispatchDate"):
+            plan_status[i] = "Despatched " + R.fmt(R.pdate(d["actualDispatchDate"]))
+        elif d.get("dispatchDate"):
+            plan_status[i] = "Outturned " + R.fmt(R.pdate(d["dispatchDate"])) + " - FND"
+        elif R.pdate(p.get("desp_pdc")) and R.pdate(p.get("desp_pdc")) <= as_on:
+            plan_status[i] = "OVERDUE"
+    return render_template("daily.html", inp=inp, wd=wd, fy=R.fy_of(as_on), as_on=as_on, report_date=report_date,
+                           saved=request.args.get("saved"), target_rows=DI.TARGET_ROWS, typed_fields=DI.TYPED_FIELDS,
+                           cond=cond, cond_err=cond_err, cond_rows=cond_rows, heavy=heavy, plan_status=plan_status)
+
+
+@app.route("/daily/report")
+def daily_report():
+    _local_only()
+    from analysis import daily_report as DR
+    from core import condemnation, daily_inputs as DI
+    D, ex, report_date, as_on = _daily_context()
+    inp = DI.load()
+    cond, _ = condemnation.load(live=True)
+    html = DR.build(D, ex, inp, DI.working_days(as_on, inp), [r["coach"] for r in cond.get("rows", [])],
+                    as_on=as_on, report_date=report_date)
+    return html
 
 
 @app.route("/health")
