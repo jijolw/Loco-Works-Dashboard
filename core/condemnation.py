@@ -7,6 +7,7 @@ when JIJO sets a coach to Return in ERP it leaves holding and drops off the repo
 """
 import json
 import os
+import re
 from datetime import datetime
 
 import config
@@ -18,11 +19,14 @@ FILE = os.path.join(config.APP_DIR, "data", "condemnation.json")
 def refresh():
     from updaters.common import open_sheet
     vals = open_sheet(config.POSITION_SHEET_KEY).worksheet(TAB).get_all_values()
-    head_i = next((i for i, r in enumerate(vals) if any("coach" in str(c).lower() for c in r)), None)
+    # header = the row with a cell that is just "Coach No" / "Coach Number" / "Coach" (a title row above it,
+    # e.g. "COACHES PROPOSED FOR CONDEMNATION ...", must not be taken as the header - fixed 31-10-2026)
+    is_head = lambda c: re.fullmatch(r"coach\s*(no\.?|number|nos\.?)?", str(c).strip().lower()) is not None
+    head_i = next((i for i, r in enumerate(vals) if any(is_head(c) for c in r)), None)
     rows = []
     if head_i is not None:
         head = [str(h).strip() for h in vals[head_i]]
-        ci = next(i for i, h in enumerate(head) if "coach" in h.lower())
+        ci = next(i for i, h in enumerate(head) if is_head(h))
         for r in vals[head_i + 1:]:
             r = list(r) + [""] * (len(head) - len(r))
             if str(r[ci]).strip():
