@@ -337,7 +337,8 @@ def _daily_context():
     if not D:
         abort(503, "No ERP data yet - press 'Update from ERP'.")
     report_date = ex.date()
-    return D, ex, report_date, report_date - timedelta(days=1)
+    from core import daily_inputs as DI
+    return D, ex, report_date, DI.position_date(report_date)
 
 
 @app.route("/daily", methods=["GET", "POST"])

@@ -179,6 +179,20 @@ def _sum(a, b, holidays, sat):
     return t
 
 
+def position_date(report_date, inp=None):
+    """The report shows the position at the end of the LAST WORKING DAY before the report date:
+    Monday -> Saturday, day after a holiday -> the day before it (JIJO 31-10-2026). Sundays and the holidays
+    in the form are skipped."""
+    inp = inp or load()
+    hol = {h["date"] for h in inp.get("holidays", [])}
+    d = report_date - timedelta(days=1)
+    for _ in range(10):
+        if d.weekday() != 6 and d.isoformat() not in hol:
+            break
+        d -= timedelta(days=1)
+    return d
+
+
 def working_days(as_on, inp):
     """Completed = up to and including as_on (the report's 'end of day')."""
     hol = {h["date"] for h in inp.get("holidays", [])}
