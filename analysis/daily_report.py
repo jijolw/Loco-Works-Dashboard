@@ -47,7 +47,7 @@ def _num(v, default=0.0):
         return default
 
 
-def build(D, exported, inp, wd, condemned=(), as_on=None, report_date=None):
+def build(D, exported, inp, wd, condemned=(), as_on=None, report_date=None, back_url="/daily"):
     """-> full HTML document. D = enriched demands, exported = export datetime, inp = daily_inputs.load(),
     wd = daily_inputs.working_days(...), condemned = coach keys proposed for condemnation."""
     report_date = report_date or exported.date()
@@ -451,7 +451,7 @@ Report date {report_date:%d-%m-%Y} · data at {exported:%H:%M} · Page 1 of 2</d
 
     return (f"<!DOCTYPE html><html><head><meta charset='utf-8'><title>DailyPosition{report_date:%d%m%Y}</title>"
             f"<style>{CSS}</style></head><body><div class='noprint bar'><button onclick='window.print()'>Print / Save as PDF</button> "
-            f"<a href='/daily'>Back to the form</a> <span>In the print box choose “Save as PDF”, A4, margins default.</span></div>"
+            f"<a href='{back_url}'>Back to the form</a> <span>In the print box choose “Save as PDF”, A4, margins default.</span></div>"
             f"{''.join(p1)}{''.join(p2)}{FIT_JS}</body></html>")
 
 

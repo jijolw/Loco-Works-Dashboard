@@ -108,9 +108,12 @@ def save(d):
     return d
 
 
-def from_form(form, current):
-    """Build the inputs dict from the posted form (missing parts keep their current values)."""
+def from_form(form, current, staff=False):
+    """Build the inputs dict from the posted form (missing parts keep their current values).
+    staff=True (staff Daily Report app): only the daily items change - holidays, override and targets stay as they are."""
     d = copy.deepcopy(current)
+    if staff:
+        return _daily_items(form, d)
     hol = []
     for ds, nm in zip(form.getlist("hol_date"), form.getlist("hol_name")):
         if ds.strip():
@@ -121,6 +124,11 @@ def from_form(form, current):
     for key, _ in TARGET_ROWS:
         d["targets"][key] = {f: form.get(f"t_{key}_{f}", "").strip() for f in ("rb", "basis", "hq")}
     d["rb_total_text"] = form.get("rb_total_text", "").strip()
+    return _daily_items(form, d)
+
+
+def _daily_items(form, d):
+    """Typed rows, NMGHS, AC loco bay, weekly plan and notes."""
     typed = []
     for i in range(int(form.get("typed_n", 0) or 0)):
         r = {k: form.get(f"ty_{i}_{k}", "").strip() for k, _ in TYPED_FIELDS}
