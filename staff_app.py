@@ -59,7 +59,7 @@ def form():
                 plan_status[i] = "Outturned " + R.fmt(R.pdate(d["dispatchDate"])) + " - FND"
             elif R.pdate(p.get("desp_pdc")) and R.pdate(p.get("desp_pdc")) <= as_on:
                 plan_status[i] = "OVERDUE"
-    return render_template("staff_daily.html", inp=inp, wd=wd, exported=ex, report_date=report_date, as_on=as_on,
+    return render_template("staff_daily.html", inp=inp, wd=wd, fy=R.fy_of(as_on) if as_on else "", exported=ex, report_date=report_date, as_on=as_on,
                            saved=request.args.get("saved"), typed_fields=DI.TYPED_FIELDS, plan_status=plan_status)
 
 

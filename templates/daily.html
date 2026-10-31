@@ -29,11 +29,13 @@
 <b>Holidays</b> <span class="note">(add a date; Sundays need not be entered)</span>
 <table id="hol">{% for h in inp.holidays %}<tr><td><input type="date" name="hol_date" value="{{ h.date }}"></td><td><input name="hol_name" value="{{ h.name }}" placeholder="name"></td></tr>{% endfor %}
 {% for i in range(4) %}<tr><td><input type="date" name="hol_date"></td><td><input name="hol_name" placeholder="name"></td></tr>{% endfor %}</table>
-<details><summary class="note">Override (only for an unusual day – leave blank normally)</summary>
-<table><tr><td>Month completed</td><td><input class="num" name="ov_month_completed" value="{{ inp.override.month_completed }}"></td>
-<td>Month total</td><td><input class="num" name="ov_month_total" value="{{ inp.override.month_total }}"></td></tr>
-<tr><td>Year completed</td><td><input class="num" name="ov_year_completed" value="{{ inp.override.year_completed }}"></td>
-<td>Year total</td><td><input class="num" name="ov_year_total" value="{{ inp.override.year_total }}"></td></tr></table></details>
+<details {{ 'open' if wd.typed }}><summary class="note">Type the figures (only if the count is wrong - blank = automatic)</summary>
+<input type="hidden" name="ov_for_date" value="{{ as_on.isoformat() }}">
+<table><tr><td>Month completed</td><td><input class="num" name="ov_month_completed" value="{{ wd.typed.get('month_completed', '') }}" placeholder="{{ '%g' % wd.auto.month_completed }}"></td>
+<td>Month total</td><td><input class="num" name="ov_month_total" value="{{ wd.typed.get('month_total', '') }}" placeholder="{{ '%g' % wd.auto.month_total }}"></td></tr>
+<tr><td>Year completed</td><td><input class="num" name="ov_year_completed" value="{{ wd.typed.get('year_completed', '') }}" placeholder="{{ '%g' % wd.auto.year_completed }}"></td>
+<td>Year total</td><td><input class="num" name="ov_year_total" value="{{ wd.typed.get('year_total', '') }}" placeholder="{{ '%g' % wd.auto.year_total }}"></td></tr></table>
+<p class="note">Completed is kept for this report day only; totals for the month / year.</p></details>
 </div>
 
 <div class="box"><h2>2. Targets (page 2)</h2>

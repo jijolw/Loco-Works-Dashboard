@@ -26,8 +26,19 @@ body{background:#f6f7f9}
  {% if inp.saved_at %}<span class="note">· last saved {{ inp.saved_at }}</span>{% endif %}{% if saved %}<span class="ok">· saved</span>{% endif %}
 </div>
 {% if exported and report_date and exported.date() < report_date %}{% endif %}
-{% if wd %}<p class="note">Working days (set by JIJO): {{ as_on.strftime('%B') }} {{ '%g' % wd.month_completed }} of {{ '%g' % wd.month_total }} ·
-year {{ '%g' % wd.year_completed }} of {{ '%g' % wd.year_total }}. Holidays and targets are changed only in JIJO's app.</p>{% endif %}
+{% if wd %}<div class="box"><h2>Working days <span class="note">(page 2)</span></h2>
+<input type="hidden" name="ov_for_date" value="{{ as_on.isoformat() }}">
+<table><tr><th></th><th>Completed</th><th>Total</th><th>Available</th></tr>
+<tr><td style="text-align:left">{{ as_on.strftime('%B %Y') }}</td>
+<td><input class="num" name="ov_month_completed" value="{{ wd.typed.get('month_completed', '') }}" placeholder="{{ '%g' % wd.auto.month_completed }}"></td>
+<td><input class="num" name="ov_month_total" value="{{ wd.typed.get('month_total', '') }}" placeholder="{{ '%g' % wd.auto.month_total }}"></td>
+<td>{{ '%g' % (wd.month_total - wd.month_completed) }}</td></tr>
+<tr><td style="text-align:left">Year {{ fy }}</td>
+<td><input class="num" name="ov_year_completed" value="{{ wd.typed.get('year_completed', '') }}" placeholder="{{ '%g' % wd.auto.year_completed }}"></td>
+<td><input class="num" name="ov_year_total" value="{{ wd.typed.get('year_total', '') }}" placeholder="{{ '%g' % wd.auto.year_total }}"></td>
+<td>{{ '%g' % (wd.year_total - wd.year_completed) }}</td></tr></table>
+<p class="note">Grey figure = counted automatically. Type a figure only if it is wrong (e.g. year total 271), then Save.
+"Completed" is kept for this report day only; the totals are kept for the month / year.</p></div>{% endif %}
 
 <div class="box"><h2>1. Items not in the coach ERP (page 2)</h2>
 <input type="hidden" name="typed_n" value="{{ inp.typed|length + 2 }}">

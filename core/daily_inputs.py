@@ -21,7 +21,10 @@ AC_LINES = ["Pit 10", "Pit 9", "Line 8", "Line 7", "Line 6", "Line 5", "Line 4",
 DEFAULT = {
     "holidays": [{"date": "2026-10-02", "name": "Gandhi Jayanthi"}],
     "saturday_half": True,
-    "override": {"month_completed": "", "month_total": "", "year_completed": "", "year_total": ""},
+    # typed working days (blank = counted automatically). Each value is kept only for its own period:
+    # completed -> only for the report day it was typed for (for_date), month total -> that month, year total -> that FY.
+    "override": {"month_completed": "", "month_total": "", "year_completed": "", "year_total": "",
+                 "for_date": "", "month": "", "fy": ""},
     # page-2 targets: rb = text shown, basis = number for the proportionate target, hq = monthly HQ target
     "targets": {
         "ICF": {"rb": "300", "basis": "300", "hq": "28"},
@@ -110,8 +113,10 @@ def save(d):
 
 def from_form(form, current, staff=False):
     """Build the inputs dict from the posted form (missing parts keep their current values).
-    staff=True (staff Daily Report app): only the daily items change - holidays, override and targets stay as they are."""
+    staff=True (staff Daily Report app): daily items + typed working days change - holidays, Saturday rule and targets stay as they are."""
     d = copy.deepcopy(current)
+    if "ov_for_date" in form:
+        _override(form, d)
     if staff:
         return _daily_items(form, d)
     hol = []
@@ -120,11 +125,19 @@ def from_form(form, current, staff=False):
             hol.append({"date": ds.strip(), "name": nm.strip()})
     d["holidays"] = sorted(hol, key=lambda h: h["date"])
     d["saturday_half"] = form.get("saturday_half") == "1"
-    d["override"] = {k: form.get("ov_" + k, "").strip() for k in DEFAULT["override"]}
     for key, _ in TARGET_ROWS:
         d["targets"][key] = {f: form.get(f"t_{key}_{f}", "").strip() for f in ("rb", "basis", "hq")}
     d["rb_total_text"] = form.get("rb_total_text", "").strip()
     return _daily_items(form, d)
+
+
+def _override(form, d):
+    """Working days typed in the form (JIJO's or the staff app). Blank = automatic."""
+    fd = form.get("ov_for_date", "").strip()
+    asd = R.pdate(fd)
+    o = {k: form.get("ov_" + k, "").strip() for k in ("month_completed", "month_total", "year_completed", "year_total")}
+    o.update(for_date=fd, month=asd.strftime("%Y-%m") if asd else "", fy=R.fy_of(asd) if asd else "")
+    d["override"] = o
 
 
 def _daily_items(form, d):
@@ -177,11 +190,19 @@ def working_days(as_on, inp):
     wd = dict(month_completed=_sum(m0, as_on, hol, sat), month_total=_sum(m0, m1, hol, sat),
               year_completed=_sum(y0, as_on, hol, sat), year_total=_sum(y0, y1, hol, sat))
     wd["auto"] = dict(wd)
-    for k, v in (inp.get("override") or {}).items():
-        try:
-            if str(v).strip():
+    o = inp.get("override") or {}
+    scope = {"month_completed": o.get("for_date") == as_on.isoformat(),
+             "year_completed": o.get("for_date") == as_on.isoformat(),
+             "month_total": o.get("month") == as_on.strftime("%Y-%m"),
+             "year_total": o.get("fy") == R.fy_of(as_on)}
+    wd["typed"] = {}
+    for k, ok in scope.items():
+        v = str(o.get(k, "")).strip()
+        if ok and v:
+            try:
                 wd[k] = float(v)
-        except ValueError:
-            pass
+                wd["typed"][k] = v
+            except ValueError:
+                pass
     wd["holidays_in_year"] = sum(1 for h in hol if y0.isoformat() <= h <= y1.isoformat())
     return wd
