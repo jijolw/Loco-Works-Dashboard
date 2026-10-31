@@ -272,10 +272,16 @@ Report date {report_date:%d-%m-%Y} · data at {exported:%H:%M} · Page 1 of 2</d
     p1.append(f'<div class="box" style="margin-top:5px"><div class="bh"><b>Yard (OT/YD)</b><span>{len(yard_rows)} coaches</span></div>'
               f'<div style="display:grid;grid-template-columns:repeat({ncol},minmax(0,1fr))">{cols}</div></div>')
 
+    key_t = lambda x: ORDER.index(x) if x in ORDER else 99
     o_txt = ", ".join(f"{R.coach_type(d)} {d['coachNo']}" for d in out_day) or "nil"
     d_txt = ", ".join(f"{R.coach_type(d)} {d['coachNo']}" for d in desp_day) or "nil"
+    cond_in = [h for h in H if R.coach_key(h) in cond]
+    by_t = Counter(R.coach_type(h) for h in cond_in)
+    cond_txt = (f' ({", ".join(f"{t} {n}" for t, n in sorted(by_t.items(), key=lambda x: (key_t(x[0]), x[0])))})' if cond_in else "")
     p1.append(f'<div class="mv"><b>Outturn {as_on:%d/%m} ({len(out_day)}):</b> {o_txt} &nbsp;&nbsp; '
-              f'<b>Physical despatch ({len(desp_day)}):</b> {d_txt}</div>')
+              f'<b>Physical despatch ({len(desp_day)}):</b> {d_txt}<br>'
+              f'<b>Holding {len(H)}</b> &nbsp;·&nbsp; <span class="cond">Proposed for condemnation</span> <b>{len(cond_in)}</b>{cond_txt}'
+              f' &nbsp;·&nbsp; <b>Balance holding {len(H) - len(cond_in)}</b></div>')
 
     plan = [p for p in inp.get("plan", []) if (p.get("coach") or "").strip()]
 
@@ -294,7 +300,6 @@ Report date {report_date:%d-%m-%Y} · data at {exported:%H:%M} · Page 1 of 2</d
                   f'<div class="grid2" style="gap:0"><div style="border-right:1px solid #000">{plan_part(plan[:ph], 1)}</div>'
                   f'<div>{plan_part(plan[ph:], ph + 1)}</div></div></div>')
 
-    key_t = lambda x: ORDER.index(x) if x in ORDER else 99
     s1 = ['<table class="p s"><tr><th rowspan=2 style="text-align:left">ICF</th><th colspan=3>&gt;13 yrs &amp; &gt;1300 hrs</th>'
           '<th colspan=3>&gt;13 yrs &amp; ≤1300 hrs</th><th colspan=3>≤13 yrs</th><th rowspan=2>Total</th></tr>'
           '<tr>' + "<th>Y</th><th>W</th><th>T</th>" * 3 + '</tr>']
@@ -328,10 +333,7 @@ Report date {report_date:%d-%m-%Y} · data at {exported:%H:%M} · Page 1 of 2</d
         s3.append(f'<tr><td class="l">{t}</td><td>{c["Y"]}</td><td>{c["W"]}</td><td><b>{c["Y"] + c["W"]}</b></td><td>{c["OR"] or ""}</td></tr>')
     s3.append(f'<tr class="tot"><td class="l">Total</td><td>{lt["Y"]}</td><td>{lt["W"]}</td><td>{lt["Y"] + lt["W"]}</td><td>{lt["OR"]}</td></tr></table>')
     p1.append('<div class="strip"><div>' + "".join(s1) + '</div><div>' + "".join(s2) + '</div><div>' + "".join(s3) + '</div></div>')
-    p1.append('<div class="lg2"><b>Legend:</b> coach no. on <span class="fndc">&nbsp;green&nbsp;</span> = FND (outturned, not yet despatched) · '
-              'on <span class="ccc">&nbsp;yellow&nbsp;</span> = corrosion completed · <span class="cond">red underline</span> = proposed for condemnation · '
-              '<b>bold</b> days = over 30 days · – = empty line · CC / UC = corrosion completed / under corrosion · '
-              'PDC = despatch PDC, C-PDC = corrosion PDC · Y / W = yard / work area.</div></div>')
+    p1.append('</div>')
 
     # ================================================================ page 2 (original format)
     pm = wd["month_completed"] / wd["month_total"] if wd["month_total"] else 0
