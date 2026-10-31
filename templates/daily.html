@@ -49,7 +49,7 @@
 <input type="hidden" name="typed_n" value="{{ inp.typed|length + 2 }}">
 <table><tr>{% for k, lab in typed_fields %}<th>{{ lab }}</th>{% endfor %}</tr>
 {% for r in inp.typed + [{}, {}] %}{% set i = loop.index0 %}<tr>{% for k, lab in typed_fields %}
-<td><input name="ty_{{ i }}_{{ k }}" value="{{ r.get(k, '') }}" {% if k != 'label' %}style="width:80px"{% endif %}></td>{% endfor %}</tr>{% endfor %}</table>
+<td><input name="ty_{{ i }}_{{ k }}" value="{{ r.get(k, '') }}" style="width:{{ '180px' if k == 'label' else ('110px' if k == 'hold' else '75px') }}"></td>{% endfor %}</tr>{% endfor %}</table>
 <p class="note">Clear the Activity box to remove a row. Two empty rows are always offered for new items.</p>
 <b>NMGHS Conversion</b>
 <table><tr><td><input name="nm_label" value="{{ inp.nmghs.label }}"></td><td>Balance target <input class="num" name="nm_balance" value="{{ inp.nmghs.balance }}"></td>
