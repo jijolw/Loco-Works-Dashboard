@@ -90,7 +90,7 @@ def build(D, exported, inp, wd, condemned=(), as_on=None, report_date=None):
                     days=(as_on - rd).days if rd else None, hrs=int(hrs) if hrs else "", corr=corr(d),
                     rem="; ".join(rem), fnd=d["demandId"] in fnd_ids,
                     cc=bool(pd_(d.get("corrComp"))) and d["demandId"] not in fnd_ids,
-                    cond=R.coach_key(d) in cond and d["demandId"] not in fnd_ids, fam=d["_family"])
+                    cond=R.coach_key(d) in cond and d["demandId"] not in fnd_ids and d["_family"] == "ICF", fam=d["_family"])
 
     def coach_cell(r):
         cls = " ".join(c for c in ("fndc" if r["fnd"] else ("ccc" if r["cc"] else ""), "cond" if r["cond"] else "") if c)
@@ -275,13 +275,14 @@ Report date {report_date:%d-%m-%Y} · data at {exported:%H:%M} · Page 1 of 2</d
     key_t = lambda x: ORDER.index(x) if x in ORDER else 99
     o_txt = ", ".join(f"{R.coach_type(d)} {d['coachNo']}" for d in out_day) or "nil"
     d_txt = ", ".join(f"{R.coach_type(d)} {d['coachNo']}" for d in desp_day) or "nil"
-    cond_in = [h for h in H if R.coach_key(h) in cond]
+    icf_h = [h for h in H if h["_family"] == "ICF"]           # condemnation is for ICF coaches only (JIJO 31-10)
+    cond_in = [h for h in icf_h if R.coach_key(h) in cond]
     by_t = Counter(R.coach_type(h) for h in cond_in)
     cond_txt = (f' ({", ".join(f"{t} {n}" for t, n in sorted(by_t.items(), key=lambda x: (key_t(x[0]), x[0])))})' if cond_in else "")
     p1.append(f'<div class="mv"><b>Outturn {as_on:%d/%m} ({len(out_day)}):</b> {o_txt} &nbsp;&nbsp; '
               f'<b>Physical despatch ({len(desp_day)}):</b> {d_txt}<br>'
-              f'<b>Holding {len(H)}</b> &nbsp;·&nbsp; <span class="cond">Proposed for condemnation</span> <b>{len(cond_in)}</b>{cond_txt}'
-              f' &nbsp;·&nbsp; <b>Balance holding {len(H) - len(cond_in)}</b></div>')
+              f'<b>ICF holding {len(icf_h)}</b> &nbsp;·&nbsp; <span class="cond">Proposed for condemnation</span> <b>{len(cond_in)}</b>{cond_txt}'
+              f' &nbsp;·&nbsp; <b>ICF balance holding {len(icf_h) - len(cond_in)}</b></div>')
 
     plan = [p for p in inp.get("plan", []) if (p.get("coach") or "").strip()]
 
