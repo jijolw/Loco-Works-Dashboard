@@ -20,10 +20,10 @@ NAV = [
     ("Analysis", [("cycle", "Cycle Time"), ("corrosion", "Corrosion Cycle"), ("hours", "Man-hours"),
                   ("prev_poh", "Previous POH"), ("targets", "Target vs Actual")]),
     ("Workshop", [("aerial", "Aerial View"), ("coach", "Coach Search"), ("reports", "Report Centre")]),
-    ("Office PC", [("daily", "Daily Report"), ("tools", "Control Panel")]),
+    ("Office PC", [("daily", "Daily Report"), ("erp_edit_page", "Edit ERP"), ("tools", "Control Panel")]),
 ]
 READY = {"dashboard", "holding", "outturn", "coach", "cycle", "corrosion", "hours", "prev_poh", "targets", "reports", "aerial", "tools",
-         "daily"}
+         "daily", "erp_edit_page"}
 
 
 @app.context_processor
@@ -343,7 +343,7 @@ def _daily_context():
 
 @app.route("/edit", methods=["GET", "POST"])
 def erp_edit_page():
-    """Edit one field of a coach visit in ERP - JIJO only, office PC only, not in the menu (31-10-2026)."""
+    """Edit one field of a coach visit in ERP - office PC only (JIJO is the only user of this app) (31-10-2026)."""
     _local_only()
     from core import erp_edit as E
     f = request.values
