@@ -9,7 +9,7 @@ Holding  = received, no desp date, not excluded - one entry per coach (latest de
 Not inside = data-entered in ERP (received date) but no pit and no status yet - coach still outside the
            workshop (JIJO 30-10-2026). Not in holding / yard; listed separately. Joins holding once a pit is entered.
 Groups   = coach_groups.csv (edit that file; unknown types show as OTHERS).
-           Repair type 4 = OR; 201 = ART CONVERSION / ARMV CONVERSION (type ARMVCONV); NMG 181/281/2 or /C = NMG CONVERSION.
+           Repair type 4 = OR; 201 = ART CONVERSION / ARMV CONVERSION (type ARMVCONV); NMG 181/2 or /C = NMG CONVERSION (281 is POH - X971121, JIJO 31-10).
 AC locos are not handled anywhere.
 """
 import csv
@@ -115,7 +115,7 @@ def classify(d):
     if not hit:
         return "Others", "OTHERS", 999
     fam, grp, order = hit["family"], hit["group"], hit["order"]
-    if grp == "NMG POH" and (rep in ("181", "281", "2") or t.endswith("/C")):
+    if grp == "NMG POH" and (rep in ("181", "2") or t.endswith("/C")):     # 281 = POH (JIJO 31-10)
         return fam, "NMG CONVERSION", order + 1
     return fam, grp, order
 
