@@ -75,13 +75,8 @@ document.querySelectorAll('.acmove').forEach(s=>s.onchange=()=>{const i=s.datase
 </script></div>
 
 <div class="box"><h2>3. Weekly plan (page 1)</h2>
-<input type="hidden" name="plan_n" value="{{ inp.plan|length + 4 }}">
-<table><tr><th>#</th><th>Coach (type + no.)</th><th>Corrosion PDC</th><th>Despatch PDC</th><th>Status today</th></tr>
-{% for p in inp.plan + [{}, {}, {}, {}] %}{% set i = loop.index0 %}<tr><td>{{ i + 1 }}</td>
-<td><input name="pl_{{ i }}_coach" value="{{ p.coach or '' }}" placeholder="e.g. GS 096409"></td>
-<td><input type="date" name="pl_{{ i }}_corr" value="{{ p.corr_pdc or '' }}"></td><td><input type="date" name="pl_{{ i }}_desp" value="{{ p.desp_pdc or '' }}"></td>
-<td class="note" style="text-align:left">{{ plan_status.get(i, '') }}</td></tr>{% endfor %}</table>
-<p class="note">Clear the coach box to remove a coach.</p></div>
+<p class="note">Comes from ERP: coaches whose <b>despatch PDC</b> in ERP falls Monday–Friday of the report week.
+A coach not done last week shows again only after its PDC is revised in ERP to this week. Nothing to type here.</p></div>
 </div>
 </form>
 <p class="note">After making the report: in the report tab click <b>Print / Save as PDF</b> → Save as PDF, A4. Name it DailyPosition&lt;date&gt;.pdf.</p>

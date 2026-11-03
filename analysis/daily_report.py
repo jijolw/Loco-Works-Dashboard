@@ -334,22 +334,50 @@ Report date {report_date:%d-%m-%Y} · data at {exported:%H:%M} · Page 1 of 2</d
               f'<b>ICF holding {len(icf_h)}</b> &nbsp;·&nbsp; <span class="cond">Proposed for condemnation</span> <b>{len(cond_in)}</b>{cond_txt}'
               f' &nbsp;·&nbsp; <b>ICF balance holding {len(icf_h) - len(cond_in)}</b></div>')
 
-    plan = [p for p in inp.get("plan", []) if (p.get("coach") or "").strip()]
+    # Weekly plan FROM ERP (JIJO 03-11-2026): coaches whose despatch PDC (ERP pdcDate) falls Monday-Friday of the report
+    # week. A coach carried over from last week shows only after its PDC is revised in ERP into this week - no FND/OVERDUE
+    # carry-overs. The typed plan in the forms is no longer used.
+    rd_ = report_date or as_on
+    wk0 = rd_ - timedelta(days=rd_.weekday())
+    wk1 = wk0 + timedelta(days=4)
+    seen, plan = set(), []
+    for d in sorted(D, key=lambda d: (str(d.get("pdcDate") or ""), d["_order"])):
+        p = pd_(d.get("pdcDate"))
+        if not p or not (wk0 <= p <= wk1) or R.is_excluded(d) or R.coach_key(d) in seen:
+            continue
+        seen.add(R.coach_key(d))
+        plan.append(d)
+
+    def wk_status(d):
+        dd, ad = pd_(d.get("dispatchDate")), pd_(d.get("actualDispatchDate"))
+        if ad and ad <= as_on:
+            return f"Despatched {f(ad)}"
+        if dd and dd <= as_on:
+            return f"Outturned {f(dd)}"
+        if pd_(d.get("corrComp")):
+            return "Corr. completed"
+        if pd_(d.get("corrPlace")):
+            return "Under corrosion"
+        return ""
 
     def plan_part(rows, start):
         h = ['<table class="t"><tr><th>#</th><th>Coach</th><th>Corr PDC</th><th>Desp PDC</th><th>Status</th></tr>']
-        for i, p in enumerate(rows, start):
-            s, ov = plan_status(p["coach"].split()[-1], p.get("desp_pdc"))
-            h.append(f'<tr><td>{i}</td><td class="c">{esc(p["coach"])}</td><td>{f(pd_(p.get("corr_pdc")))}</td>'
-                     f'<td>{f(pd_(p.get("desp_pdc")))}</td><td{" class=ov" if ov else ""}>{s}</td></tr>')
+        for i, d in enumerate(rows, start):
+            r = row(d)
+            h.append(f'<tr><td>{i}</td>{coach_cell(r)}<td>{f(pd_(d.get("corrPd")))}</td>'
+                     f'<td>{f(pd_(d.get("pdcDate")))}</td><td>{wk_status(d)}</td></tr>')
         h.append("</table>")
         return "".join(h)
 
+    title = f'Weekly plan {f(wk0)} – {f(wk1)} (despatch PDC in ERP)'
     if plan:
         ph = (len(plan) + 1) // 2
-        p1.append(f'<div class="box"><div class="bh"><b>Weekly plan (despatch PDC)</b><span>{len(plan)} coaches</span></div>'
+        p1.append(f'<div class="box"><div class="bh"><b>{title}</b><span>{len(plan)} coaches</span></div>'
                   f'<div class="grid2" style="gap:0"><div style="border-right:1px solid #000">{plan_part(plan[:ph], 1)}</div>'
                   f'<div>{plan_part(plan[ph:], ph + 1)}</div></div></div>')
+    else:
+        p1.append(f'<div class="box"><div class="bh"><b>{title}</b><span>0</span></div>'
+                  '<div style="padding:2px 4px">No coach has a despatch PDC in ERP for this week.</div></div>')
 
     s1 = ['<table class="p s"><tr><th rowspan=2 style="text-align:left">ICF</th><th colspan=3>&gt;13 yrs &amp; &gt;1300 hrs</th>'
           '<th colspan=3>&gt;13 yrs &amp; ≤1300 hrs</th><th colspan=3>≤13 yrs</th><th rowspan=2>Total</th></tr>'
