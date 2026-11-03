@@ -537,6 +537,10 @@ table.t td.rem { font-size: 6.4pt; white-space: normal; line-height: 1.05; }
 table.t td.c { font-weight: bold; }
 table.t.two td.sl { width: 44%; white-space: normal; }
 table.t.two td.sl .h { font-size: 6.6pt; color: #333; }
+/* vertical lines like the original print (JIJO 03-11): every column ruled; Left | Right of a line clearly split */
+table.t th + th, table.t td + td { border-left: 0.5px solid #888; }
+table.t tr > :first-child { border-right: 0.5px solid #555; }
+table.t.two td.sl + td.sl, table.t.two th + th + th { border-left: 1.2px solid #000; }
 .r { text-align: right; }
 span.fndc { background: #8fe000; padding: 0 2px; }
 span.ccc { background: #ffff00; padding: 0 2px; }
