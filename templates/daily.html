@@ -48,11 +48,19 @@
 </div>
 
 <div class="box"><h2>3. Items not in the coach ERP (page 2, below Total)</h2>
-<input type="hidden" name="typed_n" value="{{ inp.typed|length + 2 }}">
-<table><tr>{% for k, lab in typed_fields %}<th>{{ lab }}</th>{% endfor %}</tr>
-{% for r in inp.typed + [{}, {}] %}{% set i = loop.index0 %}<tr>{% for k, lab in typed_fields %}
-<td><input name="ty_{{ i }}_{{ k }}" value="{{ r.get(k, '') }}" style="width:{{ '180px' if k == 'label' else ('110px' if k == 'hold' else '75px') }}"></td>{% endfor %}</tr>{% endfor %}</table>
-<p class="note">Clear the Activity box to remove a row. Two empty rows are always offered for new items.</p>
+<input type="hidden" name="typed_n" value="{{ inp.typed|length + 2 }}"><input type="hidden" name="pos_date" value="{{ as_on.isoformat() }}">
+<table><tr><th>Activity</th><th>Yearly target</th><th>Monthly HQ target</th><th>Outturn on {{ as_on.strftime('%d-%m') }}</th><th>Holding</th>
+<th class="note">Month till date</th><th class="note">Year till date</th><th>Start figures as on</th><th>Month till date then</th><th>Year till date then</th></tr>
+{% for r in inp.typed + [{}, {}] %}{% set i = loop.index0 %}{% set fg = tfig[i] if i < tfig|length else {} %}<tr>
+<td><input name="ty_{{ i }}_label" value="{{ r.label or '' }}" style="width:170px"></td>
+<td><input class="num" name="ty_{{ i }}_rb" value="{{ r.rb or '' }}"></td><td><input class="num" name="ty_{{ i }}_hq" value="{{ r.hq or '' }}"></td>
+<td><input class="num" name="ty_{{ i }}_day" value="{{ (r.daily or {}).get(as_on.isoformat(), '') if r.base_date else (r.day or '') }}"></td>
+<td><input name="ty_{{ i }}_hold" value="{{ r.hold or '' }}" style="width:110px"></td>
+<td class="note">{{ fg.mon }}</td><td class="note">{{ fg.todate }}</td>
+<td><input type="date" name="ty_{{ i }}_base_date" value="{{ r.base_date or '' }}"></td>
+<td><input class="num" name="ty_{{ i }}_base_mon" value="{{ r.base_mon or '' }}"></td><td><input class="num" name="ty_{{ i }}_base_year" value="{{ r.base_year or '' }}"></td></tr>{% endfor %}</table>
+<p class="note">Staff type only the day's outturn and holding. Month / year till date = start figures + the daily outturns after that date;
+"cum. up to last month" and both prop. figures are worked out. Start figures are typed once (or to correct a total). Clear the Activity box to remove a row.</p>
 <b>NMGHS Conversion</b>
 <table><tr><td><input name="nm_label" value="{{ inp.nmghs.label }}"></td><td>Balance target <input class="num" name="nm_balance" value="{{ inp.nmghs.balance }}"></td>
 <td>Cumulative actual <input class="num" name="nm_actual" value="{{ inp.nmghs.actual }}"></td><td>Balance to achieve <input class="num" name="nm_to_achieve" value="{{ inp.nmghs.to_achieve }}"></td></tr></table>

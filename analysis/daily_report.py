@@ -17,7 +17,7 @@ from datetime import date, timedelta
 
 from analysis import position as P
 from analysis.aerial import PREFIX_SHOP, SHOPS, _split_pit
-from core import rules as R
+from core import daily_inputs, rules as R
 
 CAT = {"GS": "ICF", "CN": "ICF", "SLR / GSLRD": "ICF", "CZ": "ICF", "VPH": "ICF", "VPU": "ICF", "VPUX": "ICF",
        "NMG POH": "NMG", "NMG CONVERSION": "NMG", "ART CONVERSION": "ARTC", "ARMV CONVERSION": "ARTC", "ARMV": "ARTC",
@@ -483,7 +483,8 @@ Report date {report_date:%d-%m-%Y} · data at {exported:%H:%M} · Page 1 of 2</d
     for t in inp.get("typed", []):
         if not (t.get("label") or "").strip():
             continue
-        v = [esc(t.get(k, "")) for k in ("rb", "prop", "sep", "todate", "hq", "mprop", "mon", "day", "hold")]
+        fg = daily_inputs.typed_figures(t, as_on, wd)
+        v = [esc(fg.get(k, "")) for k in ("rb", "prop", "sep", "todate", "hq", "mprop", "mon", "day", "hold")]
         p2.append(f'<tr class="ty"><td class="l">{esc(t["label"])}</td><td>{v[0]}</td><td>{red(v[1]) if v[1] not in ("", "-") else v[1]}</td>'
                   f'<td class="b">{v[2]}</td><td>{red(v[3])}</td><td>{v[4]}</td><td>{v[5]}</td><td>{red(v[6])}</td>'
                   f'<td class="b">{v[7]}</td><td>{v[8]}</td><td></td></tr>')

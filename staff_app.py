@@ -61,7 +61,7 @@ def form():
             elif R.pdate(p.get("desp_pdc")) and R.pdate(p.get("desp_pdc")) <= as_on:
                 plan_status[i] = "OVERDUE"
     return render_template("staff_daily.html", inp=inp, wd=wd, fy=R.fy_of(as_on) if as_on else "", exported=ex, report_date=report_date, as_on=as_on,
-                           saved=request.args.get("saved"), typed_fields=DI.TYPED_FIELDS, plan_status=plan_status)
+                           saved=request.args.get("saved"), typed_fields=DI.TYPED_FIELDS, tfig=[DI.typed_figures(r, as_on, wd) for r in inp.get("typed", [])] if wd else [], plan_status=plan_status)
 
 
 @app.route("/report")

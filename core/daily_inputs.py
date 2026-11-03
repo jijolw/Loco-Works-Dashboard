@@ -80,9 +80,10 @@ TARGET_ROWS = [("ICF", "ICF NAC Coach POH"), ("NMG", "ICF - NMG POH/Conv"), ("AR
                ("LHBN", "LHB NAC POH"), ("LHBA", "LHB AC POH"), ("EMUONLY", "EMU (HQ target only)"),
                ("EMU", "EMU + MEMU (RB) / MEMU (HQ)"), ("DEMU", "DEMU DPC/TC"), ("SPART", "SPART/Spic"),
                ("TW4", "TW -4W"), ("TW8", "TW -8W"), ("OR", "OR")]
-TYPED_FIELDS = [("label", "Activity"), ("rb", "Yearly target"), ("prop", "Prop till date"), ("sep", "Cum. upto last month"),
-                ("todate", "Till date"), ("hq", "Monthly HQ target"), ("mprop", "Prop till date (month)"),
-                ("mon", "Month till date"), ("day", "Last working day"), ("hold", "Holding")]
+TYPED_FIELDS = [("label", "Activity"), ("rb", "Yearly target"), ("hq", "Monthly HQ target"),
+                ("day", "Outturn on last working day"), ("hold", "Holding")]
+# one-time start figures (JIJO's form): month till date and year till date AS ON base_date (that day included)
+BASE_FIELDS = [("base_date", "Start figures as on"), ("base_mon", "Month till date"), ("base_year", "Year till date")]
 
 
 def load():
@@ -137,16 +138,42 @@ def _override(form, d):
     asd = R.pdate(fd)
     o = {k: form.get("ov_" + k, "").strip() for k in ("month_completed", "month_total", "year_completed", "year_total")}
     o.update(for_date=fd, month=asd.strftime("%Y-%m") if asd else "", fy=R.fy_of(asd) if asd else "")
+    prev = d.get("override") or {}
+    if not o["month_completed"] and not o["year_completed"] and prev.get("for_date") and prev.get("for_date") != fd:
+        # nothing typed in "completed" today: keep the correction typed on an earlier day (it is carried forward) -
+        # before 03-11 a staff save on the next day wiped JIJO's -3.5 year correction
+        o.update(for_date=prev["for_date"], month_completed=prev.get("month_completed", ""),
+                 year_completed=prev.get("year_completed", ""))
     d["override"] = o
 
 
 def _daily_items(form, d):
     """Typed rows, NMGHS, AC loco bay, weekly plan and notes."""
-    typed = []
-    for i in range(int(form.get("typed_n", 0) or 0)):
-        r = {k: form.get(f"ty_{i}_{k}", "").strip() for k, _ in TYPED_FIELDS}
-        if r["label"]:
-            typed.append(r)
+    pos = form.get("pos_date", "").strip()                    # position date of the report the form was opened for
+    old_rows = d.get("typed", [])
+    if "typed_n" in form:                                     # JIJO's form: rows can be added / renamed / removed
+        typed = []
+        for i in range(int(form.get("typed_n", 0) or 0)):
+            r = dict(old_rows[i]) if i < len(old_rows) else {}
+            for k, _ in TYPED_FIELDS + BASE_FIELDS:
+                if f"ty_{i}_{k}" in form:
+                    r[k] = form.get(f"ty_{i}_{k}", "").strip()
+            if r.get("label"):
+                typed.append(r)
+    else:                                                     # staff form: only the day's outturn and holding
+        typed = [dict(r) for r in old_rows]
+        for i, r in enumerate(typed):
+            for k in ("day", "hold"):
+                if f"ty_{i}_{k}" in form:
+                    r[k] = form.get(f"ty_{i}_{k}", "").strip()
+    for r in typed:                                           # the day's outturn is kept against its date
+        if pos and r.get("base_date"):
+            daily = dict(r.get("daily") or {})
+            if str(r.get("day", "")).strip() == "":
+                daily.pop(pos, None)
+            else:
+                daily[pos] = r["day"]
+            r["daily"] = daily
     d["typed"] = typed
     d["nmghs"] = {k: form.get("nm_" + k, "").strip() for k in ("label", "balance", "actual", "to_achieve")}
     d["ac_bay"] = [{"line": ln, **{k: form.get(f"ac_{i}_{k}", "").strip() for k in ("type", "loco", "repair", "shed", "date")}}
@@ -234,3 +261,41 @@ def working_days(as_on, inp):
                 wd.setdefault("carried", {})[k] = delta
     wd["holidays_in_year"] = sum(1 for h in hol if y0.isoformat() <= h <= y1.isoformat())
     return wd
+
+
+# ---------------------------------------------------------------- items not in the coach ERP (page 2)
+def _n(v):
+    try:
+        return float(str(v).strip())
+    except (TypeError, ValueError):
+        return None
+
+
+def _g(x):
+    return f"{x:g}" if x is not None else ""
+
+
+def typed_figures(r, as_on, wd):
+    """Page-2 figures of one typed row (JIJO 03-11-2026: staff type only the day's outturn and holding).
+    Month / year till date = start figures (as on base_date) + the daily outturns after base_date up to as_on;
+    'cum. up to last month' = year till date - month till date; prop. figures from the targets and working days.
+    A row without start figures is shown as typed (old way)."""
+    out = {k: r.get(k, "") for k in ("rb", "prop", "sep", "todate", "hq", "mprop", "mon", "day", "hold")}
+    bd = R.pdate(r.get("base_date"))
+    rb, hq = _n(r.get("rb")), _n(r.get("hq"))
+    py = wd["year_completed"] / wd["year_total"] if wd.get("year_total") else 0
+    pm = wd["month_completed"] / wd["month_total"] if wd.get("month_total") else 0
+    out["prop"] = f"{rb * py:.2f}" if rb else (r.get("rb") or "-")
+    out["mprop"] = f"{hq * pm:.2f}" if hq else ("0" if hq == 0 else "")
+    if not bd or bd > as_on:
+        return out
+    daily = {R.pdate(k): _n(v) or 0 for k, v in (r.get("daily") or {}).items() if R.pdate(k)}
+    same_m = (bd.year, bd.month) == (as_on.year, as_on.month)
+    same_y = R.fy_of(bd) == R.fy_of(as_on)
+    m0 = date(as_on.year, as_on.month, 1)
+    mon = (_n(r.get("base_mon")) or 0 if same_m else 0) + sum(v for k, v in daily.items()
+                                                            if k <= as_on and k >= m0 and (k > bd or not same_m))
+    yr = (_n(r.get("base_year")) or 0 if same_y else 0) + sum(v for k, v in daily.items()
+                                                             if k <= as_on and R.fy_of(k) == R.fy_of(as_on) and (k > bd or not same_y))
+    out.update(mon=_g(mon), todate=_g(yr), sep=_g(yr - mon), day=_g(daily.get(as_on, 0)))
+    return out
