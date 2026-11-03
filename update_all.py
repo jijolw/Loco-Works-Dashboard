@@ -135,10 +135,21 @@ def main():
     try:
         sh_pdc = open_sheet(pdc_hq.SHEET_KEY)
         cur = pdc_hq.read_current(sh_pdc)
-        plan["pdc"] = (sh_pdc, pdc_hq.build(D, as_on, cur))
+        try:
+            from core import condemnation
+            cond_rows, cond_err = condemnation.load(live=True)
+            cond = pdc_hq.pipeline_remarks(cond_rows.get("rows", []))
+            if cond_err:
+                log("    NOTE: " + cond_err)
+        except Exception as e:
+            cond = {}
+            log(f"    NOTE: Condemnation_Pipeline not read ({e}) - REMARKS kept as typed")
+        plan["pdc"] = (sh_pdc, pdc_hq.build(D, as_on, cur, cond))
         log("\n3c. PDC for CN GS SLR Coaches (holding only, no FND):")
         for line in pdc_hq.preview_lines(plan["pdc"][1], cur):
             log("  " + line)
+        in_sheet = [r[3].lstrip("'") for rows in plan["pdc"][1].values() for r in rows if "condemn" in str(r[14]).lower()]
+        log(f"    REMARKS from Condemnation_Pipeline: {len(in_sheet)} coach(es)" + (f" - {', '.join(in_sheet)}" if in_sheet else ""))
     except Exception as e:
         problems.append(f"PDC sheet: {e}")
         log(f"\n3c. PDC sheet NOT prepared: {e}")

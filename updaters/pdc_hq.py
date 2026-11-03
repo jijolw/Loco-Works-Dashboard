@@ -6,7 +6,12 @@ Rules (JIJO 22-10 / 26-10 / 27-10-2026):
  - PDC = ERP pdcDate; the sheet value is kept only when ERP is blank. REMARKS, COUP kept from the sheet.
  - DIVN = ERP divisionId, else the sheet value. LIGHT / HEAVY: pre-survey hrs >= 500 HEAVY.
  - NO OF DAYS = formula =TODAY()-G<row>. Sorted by PDC (blank last), then receipt date.
+ - REMARKS for condemnation come from OUR Condemnation_Pipeline tab (JIJO 03-11-2026): a coach listed there that is
+   not yet condemned gets its pipeline status (e.g. "Proposed for condemnation", "M268 Given - condemnation");
+   an old typed "nominated / proposed for condemnation" remark on a coach no longer in the pipeline is cleared.
+   Already-condemned rows of the pipeline are ignored. Other remarks stay as typed.
 """
+import re
 from datetime import date, datetime
 
 from core import rules as R
@@ -40,8 +45,25 @@ def status(d):
     return "YARD"
 
 
-def build(demands, as_on, current):
-    """current = {tab: [rows as read from the sheet]} -> {tab: [value rows]} + notes."""
+_STALE = re.compile(r"(nominat|propos)\w*.*condemn|condemn\w*.*(nominat|propos)", re.I)
+
+
+def pipeline_remarks(rows):
+    """rows of core.condemnation.load() -> {coach key: remark} for coaches not yet condemned."""
+    out = {}
+    for r in rows or []:
+        st = next((str(v).strip() for k, v in r.items() if "status" in k.lower()), "")
+        if st.lower().startswith("condemn"):                 # Condemned / Condemnded - already done
+            continue
+        k = R.coach_key({"coachNo": r.get("coach", "")})
+        if k:
+            out[k] = st if "condemn" in st.lower() else (f"{st} - condemnation" if st else "Proposed for condemnation")
+    return out
+
+
+def build(demands, as_on, current, cond=None):
+    """current = {tab: [rows as read from the sheet]}; cond = pipeline_remarks(...) -> {tab: [value rows]}."""
+    cond = cond or {}
     keep = {}
     for tab, rows in current.items():
         for r in rows[2:]:
@@ -58,12 +80,17 @@ def build(demands, as_on, current):
         old = keep.get(k, {})
         pdc = R.pdate(h.get("pdcDate")) or old.get("pdc")
         pre = R.hours(h, "preSurveyHrs")
+        rem = old.get("rem", "")
+        if k in cond:
+            rem = cond[k]
+        elif _STALE.search(rem):
+            rem = ""
         out[tab].append(dict(
             sort=(pdc or date.max, R.pdate(h.get("receivedDate")) or date.max),
             vals=["", "SR", R.coach_type(h), "'" + str(h.get("coachNo")), old.get("coup", ""), "NAC",
                   (R.pdate(h.get("receivedDate")) or "").isoformat() if h.get("receivedDate") else "", "POH",
                   int(pre) if pre else "", R.light_heavy(h), h.get("divisionId") or old.get("divn", ""), "",
-                  status(h), pdc.isoformat() if pdc else "", old.get("rem", "")]))
+                  status(h), pdc.isoformat() if pdc else "", rem]))
     result = {}
     for tab, items in out.items():
         items.sort(key=lambda x: x["sort"])
