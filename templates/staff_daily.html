@@ -57,6 +57,10 @@ body{background:#f6f7f9}
 
 <div class="grid">
 <div class="box" style="grid-column:1/-1"><h2>2. AC Loco Bay (page 1)</h2>
+{% if ac_erp %}<p class="note"><b>Filled from ERP Aerial View automatically</b> (read {{ ac_erp.read_at }}). Nothing to type.
+{% for b in ac_erp.bay if b.loco %}{{ b.line }}: {{ b.type }} {{ b.loco }}{{ ' · ' if not loop.last }}{% endfor %}
+{% if ac_erp.others %}<br>Not on a line: {% for o in ac_erp.others %}{{ o.type }} {{ o.loco }}{{ ', ' if not loop.last }}{% endfor %}{% endif %}</p>
+<details><summary class="note">Typed boxes (used only when ERP cannot be read; shed is also taken from here)</summary>{% endif %}
 <table id="acbay"><tr><th>Line</th><th>Type</th><th>Loco no.</th><th>Repair</th><th>Shed</th><th>Date received</th><th></th></tr>
 {% for b in inp.ac_bay %}{% set i = loop.index0 %}<tr><td style="text-align:left">{{ b.line }}</td>
 <td><input name="ac_{{ i }}_type" value="{{ b.type or '' }}" style="width:60px"></td><td><input name="ac_{{ i }}_loco" value="{{ b.loco or '' }}" style="width:70px"></td>
@@ -72,7 +76,8 @@ document.querySelectorAll('.acmove').forEach(s=>s.onchange=()=>{const i=s.datase
  if(!g(i,'loco').value.trim()){alert('This line is empty - nothing to move.');return;}
  if(g(j,'loco').value.trim()){alert('That line already has loco '+g(j,'loco').value+'. Clear it first.');return;}
  F.forEach(k=>{g(j,k).value=g(i,k).value;g(i,k).value='';});});})();
-</script></div>
+</script>
+{% if ac_erp %}</details>{% endif %}</div>
 
 <div class="box"><h2>3. Weekly plan (page 1)</h2>
 <p class="note">Comes from ERP: coaches whose <b>despatch PDC</b> in ERP falls Monday–Friday of the report week.

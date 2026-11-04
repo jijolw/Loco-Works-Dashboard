@@ -17,7 +17,7 @@ from datetime import date, timedelta
 
 from analysis import position as P
 from analysis.aerial import PREFIX_SHOP, SHOPS, _split_pit
-from core import daily_inputs, rules as R
+from core import acloco, daily_inputs, rules as R
 
 CAT = {"GS": "ICF", "CN": "ICF", "SLR / GSLRD": "ICF", "CZ": "ICF", "VPH": "ICF", "VPU": "ICF", "VPUX": "ICF",
        "NMG POH": "NMG", "NMG CONVERSION": "NMG", "ART CONVERSION": "ARTC", "ARMV CONVERSION": "ARTC", "ARMV": "ARTC",
@@ -294,7 +294,17 @@ Report date {report_date:%d-%m-%Y} · data at {exported:%H:%M} · Page 1 of 2</d
     ac = ['<div class="box"><div class="bh"><b>AC Loco Bay</b><span>{n} locos</span></div><table class="t">'
           '<tr><th>Line</th><th>Loco</th><th>Repair</th><th>Shed</th><th>Date</th><th class="r">Days</th></tr>']
     n_loco = 0
-    for b in inp.get("ac_bay", []):
+    # AC Loco Bay from the ERP Aerial View (core/acloco.py, read at each ERP export, 04-11-2026); typed bay = fallback.
+    # Shed / repair not given by ERP are taken from the typed bay for the same loco.
+    erp_ac = acloco.load()
+    typed = {str(b.get("loco") or "").strip(): b for b in inp.get("ac_bay", []) if (b.get("loco") or "").strip()}
+    bay, others = inp.get("ac_bay", []), []
+    if erp_ac and R.pdate(erp_ac.get("read_at")) and R.pdate(erp_ac["read_at"]) >= exported.date() - timedelta(days=1):
+        bay = [dict(b, shed=b.get("shed") or typed.get(b.get("loco", ""), {}).get("shed", ""),
+                    repair=b.get("repair") or typed.get(b.get("loco", ""), {}).get("repair", ""))
+               for b in erp_ac.get("bay", [])]
+        others = erp_ac.get("others", [])
+    for b in bay:
         if not (b.get("loco") or "").strip():
             ac.append(f'<tr class="emp"><td>{esc(b.get("line"))}</td><td colspan=5>–</td></tr>')
             continue
@@ -304,8 +314,11 @@ Report date {report_date:%d-%m-%Y} · data at {exported:%H:%M} · Page 1 of 2</d
         dd = f"<b>{days}</b>" if days != "" and days > 30 else days
         ac.append(f'<tr><td>{esc(b.get("line"))}</td><td class="c">{esc(b.get("type"))} {esc(b.get("loco"))}</td>'
                   f'<td>{esc(b.get("repair"))}</td><td>{esc(b.get("shed"))}</td><td>{f(dt)}</td><td class="r">{dd}</td></tr>')
+    if others:
+        ac.append(f'<tr><td colspan=6 class="rem">Not on a line: ' +
+                  ", ".join(f'{esc(o.get("type"))} {esc(o.get("loco"))}' for o in others) + '</td></tr>')
     ac.append("</table></div>")
-    ac[0] = ac[0].replace("{n}", str(n_loco))
+    ac[0] = ac[0].replace("{n} locos", f"{n_loco} on lines" + (f" + {len(others)} not on a line" if others else ""))
 
     inc_rows = sorted((row(d) for d in by_area["Incoming"]), key=lambda r: (r["type"], -(r["days"] or 0)))
     p1 += ['<div class="grid2"><div class="col">', shop_table("Paint Shop"), list_table(inc_rows, "Incoming (OT/IN)"),

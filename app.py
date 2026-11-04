@@ -430,7 +430,7 @@ def daily():
         elif R.pdate(p.get("desp_pdc")) and R.pdate(p.get("desp_pdc")) <= as_on:
             plan_status[i] = "OVERDUE"
     return render_template("daily.html", inp=inp, wd=wd, fy=R.fy_of(as_on), as_on=as_on, report_date=report_date,
-                           saved=request.args.get("saved"), target_rows=DI.TARGET_ROWS, typed_fields=DI.TYPED_FIELDS, tfig=[DI.typed_figures(r, as_on, wd) for r in inp.get("typed", [])] if wd else [],
+                           saved=request.args.get("saved"), target_rows=DI.TARGET_ROWS, typed_fields=DI.TYPED_FIELDS, ac_erp=__import__("core.acloco", fromlist=["load"]).load(), tfig=[DI.typed_figures(r, as_on, wd) for r in inp.get("typed", [])] if wd else [],
                            cond=cond, cond_err=cond_err, cond_rows=cond_rows, heavy=heavy, plan_status=plan_status)
 
 

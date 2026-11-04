@@ -185,6 +185,12 @@ def build_export():
         except OSError:
             pass
     _write_xlsx(rows, os.path.join(out_dir, "erp_demands_latest.xlsx"))
+    try:                                                   # AC Loco Bay for the Daily Position report (read only)
+        from core import acloco
+        status["step"] = "AC loco positions..."
+        acloco.fetch(sess)
+    except Exception as e:
+        status["ac_error"] = str(e)
     return payload
 
 
