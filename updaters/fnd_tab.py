@@ -16,10 +16,10 @@ from core import rules as R
 SHEET_KEY = "1DWi99uWW0ReyblrXnT0MEBqzOPwYvhLCB9v9lWON0QQ"   # Workshop Coach Production Plan
 TAB = "FND"
 SECTIONS = ["Water Service", "Air Brake", "Train Lighting", "Trimming", "Carpentry", "Painting / Lettering",
-            "Bio-toilet", "Final Inspection"]
+            "Final Inspection"]                     # Bio-toilet removed (JIJO 04-11)
 HEAD = ["Sl. No", "Coach No", "Type", "Division", "Outturned On", "Days FND", "Despatch PDC (ERP)",
         "Revised Despatch PDC"] + SECTIONS + ["Remarks"]
-NCOL = len(HEAD)                      # A..Q
+NCOL = len(HEAD)                      # A..P
 FIRST = 3                             # row 1 title, row 2 headers
 
 
@@ -31,7 +31,7 @@ def fnd_coaches(D):
 
 
 def build(D, current):
-    """current = rows read from the tab (A1:Q...) -> list of value rows for A3.. ."""
+    """current = rows read from the tab (A1:P...) -> list of value rows for A3.. ."""
     keep = {}
     for r in current[FIRST - 1:]:
         r = list(r) + [""] * NCOL
@@ -63,7 +63,7 @@ def read_current(sh):
     titles = {w.title: w for w in sh.worksheets()}
     # unformatted: a typed Revised PDC comes back as a date serial number and is written back unchanged
     # (a "05/11/2026" text could be re-read as 11 May in a US-locale sheet)
-    return titles[TAB].get_values("A1:Q400", value_render_option="UNFORMATTED_VALUE") if TAB in titles else []
+    return titles[TAB].get_values(f"A1:{_col(NCOL)}400", value_render_option="UNFORMATTED_VALUE") if TAB in titles else []
 
 
 def _col(n):
