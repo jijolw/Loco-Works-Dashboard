@@ -5,7 +5,7 @@ FND coaches = outturned in ERP (desp date) but not yet physically despatched (no
 Corrosion is done, so only the remaining sections are tracked. Refreshed by Update_All every day:
  - rows come from ERP (coach, type, division, outturned on, days since outturn, despatch PDC);
  - what the shop typed is KEPT per coach: Revised PDC, the section columns and Remarks;
- - a coach physically despatched drops off; a new FND coach is added with every section "Yet to be taken".
+ - a coach physically despatched drops off; a new FND coach is added with the sections blank.
 Revised PDC and section cells are FREE typing (JIJO 04-11: no drop-downs) - the shop types a date or "Completed";
 they are date-formatted so a typed date shows dd/mm/yyyy, and new rows start blank.
 """
