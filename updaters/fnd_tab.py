@@ -6,7 +6,8 @@ Corrosion is done, so only the remaining sections are tracked. Refreshed by Upda
  - rows come from ERP (coach, type, division, outturned on, days since outturn, despatch PDC);
  - what the shop typed is KEPT per coach: Revised PDC, the section columns and Remarks;
  - a coach physically despatched drops off; a new FND coach is added with every section "Yet to be taken".
-Section cells have a drop-down (Yet to be taken / Under process / Completed); Revised PDC has a date picker.
+Revised PDC and section cells are FREE typing (JIJO 04-11: no drop-downs) - the shop types a date or "Completed";
+they are date-formatted so a typed date shows dd/mm/yyyy, and new rows start blank.
 """
 from datetime import datetime
 
@@ -18,7 +19,6 @@ SECTIONS = ["Water Service", "Air Brake", "Train Lighting", "Trimming", "Carpent
             "Bio-toilet", "Final Inspection"]
 HEAD = ["Sl. No", "Coach No", "Type", "Division", "Outturned On", "Days FND", "Despatch PDC (ERP)",
         "Revised Despatch PDC"] + SECTIONS + ["Remarks"]
-CHOICES = ["Yet to be taken", "Under process", "Completed"]
 NCOL = len(HEAD)                      # A..Q
 FIRST = 3                             # row 1 title, row 2 headers
 
@@ -41,7 +41,7 @@ def build(D, current):
     rows = []
     for i, d in enumerate(fnd_coaches(D), 1):
         old = keep.get(R.coach_key(d))
-        typed = old[7:NCOL] if old else ([""] + ["Yet to be taken"] * len(SECTIONS) + [""])
+        typed = old[7:NCOL] if old else [""] * (NCOL - 7)
         out = R.pdate(d.get("dispatchDate"))
         pdc = R.pdate(d.get("pdcDate"))
         n = FIRST + i - 1
@@ -81,13 +81,9 @@ def apply(sh, rows, log):
     sid = ws.id
     rng = lambda c0, c1: {"sheetId": sid, "startRowIndex": FIRST - 1, "endRowIndex": 400, "startColumnIndex": c0, "endColumnIndex": c1}
     req = [
-        {"setDataValidation": {"range": rng(7, 8), "rule": {"condition": {"type": "DATE_IS_VALID"}, "strict": True,
-                                                              "showCustomUi": True}}},
-        {"setDataValidation": {"range": rng(8, 8 + len(SECTIONS)), "rule": {
-            "condition": {"type": "ONE_OF_LIST", "values": [{"userEnteredValue": c} for c in CHOICES]},
-            "strict": False, "showCustomUi": True}}},
+        {"setDataValidation": {"range": rng(7, 8 + len(SECTIONS))}},          # no drop-down / picker rule
         {"repeatCell": {"range": {"sheetId": sid, "startRowIndex": FIRST - 1, "endRowIndex": 400, "startColumnIndex": 4,
-                                  "endColumnIndex": 8},
+                                  "endColumnIndex": 8 + len(SECTIONS)},
                         "cell": {"userEnteredFormat": {"numberFormat": {"type": "DATE", "pattern": "dd/mm/yyyy"}}},
                         "fields": "userEnteredFormat.numberFormat"}},
         {"repeatCell": {"range": {"sheetId": sid, "startRowIndex": FIRST - 1, "endRowIndex": 400, "startColumnIndex": 5,
