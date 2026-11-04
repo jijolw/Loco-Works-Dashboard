@@ -303,7 +303,7 @@ Report date {report_date:%d-%m-%Y} · data at {exported:%H:%M} · Page 1 of 2</d
         bay = [dict(b, shed=b.get("shed") or typed.get(b.get("loco", ""), {}).get("shed", ""),
                     repair=b.get("repair") or typed.get(b.get("loco", ""), {}).get("repair", ""))
                for b in erp_ac.get("bay", [])]
-        others = erp_ac.get("others", [])
+        others = []          # JIJO 04-11: show only the locos the AC loco shop has placed on a pit / line
     for b in bay:
         if not (b.get("loco") or "").strip():
             ac.append(f'<tr class="emp"><td>{esc(b.get("line"))}</td><td colspan=5>–</td></tr>')
