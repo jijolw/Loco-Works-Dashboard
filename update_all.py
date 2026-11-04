@@ -154,6 +154,19 @@ def main():
         problems.append(f"PDC sheet: {e}")
         log(f"\n3c. PDC sheet NOT prepared: {e}")
 
+    # f. Production Plan sheet - FND tab (all FND coaches, sections kept as typed by the shop) - JIJO 04-11-2026
+    try:
+        from updaters import fnd_tab
+        sh_fnd = open_sheet(fnd_tab.SHEET_KEY)
+        cur_fnd = fnd_tab.read_current(sh_fnd)
+        plan["fnd"] = (sh_fnd, fnd_tab.build(D, cur_fnd))
+        log("\n3f. Production Plan - FND tab (outturned, not physically despatched):")
+        for line in fnd_tab.preview_lines(plan["fnd"][1], cur_fnd):
+            log(line)
+    except Exception as e:
+        problems.append(f"FND tab: {e}")
+        log(f"\n3f. FND tab NOT prepared: {e}")
+
     # e. Achieved columns of the target tabs (ERP outturn; targets themselves are JIJO's)
     try:
         from updaters import achieved
@@ -192,7 +205,7 @@ def main():
 
     if problems:
         log("\nNot prepared (will be skipped): " + "; ".join(problems))
-    if not any(k in plan for k in ("km", "pos", "pdc", "ach", "online")):
+    if not any(k in plan for k in ("km", "pos", "pdc", "fnd", "ach", "online")):
         log("\nNothing to write.")
         return
     log("\nNothing has been written yet. The HQ KM sheet (2026 KM SPLs) is only read, never written.")
@@ -215,6 +228,8 @@ def main():
         log(f"  Position tabs - {n} ranges written")
     if "pdc" in plan:
         pdc_hq.apply(plan["pdc"][0], plan["pdc"][1], as_on, log)
+    if "fnd" in plan:
+        fnd_tab.apply(plan["fnd"][0], plan["fnd"][1], log)
     if "ach" in plan:
         achieved.apply(plan["ach"], log)
     if "online" in plan:
