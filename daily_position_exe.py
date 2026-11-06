@@ -77,18 +77,30 @@ def make(get_erp=True, out_dir=None, open_pdf=True):
     # own profile folder: with Edge already open, a plain --headless run hands over to it and prints nothing
     prof = os.path.join(config.APP_DIR, "data", "edge_print_profile")
     url = "file:///" + html_path.replace("\\", "/")
-    for head in ("--headless=new", "--headless"):
-        r = subprocess.run([exe, head, "--disable-gpu", "--no-first-run", "--no-default-browser-check",
-                            f"--user-data-dir={prof}", "--no-pdf-header-footer", "--print-to-pdf-no-header",
-                            "--virtual-time-budget=5000", f"--print-to-pdf={out}", url],
-                           check=False, timeout=180, capture_output=True, text=True)
-        for _ in range(20):
+    tries = [["--headless=new"], ["--headless=old"], ["--headless"]]
+    for i, extra in enumerate(tries, 1):                 # a fresh profile each time: a hung Edge may still hold the last one
+        cmd = [exe] + extra + ["--disable-gpu", "--no-first-run", "--no-default-browser-check", f"--user-data-dir={prof}{i}",
+                               "--no-pdf-header-footer", "--print-to-pdf-no-header", f"--print-to-pdf={out}", url]
+        try:
+            subprocess.run(cmd, check=False, timeout=60, capture_output=True)
+        except subprocess.TimeoutExpired:
+            say(f"    {extra[0]}: Edge did not finish in 60 s - trying the next way")
+        for _ in range(10):
             if os.path.exists(out) and os.path.getsize(out) > 0:
                 break
             time.sleep(0.5)
-        if os.path.exists(out):
+        if os.path.exists(out) and os.path.getsize(out) > 0:
             break
-        say(f"    {os.path.basename(exe)} {head}: no PDF ({(r.stderr or '').strip()[-200:]})")
+    if not (os.path.exists(out) and os.path.getsize(out) > 0):
+        # last way: open the report in the browser with the Print window ready - choose "Save as PDF", Save
+        pr = html_path.replace(".html", "_print.html")
+        with open(pr, "w", encoding="utf-8") as f:
+            f.write(html.replace("</body>", "<script>window.addEventListener('load',()=>setTimeout(()=>window.print(),800));</script></body>"))
+        say("    Edge could not print by itself - the report is opening; in the Print window choose 'Save as PDF' and Save"
+            f" (folder: {out_dir}).")
+        if os.name == "nt":
+            os.startfile(pr)
+        return pr
     if not os.path.exists(out):
         raise SystemExit("PDF not made - check Edge/Chrome.")
     say(f"\nERP data {ex:%d-%m-%Y %H:%M} | report date {report_date:%d-%m-%Y} | position as on {as_on:%d-%m-%Y}")
