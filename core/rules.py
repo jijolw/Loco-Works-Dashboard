@@ -16,7 +16,11 @@ import csv
 import os
 from datetime import datetime, date
 
-APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+try:                                        # the app folder, or the folder of Daily_Position.exe (06-11-2026)
+    import config as _config
+    APP_DIR = _config.APP_DIR
+except Exception:
+    APP_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GROUPS_CSV = os.path.join(APP_DIR, "coach_groups.csv")
 
 HEAVY_HOURS = 500          # pre-survey / final hours >= 500 -> HEAVY (ICF and LHB alike)
