@@ -14,6 +14,7 @@ Run with --no-erp to skip step 1 and use the last ERP data (e.g. when ERP is dow
 import os
 import subprocess
 import sys
+import time
 import traceback
 
 if not getattr(sys, "frozen", False):
@@ -73,8 +74,21 @@ def make(get_erp=True, out_dir=None, open_pdf=True):
         raise SystemExit(f"No Edge/Chrome found - open {html_path} and print it to PDF.")
     if os.path.exists(out):
         os.remove(out)
-    subprocess.run([exe, "--headless", "--disable-gpu", "--no-pdf-header-footer", "--print-to-pdf-no-header",
-                    f"--print-to-pdf={out}", "file:///" + html_path.replace("\\", "/")], check=False, timeout=180)
+    # own profile folder: with Edge already open, a plain --headless run hands over to it and prints nothing
+    prof = os.path.join(config.APP_DIR, "data", "edge_print_profile")
+    url = "file:///" + html_path.replace("\\", "/")
+    for head in ("--headless=new", "--headless"):
+        r = subprocess.run([exe, head, "--disable-gpu", "--no-first-run", "--no-default-browser-check",
+                            f"--user-data-dir={prof}", "--no-pdf-header-footer", "--print-to-pdf-no-header",
+                            "--virtual-time-budget=5000", f"--print-to-pdf={out}", url],
+                           check=False, timeout=180, capture_output=True, text=True)
+        for _ in range(20):
+            if os.path.exists(out) and os.path.getsize(out) > 0:
+                break
+            time.sleep(0.5)
+        if os.path.exists(out):
+            break
+        say(f"    {os.path.basename(exe)} {head}: no PDF ({(r.stderr or '').strip()[-200:]})")
     if not os.path.exists(out):
         raise SystemExit("PDF not made - check Edge/Chrome.")
     say(f"\nERP data {ex:%d-%m-%Y %H:%M} | report date {report_date:%d-%m-%Y} | position as on {as_on:%d-%m-%Y}")
