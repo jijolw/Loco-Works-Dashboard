@@ -441,6 +441,8 @@ def daily_report():
     from core import condemnation, daily_inputs as DI
     D, ex, report_date, as_on = _daily_context()
     inp = DI.load()
+    from core import manual_sheet                       # staff's manual-entry sheet (06-11-2026)
+    inp = manual_sheet.apply(inp, as_on, manual_sheet.load(live=True)[0])
     cond, _ = condemnation.load(live=True)
     html = DR.build(D, ex, inp, DI.working_days(as_on, inp), [r["coach"] for r in cond.get("rows", [])],
                     as_on=as_on, report_date=report_date)

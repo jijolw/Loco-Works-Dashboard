@@ -1,7 +1,10 @@
 """updaters/common.py - Google Sheets access for the update tools (service account on the office PC)."""
 import os
 
-CRED_PATHS = [r"D:\JIJO\information\Coach Position\credentials.json", r"D:\TypeWiseHoldingApp\credentials.json"]
+import config
+
+CRED_PATHS = [os.path.join(config.APP_DIR, "credentials.json"), config.get("GOOGLE_CREDENTIALS", "") or "-",
+              r"D:\JIJO\information\Coach Position\credentials.json", r"D:\TypeWiseHoldingApp\credentials.json"]
 HQ_KM_SHEET_KEY = "1M3eSBWsa4Lp4NzQhEqRNGiCIxNgmSmdHIW-0N8IhUxk"     # HQ 2026 KM SPLs - READ ONLY, never opened for writing
 
 

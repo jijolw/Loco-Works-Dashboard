@@ -6,8 +6,11 @@ APP_MODE = local   -> office PC: reads the ERP export, can refresh from ERP and 
 APP_MODE = online  -> Render: view only, reads the last snapshot from Supabase
 """
 import os
+import sys
 
-APP_DIR = os.path.dirname(os.path.abspath(__file__))
+# Daily_Position.exe (PyInstaller): settings, data and the PDF live in the folder of the .exe
+FROZEN = getattr(sys, "frozen", False)
+APP_DIR = os.path.dirname(sys.executable) if FROZEN else os.path.dirname(os.path.abspath(__file__))
 ENV_FILE = os.path.join(APP_DIR, ".env")
 
 
@@ -42,8 +45,8 @@ ERP_USERNAME = get("ERP_USERNAME")
 ERP_PASSWORD = get("ERP_PASSWORD")
 
 # The ERP export file - the same file Claude reads (08_Claude_ERP_Export)
-EXPORT_PATH = get("EXPORT_PATH", os.path.normpath(os.path.join(
-    APP_DIR, "..", "..", "08_Claude_ERP_Export", "data", "erp_demands_latest.json")))
+EXPORT_PATH = get("EXPORT_PATH", os.path.join(APP_DIR, "data", "erp_demands_latest.json") if FROZEN else os.path.normpath(
+    os.path.join(APP_DIR, "..", "..", "08_Claude_ERP_Export", "data", "erp_demands_latest.json")))
 
 # Supabase (online copy). SUPABASE_URL = https://<project>.supabase.co  (no /rest/v1)
 SUPABASE_URL = get("SUPABASE_URL").replace("/rest/v1", "").rstrip("/")
