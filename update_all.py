@@ -43,7 +43,44 @@ REUSE_MINUTES = 15
 
 os.makedirs(OUT, exist_ok=True)
 LOG = os.path.join(OUT, f"update_all_log_{datetime.now():%Y%m%d_%H%M}.txt")
+
+# Update all step status (JIJO 19-11-2026): every step writes what it did, so the closing summary shows it.
+STATUS_FILE = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../..", "update_all_status.json"))
+
+
+def step_status(step, state=None, **extra):
+    try:
+        with open(STATUS_FILE, encoding="utf-8") as fh:
+            st = json.load(fh)
+    except Exception:
+        st = {}
+    if state is not None:
+        st[step] = {"state": state, "at": datetime.now().strftime("%d-%m-%Y %H:%M")}
+    st.update(extra)
+    try:
+        with open(STATUS_FILE, "w", encoding="utf-8") as fh:
+            json.dump(st, fh, indent=1)
+    except Exception:
+        pass
+    return st
+
 _lines = []
+
+
+def _retry(fn, *a, tries=4):
+    """Run a sheet writer again if Google drops the connection (09-11: 'Remote end closed connection')."""
+    import time
+    for n in range(1, tries + 1):
+        try:
+            return fn(*a)
+        except Exception as e:                      # requests ConnectionError / gspread transport errors
+            msg = str(e).lower()
+            quota = "429" in msg or "quota" in msg          # Google read limit per minute (23-11-2026) - wait and go on
+            if n == tries or not ("connection" in msg or quota):
+                raise
+            wait = 65 if quota else 15
+            log(f"    {'Google read limit reached' if quota else 'connection dropped'} ({e.__class__.__name__}) - retry {n} in {wait} s")
+            time.sleep(wait)
 
 
 def log(m=""):
@@ -77,12 +114,34 @@ def read_hq_km():
 
 
 def main():
+    try:                                              # fresh status for this run (old run's YES must not carry over)
+        with open(STATUS_FILE, "w", encoding="utf-8") as fh:
+            json.dump({"started": datetime.now().strftime("%d-%m-%Y %H:%M")}, fh)
+    except Exception:
+        pass
     log(f"LW/PER UPDATE ALL - {datetime.now():%d-%m-%Y %H:%M}")
     payload = step_export()
     import lwper_rules
     demands_raw, exported = lwper_rules.load_export(config.EXPORT_PATH)
-    D, ex = data.load(force=True)
+    from core import physical                       # HQ OUT TURN - READ ONLY (JIJO 10-11-2026)
+    log("1b. HQ OUT TURN (read only) - physical despatch...")
+    pl, perr = physical.refresh()
+    if perr:
+        log("    NOTE: " + perr + (" - saved copy of " + pl["read_at"] + " used" if pl else " - ERP shop-out dates used"))
+    D, ex = data.load(force=True)                    # ERP only (JIJO 12-11-2026)
     as_on = ex.date()
+    # HQ OUT TURN is used ONLY for the daily planner (Production Plan FND / Despatched col K / Shop Out - Yard),
+    # on its own copy DP; HQ PDC, POSITION tabs, targets and checks use ERP (D). JIJO 12-11-2026.
+    import copy
+    DP = copy.deepcopy(D)
+    phys_checks = physical.apply(DP, pl, as_on=as_on) if pl else []
+    if pl:
+        n, shop_only = physical.summary(DP)
+        log(f"    read {pl['read_at']}: {len(pl['rows'])} rows - DESP {n['DESP']}, FND {n['FND']}, RFD {n['RFD']} (planner only)")
+        if shop_only:
+            log(f"    Shop out in ERP, still in yard per HQ (planner 'Shop Out - Yard'): {', '.join(shop_only)}")
+        for c in phys_checks:
+            log(f"    CHECK: {c}")
 
     log("2. HQ KM sheet (read only)...")
     hq_csv_path = os.path.join(OUT, "hq_km_latest.csv")
@@ -145,11 +204,11 @@ def main():
             cond = {}
             log(f"    NOTE: Condemnation_Pipeline not read ({e}) - REMARKS kept as typed")
         plan["pdc"] = (sh_pdc, pdc_hq.build(D, as_on, cur, cond))
-        log("\n3c. PDC for CN GS SLR Coaches (holding only, no FND):")
+        log("\n3c. PDC for CN GS SLR Coaches (holding + ICF FND/RFD per HQ OUT TURN):")
         for line in pdc_hq.preview_lines(plan["pdc"][1], cur):
             log("  " + line)
-        in_sheet = [r[3].lstrip("'") for rows in plan["pdc"][1].values() for r in rows if "condemn" in str(r[14]).lower()]
-        log(f"    REMARKS from Condemnation_Pipeline: {len(in_sheet)} coach(es)" + (f" - {', '.join(in_sheet)}" if in_sheet else ""))
+        log(f"    Left out - proposed for condemnation: {len(pdc_hq.LEFT_OUT)} coach(es)"
+            + (f" - {', '.join(pdc_hq.LEFT_OUT)}" if pdc_hq.LEFT_OUT else ""))
     except Exception as e:
         problems.append(f"PDC sheet: {e}")
         log(f"\n3c. PDC sheet NOT prepared: {e}")
@@ -159,13 +218,38 @@ def main():
         from updaters import fnd_tab
         sh_fnd = open_sheet(fnd_tab.SHEET_KEY)
         cur_fnd = fnd_tab.read_current(sh_fnd)
-        plan["fnd"] = (sh_fnd, fnd_tab.build(D, cur_fnd))
-        log("\n3f. Production Plan - FND tab (outturned, not physically despatched):")
+        plan["fnd"] = (sh_fnd, fnd_tab.build(DP, cur_fnd))
+        log("\n3f. Production Plan - FND tab (outturned, not yet shop out):")
         for line in fnd_tab.preview_lines(plan["fnd"][1], cur_fnd):
             log(line)
     except Exception as e:
         problems.append(f"FND tab: {e}")
         log(f"\n3f. FND tab NOT prepared: {e}")
+
+    # g. Production Plan sheet - Despatched tab (physically despatched this month; typed rows kept) - JIJO 07-11-2026
+    try:
+        from updaters import despatched_tab
+        sh_desp = open_sheet(despatched_tab.SHEET_KEY)
+        plan["desp"] = (sh_desp, despatched_tab.build(DP, despatched_tab.read_current(sh_desp)))
+        log("\n3g. Production Plan - Despatched tab (shop out this month; K = physical despatch):")
+        for line in despatched_tab.preview_lines(plan["desp"][1]):
+            log(line)
+    except Exception as e:
+        problems.append(f"Despatched tab: {e}")
+        log(f"\n3g. Despatched tab NOT prepared: {e}")
+
+    # h. Production Plan sheet - Shop Out - Yard tab (shop out, still in yard per HQ OUT TURN) - JIJO 11-11-2026
+    try:
+        from updaters import yard_tab
+        sh_yard = open_sheet(yard_tab.SHEET_KEY)
+        cur_yard = yard_tab.read_current(sh_yard)
+        plan["yard"] = (sh_yard, yard_tab.build(DP, cur_yard))
+        log("\n3h. Production Plan - Shop Out - Yard tab (rubber / cleaning / VG / KM):")
+        for line in yard_tab.preview_lines(plan["yard"][1], cur_yard):
+            log(line)
+    except Exception as e:
+        problems.append(f"Shop Out - Yard tab: {e}")
+        log(f"\n3h. Shop Out - Yard tab NOT prepared: {e}")
 
     # e. Achieved columns of the target tabs (ERP outturn; targets themselves are JIJO's)
     try:
@@ -205,13 +289,17 @@ def main():
 
     if problems:
         log("\nNot prepared (will be skipped): " + "; ".join(problems))
-    if not any(k in plan for k in ("km", "pos", "pdc", "fnd", "ach", "online")):
+    if not any(k in plan for k in ("km", "pos", "pdc", "fnd", "desp", "yard", "ach", "online")):
         log("\nNothing to write.")
+        step_status("1 Sheets", "nothing to write")
         return
     log("\nNothing has been written yet. The HQ KM sheet (2026 KM SPLs) is only read, never written.")
+    log("ONE YES covers step 1 (above) and step 2 (Production Plan plan tabs, its preview prints next).")
     if input("Type YES to write all of the above: ").strip() != "YES":
         log("Cancelled - nothing written.")
+        step_status("1 Sheets", "not written (no YES)")
         return
+    step_status(None, yes_at=datetime.now().timestamp())
 
     log("\n4. Writing...")
     if "km" in plan:
@@ -219,7 +307,7 @@ def main():
         ws_km = open_sheet(km.LOCAL_SHEET_KEY).worksheet(km.TAB)
         ws_km.spreadsheet.batch_update({"requests": [{"unmergeCells": {"range": {
             "sheetId": ws_km.id, "startRowIndex": 0, "endRowIndex": 6, "startColumnIndex": 0, "endColumnIndex": 15}}}]})
-        ok = km.write_sheet(plan["km"])
+        ok = _retry(km.write_sheet, plan["km"])
         log(f"  Kumbh_Mela_Special_Pool - {'verified' if ok else 'CHECK: read-back differs'}")
         if not ok:
             raise RuntimeError("KM tab read-back differs - stopped")
@@ -227,11 +315,15 @@ def main():
         n = pt.apply(plan["pos"][0], plan["pos"][1], lambda m: log("  " + m))
         log(f"  Position tabs - {n} ranges written")
     if "pdc" in plan:
-        pdc_hq.apply(plan["pdc"][0], plan["pdc"][1], as_on, log)
+        _retry(pdc_hq.apply, plan["pdc"][0], plan["pdc"][1], as_on, log)
     if "fnd" in plan:
-        fnd_tab.apply(plan["fnd"][0], plan["fnd"][1], log)
+        _retry(fnd_tab.apply, plan["fnd"][0], plan["fnd"][1], log)
+    if "desp" in plan:
+        _retry(despatched_tab.apply, plan["desp"][0], plan["desp"][1], log)
+    if "yard" in plan:
+        _retry(yard_tab.apply, plan["yard"][0], plan["yard"][1], log)
     if "ach" in plan:
-        achieved.apply(plan["ach"], log)
+        _retry(achieved.apply, plan["ach"], log)
     if "online" in plan:
         from core import online_store
         snap = dict(payload)
@@ -242,14 +334,22 @@ def main():
             pass
         from core import targets_store
         snap["targets"] = targets_store.load()
-        online_store.upload_snapshot(snap)
+        from core import physical as _ph
+        snap["hq_outturn"] = _ph.load()            # physical despatch overlay for the online copy
+        _retry(online_store.upload_snapshot, snap)
         log("  Online snapshot uploaded")
-    log(f"\nDONE. Log: {LOG}")
+    step_status("1 Sheets", "written")
+    log(f"\nDONE (step 1 of 3). Log: {LOG}")
 
 
 if __name__ == "__main__":
     try:
         main()
-    except Exception:
-        log("\nSTOPPED:\n" + traceback.format_exc())
-    input("\nPress Enter to close...")
+    except Exception as e:
+        if "connection" in str(e).lower():
+            log("\nSTOPPED: Google connection kept dropping. Run Update_All again - steps already written show no "
+                "change the second time.")
+        log("\nSTOPPED:\n" + traceback.format_exc(limit=3))
+        step_status("1 Sheets", "STOPPED - error, see above")
+    if "--no-pause" not in sys.argv:            # --no-pause: run as step 1 of Update all (12-11-2026)
+        input("\nPress Enter to close...")

@@ -30,6 +30,22 @@ BROWSERS = [r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
             r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"]
 
 
+BW_CSS = """
+/* B/W print (JIJO 23-11-2026): FND = white on black, Corr. completed = boxed, condemnation = dashed underline, red -> black */
+* { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+body, .red, .hred, span.orr, td, th { color: #000 !important; }
+span.fndc, .lg span.fndc { background: #000 !important; color: #fff !important; font-weight: bold; padding: 0 2px; }
+span.fndc * { color: #fff !important; }
+span.ccc, .lg span.ccc { background: #fff !important; border: 1.3px solid #000; padding: 0 2px; font-weight: bold; }
+span.cond, .lg span.cond { text-decoration: underline dashed #000 !important; text-decoration-thickness: 2px !important; text-underline-offset: 2px; }
+span.orr { font-weight: bold; text-decoration: underline; }
+span.fndc::after { content: "FND"; font-size: 5.6pt; vertical-align: super; margin-left: 2px; font-weight: bold; }
+span.ccc::after { content: "CC"; font-size: 5.6pt; vertical-align: super; margin-left: 2px; font-weight: bold; }
+span.cond::after { content: "COND"; font-size: 5.6pt; vertical-align: super; margin-left: 2px; font-weight: bold; text-decoration: none; display: inline-block; }
+.lg span.fndc::after, .lg span.ccc::after, .lg span.cond::after, .mv span.cond::after { content: none; }
+"""
+
+
 def say(m):
     print(m, flush=True)
 
@@ -44,7 +60,10 @@ def make(get_erp=True, out_dir=None, open_pdf=True):
         say("1/3 Reading ERP (1-2 minutes)...")
         p = erp_client.build_export()
         say(f"    {p['count']} demands read at {p['exported_at']}")
-    D, ex = data.load()
+    from core import physical                       # HQ OUT TURN = physical despatch (JIJO 10-11-2026), read only
+    pl, perr = physical.refresh()
+    say("    " + (perr or f"HQ OUT TURN read ({len(pl['rows'])} despatch rows)"))
+    D, ex = data.load(force=True)
     if not D:
         raise SystemExit("No ERP data - run again with ERP reachable.")
     report_date = ex.date()
@@ -57,12 +76,18 @@ def make(get_erp=True, out_dir=None, open_pdf=True):
     if m:
         say(f"    Manual entries: updated on {m.get('updated_on') or '?'} (read {m.get('read_at', 'saved copy')})")
     DI_inp = manual_sheet.apply(inp, as_on, m)
+    from core import km as _km                      # HQ KM sheet, read only (page 1 KM line, JIJO 12-11-2026)
+    try:
+        km = _km.refresh()
+    except Exception as e:
+        km = _km.load()
+        say(f"    NOTE: HQ KM sheet not read ({e}) - " + ("saved copy used" if km else "KM line left out"))
     cond, cerr = condemnation.load(live=True)
     if cerr:
         say("    NOTE: " + cerr)
     say("3/3 Making the PDF...")
     html = DR.build(D, ex, DI_inp, DI.working_days(as_on, DI_inp), [r["coach"] for r in cond.get("rows", [])],
-                    as_on=as_on, report_date=report_date, back_url="/")
+                    as_on=as_on, report_date=report_date, back_url="/", km=km)
     html_path = os.path.join(config.APP_DIR, "data", "daily_report_print.html")
     with open(html_path, "w", encoding="utf-8") as f:
         f.write(html)
@@ -103,6 +128,35 @@ def make(get_erp=True, out_dir=None, open_pdf=True):
         return pr
     if not os.path.exists(out):
         raise SystemExit("PDF not made - check Edge/Chrome.")
+    # B/W copy of our 2 pages for a black-and-white printer (JIJO 23-11-2026): FND white on black, Corr. completed boxed
+    try:
+        bw_html = html_path.replace(".html", "_bw.html")
+        with open(bw_html, "w", encoding="utf-8") as f:
+            f.write(html.replace("</style>", BW_CSS + "</style>", 1))
+        bw_out = out.replace(".pdf", "_BW.pdf")
+        if os.path.exists(bw_out):
+            os.remove(bw_out)
+        bw_url = "file:///" + bw_html.replace("\\", "/")
+        for i, extra in enumerate(tries, 1):
+            cmd = [exe] + extra + ["--disable-gpu", "--no-first-run", "--no-default-browser-check", f"--user-data-dir={prof}bw{i}",
+                                   "--no-pdf-header-footer", "--print-to-pdf-no-header", f"--print-to-pdf={bw_out}", bw_url]
+            try:
+                subprocess.run(cmd, check=False, timeout=60, capture_output=True)
+            except subprocess.TimeoutExpired:
+                pass
+            for _ in range(10):
+                if os.path.exists(bw_out) and os.path.getsize(bw_out) > 0:
+                    break
+                time.sleep(0.5)
+            if os.path.exists(bw_out) and os.path.getsize(bw_out) > 0:
+                break
+        say(f"B/W PDF (2 pages, for the black-and-white printer): {bw_out}" if os.path.exists(bw_out)
+            else "    B/W PDF not made - the colour PDF is fine.")
+    except Exception as e:                                   # never stop the colour PDF for the B/W copy
+        say(f"    B/W PDF not made ({e}) - the colour PDF is fine.")
+    # then ERP's own Daily Position PDF (3-4 pages, JIJO 10-11-2026); our 2 pages stay even if ERP fails
+    from core import erp_pdf
+    erp_pdf.add_erp_page(out, os.path.join(config.APP_DIR, "data"), say)
     say(f"\nERP data {ex:%d-%m-%Y %H:%M} | report date {report_date:%d-%m-%Y} | position as on {as_on:%d-%m-%Y}")
     say(f"PDF: {out}")
     if open_pdf and os.name == "nt":

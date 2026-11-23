@@ -12,9 +12,11 @@ from datetime import datetime
 
 import config
 from core import rules
+from core import physical      # HQ OUT TURN physical despatch overlay (JIJO 10-11-2026)
 
 _lock = threading.Lock()
-_cache = {"stamp": None, "demands": [], "exported_at": None, "loaded": None, "km": {}, "targets": {}}
+_cache = {"stamp": None, "demands": [], "exported_at": None, "loaded": None, "km": {}, "targets": {},
+          "phys_checks": []}
 KM_FILE = os.path.join(config.APP_DIR, "data", "km_status.json")
 ONLINE_TTL = 600  # seconds between Supabase checks
 
@@ -38,25 +40,39 @@ def load(force=False):
     with _lock:
         if config.IS_LOCAL:
             try:
-                stamp = (os.path.getmtime(config.EXPORT_PATH), os.path.getmtime(rules.GROUPS_CSV))
+                stamp = (os.path.getmtime(config.EXPORT_PATH), os.path.getmtime(rules.GROUPS_CSV), physical.mtime())
             except OSError:
                 return [], None
             if force or stamp != _cache["stamp"]:
                 with open(config.EXPORT_PATH, encoding="utf-8") as f:
                     p = json.load(f)
-                _cache.update(stamp=stamp, demands=_enrich(p.get("demands", [])),
-                              exported_at=_parse_stamp(p.get("exported_at")), loaded=datetime.now())
+                D = _enrich(p.get("demands", []))
+                ex = _parse_stamp(p.get("exported_at"))
+                # physical despatch = HQ OUT TURN (DESP date / FND / RFD) for the coaches listed there;
+                # ERP actualDispatchDate (shop out) kept in _shopOut. Others stay on ERP.
+                # JIJO 12-11-2026: ERP ONLY here. HQ OUT TURN is used only in the daily planner (update_all.py
+                # applies physical.apply() on its own copy for the Production Plan tabs).
+                checks = []
+                _cache.update(stamp=stamp, demands=D, exported_at=ex, loaded=datetime.now(), phys_checks=checks)
         else:
             age = (datetime.now() - _cache["loaded"]).total_seconds() if _cache["loaded"] else None
             if force or age is None or age > ONLINE_TTL:
                 from core import online_store
                 p = online_store.download_snapshot()
                 if p:
-                    _cache.update(demands=_enrich(p.get("demands", [])),
+                    D = _enrich(p.get("demands", []))
+                    _cache["phys_checks"] = []              # ERP only (JIJO 12-11-2026)
+                    _cache.update(demands=D,
                                   exported_at=_parse_stamp(p.get("exported_at")),
                                   km=p.get("km_status") or {}, targets=p.get("targets") or {})
                 _cache["loaded"] = datetime.now()
         return _cache["demands"], _cache["exported_at"]
+
+
+def phys_checks():
+    """CHECK lines from the HQ OUT TURN overlay (coach not in ERP, ERP FND not in HQ, unreadable date...)."""
+    load()
+    return list(_cache.get("phys_checks") or [])
 
 
 def as_on():

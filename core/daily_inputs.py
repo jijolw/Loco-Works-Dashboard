@@ -28,8 +28,10 @@ DEFAULT = {
     # page-2 targets: rb = text shown, basis = number for the proportionate target, hq = monthly HQ target
     "targets": {
         "ICF": {"rb": "300", "basis": "300", "hq": "28"},
-        "NMG": {"rb": "-", "basis": "", "hq": "1"},
+        "NMGP": {"rb": "-", "basis": "", "hq": "0"},
+        "NMGC": {"rb": "-", "basis": "", "hq": "1"},
         "ARTC": {"rb": "-", "basis": "", "hq": "2"},
+        "ARTP": {"rb": "-", "basis": "", "hq": "0"},
         "LHBN": {"rb": "60 (HQ-120)", "basis": "120", "hq": "10"},
         "LHBA": {"rb": "36 (HQ-48)", "basis": "48", "hq": "5"},
         "EMUONLY": {"rb": "", "basis": "", "hq": "0"},
@@ -76,7 +78,7 @@ DEFAULT = {
     "saved_at": "",
 }
 
-TARGET_ROWS = [("ICF", "ICF NAC Coach POH"), ("NMG", "ICF - NMG POH/Conv"), ("ARTC", "ARMV/Conv"),
+TARGET_ROWS = [("ICF", "ICF NAC Coach POH"), ("NMGP", "ICF - NMG POH"), ("NMGC", "ICF - NMG to NMGHS Conv"), ("ARTC", "ARMV/Conv"), ("ARTP", "ART/ARMV POH"),
                ("LHBN", "LHB NAC POH"), ("LHBA", "LHB AC POH"), ("EMUONLY", "EMU (HQ target only)"),
                ("EMU", "EMU + MEMU (RB) / MEMU (HQ)"), ("DEMU", "DEMU DPC/TC"), ("SPART", "SPART/Spic"),
                ("TW4", "TW -4W"), ("TW8", "TW -8W"), ("OR", "OR")]
@@ -94,6 +96,8 @@ def load():
         saved = {}
     out = copy.deepcopy(DEFAULT)
     out.update({k: v for k, v in saved.items() if k in DEFAULT})
+    if "NMG" in out["targets"] and "NMGC" not in saved.get("targets", {}):    # old single NMG row -> conversion (11-11-2026)
+        out["targets"]["NMGC"] = dict(out["targets"]["NMG"])
     for k, v in DEFAULT["targets"].items():
         out["targets"].setdefault(k, dict(v))
     return out

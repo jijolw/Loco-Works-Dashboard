@@ -25,7 +25,7 @@ CATS = [
     ("EMU/MEMU|POH|NA", "EMU / MEMU", ["MEMU MC", "EMU MC", "MEMU TC", "EMU TC"]),
     ("DEMU/DTC/TC|POH|NA", "DEMU / DTC / TC", ["DEMU DPC", "DEMU TC"]),
     ("NMGHS|CONV/POH|NA", "NMGHS (POH + Conv)", ["NMG POH", "NMG CONVERSION"]),
-    ("ART|CONV|NA", "ART / ARMV Conversion", ["ART CONVERSION", "ARMV CONVERSION"]),
+    ("ART|CONV|NA", "ART / ARMV Conversion", ["ART CONVERSION", "ARMV CONVERSION", "ARME CONVERSION"]),
     ("SPART|POH|NA", "SPART", ["SPART"]),
     ("SPIC|POH|NA", "SPIC", ["SPIC"]),
     ("TW 4W|POH|NA", "Tower Wagon 4W", ["TW4W"]),

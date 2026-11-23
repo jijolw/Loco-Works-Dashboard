@@ -26,6 +26,7 @@ FIELDS = {
     "corrComp": ("Corrosion completed", "date"),
     "corrPd": ("Corrosion PDC", "date"),
     "pdcDate": ("PDC (despatch)", "date"),
+    "planDate": ("Plan date (weekly plan)", "date"),
     "dispatchDate": ("Outturn date (desp date)", "date"),
     "actualDispatchDate": ("Actual (physical) despatch date", "date"),
     "status": ("Status", "status"),
@@ -33,7 +34,7 @@ FIELDS = {
 }
 STATUSES = ["Running", "Return"]
 WATCH = ("coachNo", "receivedDate", "dispatchDate", "actualDispatchDate", "corrPlace", "corrComp", "corrPd",
-         "pdcDate", "status", "pitNum", "repairType", "divisionId")
+         "pdcDate", "planDate", "status", "pitNum", "repairType", "divisionId")
 
 _sess = None
 
@@ -109,7 +110,7 @@ def check(rec, field, new, replace):
     rd, nd = R.pdate(rec.get("receivedDate")), R.pdate(new) if kind == "date" else None
     if nd and rd and nd < rd:
         return False, f"date is before the received date {R.fmt(rd)}"
-    if nd and nd > datetime.now().date() and field not in ("corrPd", "pdcDate"):
+    if nd and nd > datetime.now().date() and field not in ("corrPd", "pdcDate", "planDate"):
         return False, "date is in the future"
     return True, ""
 

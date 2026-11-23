@@ -9,7 +9,7 @@
 </nav>
 <main>
 <div class="top"><h1>{% block h1 %}{% endblock %}</h1>
-<span class="asof">ERP data as on {{ as_on.strftime('%d-%m-%Y %H:%M') if as_on else '—' }}</span>
+<span class="asof">Data as on {{ as_on.strftime('%d-%m-%Y %H:%M') if as_on else '—' }}</span>
 {% if IS_LOCAL %}<button class="btn" id="updbtn" onclick="doUpdate()">Update from ERP</button><span id="upd"></span>{% endif %}
 </div>
 {% block body %}{% endblock %}

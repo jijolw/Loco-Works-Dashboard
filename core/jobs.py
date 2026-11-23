@@ -28,8 +28,17 @@ JOBS = OrderedDict([
     ("daily", ("Daily sync", "ERP export, targets + KM status (read only), online website, project files to Drive. "
                "No Google Sheet is written.", False,
                [(APP, "daily_sync.py", []), (_p("09_Drive_Sync"), "project_files_to_drive.py", [])])),
-    ("update_all", ("Update all sheets", "KM tab, YARD / ICF NAC / LHB, PDC sheet, Achieved columns, online snapshot. "
-                    "Shows a preview first - type YES to write.", True, [(APP, "update_all.py", [])])),
+    # JIJO 12-11-2026: Production Plan is daily work - Update all also runs the planner (new ERP coaches, later ERP PDCs
+    # into the sheet) and then PDC to ERP (later sheet PDCs into ERP). Farthest date wins both ways. Each step: preview + YES.
+    ("update_all", ("Update all sheets", "KM tab, YARD / ICF NAC / LHB, PDC sheet, Achieved columns, online snapshot; "
+                    "then Production Plan (planner) - one YES covers both - then PDC to ERP (own YES). Ends with a summary "
+                    "of which steps were written.", True,
+                    [(APP, "update_all.py", ["--no-pause"]),
+                     (_p("10_Claude_Reports"), "update_production_plan_holding.py", ["--no-pause", "--if-confirmed"]),
+                     (_p("16_PDC_to_ERP"), "pdc_to_erp.py", ["--apply", "--no-pause"])])),
+    ("planner", ("Planner (Production Plan) update", "Plan tabs ICF / LHB / DEMU TC / EMU MEMU TC / ART / NMG from ERP "
+                 "(typed entries and Physical Despatch kept) + Condemnation tab. Preview first - type YES to write.", True,
+                 [(_p("10_Claude_Reports"), "update_production_plan_holding.py", ["--no-pause"])])),
     ("letters_preview", ("Letters - preview", "Which new letters would go to Google Drive (nothing copied).", False,
                          [(_p("09_Drive_Sync"), "weekly_letters_sync.py", ["--preview"])])),
     ("letters", ("Monday letters update", "New letter PDFs to Google Drive + rebuild the letters search index.", True,
@@ -44,6 +53,10 @@ JOBS = OrderedDict([
                         [(_p("13_Fix_Actual_Despatch"), "fix_actual_desp.py", ["--apply"])])),
     ("fix_status", ("Fix status (Return / Running)", "Reads status_list.txt (below), preview, then YES to change ERP.", True,
                     [(_p("14_Fix_Status"), "fix_status.py", [])])),
+    ("pdc_erp_preview", ("PDC to ERP - preview", "Production Plan sheet PDCs (Despatch / Revised / Corrosion) vs ERP. "
+                         "Nothing written.", False, [(_p("16_PDC_to_ERP"), "pdc_to_erp.py", ["--no-pause"])])),
+    ("pdc_erp_apply", ("PDC to ERP - apply", "Writes the sheet PDCs to ERP (pdcDate, planDate, corrPd). YES, first coach "
+                       "verified alone, YES again.", True, [(_p("16_PDC_to_ERP"), "pdc_to_erp.py", ["--apply", "--no-pause"])])),
     ("claude_setup", ("Claude - check / set up", "Checks Claude Code on this PC; installs it and opens the one-time "
                       "sign-in after YES. Needed only for the 'Ask Claude' box.", False,
                       [(APP, "claude_helper.py", ["--setup"])])),
@@ -94,6 +107,27 @@ def _reader(proc):
         state["waiting"] = not text.endswith("\n")
 
 
+
+def summary_lines(path):
+    """Closing summary of Update all from update_all_status.json (JIJO 19-11-2026)."""
+    import json
+    try:
+        with open(path, encoding="utf-8") as fh:
+            st = json.load(fh)
+    except Exception:
+        return ["UPDATE ALL SUMMARY: no status found - check the messages above."]
+    out = ["", "=" * 60, f"UPDATE ALL SUMMARY (started {st.get('started', '?')})"]
+    bad = False
+    for k in ("1 Sheets", "2 Production Plan", "3 PDC to ERP"):
+        s = (st.get(k) or {}).get("state", "NOT DONE - no YES / closed before it finished")
+        part = s.split(" written")[0].split(" of ") if " of " in s else None
+        bad = bad or not (s.startswith("written") or s.startswith("nothing") or (part and part[0] == part[1]))
+        out.append(f"  Step {k:18}: {s}")
+    out.append("  ALL STEPS DONE" if not bad else "  >>> NOT ALL STEPS DONE - run Update all again <<<")
+    out.append("=" * 60)
+    return out
+
+
 def _run(key, extra_args):
     title, _, _, steps = JOBS[key]
     try:
@@ -126,6 +160,8 @@ def _run(key, extra_args):
         _append(f"\nERROR: {e}\n")
         state["rc"] = 1
     finally:
+        if key == "update_all":
+            _append("\n".join(summary_lines(_p("update_all_status.json"))) + "\n")
         state.update(running=False, proc=None, waiting=False, ended=datetime.now().strftime("%H:%M:%S"))
         _append(f"\n==== {title} finished at {state['ended']} ====\n")
         _lock.release()

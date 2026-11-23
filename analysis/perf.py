@@ -163,9 +163,9 @@ def previous_poh(demands, d0, d1, family="ALL"):
 # row in the same month (e.g. LWACCNE given separately in Oct-26 is then not counted under LWACCN).
 # Only POH visits: OR and conversions are never counted against these targets.
 ALIAS_GROUPS = {"3-PHASE": ["MEMU MC", "EMU MC", "MEMU TC", "EMU TC"], "DPC/DTC": ["DEMU DPC", "DEMU TC"],
-                "NMG": ["NMG POH"], "ART": ["ART"]}
+                "NMG": ["NMG POH"], "ART": ["ART POH", "ARMV POH", "ARME POH"]}
 TYPE_ALIAS = {"SLR": "SLR / GSLRD", "GSLRD": "SLR / GSLRD"}     # SLR target = SLR + GSLRD + GSRD types
-NOT_POH = {"OR", "ART CONVERSION", "ARMV CONVERSION", "NMG CONVERSION"}
+NOT_POH = {"OR", "ART CONVERSION", "ARMV CONVERSION", "ARME CONVERSION", "NMG CONVERSION"}
 _tcache = {"t": 0, "rows": None, "err": None}
 
 

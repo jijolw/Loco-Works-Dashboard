@@ -1,29 +1,120 @@
 {% extends "base.html" %}
 {% block title %}Aerial View – LW/PER{% endblock %}
 {% block h1 %}Aerial View{% endblock %}
-{% macro chip(c) %}<div class="chip {{ c.band }}{{ ' fnd' if c.fnd }}" title="{{ c.group }} · {{ c.pit }} · {{ c.days }} days{{ ' · ' ~ c.lh if c.lh }}">
-<b>{{ c.coach }}{% if c.km %} <small class="km">KM</small>{% endif %}</b><span>{{ c.group }}</span>
-<i>{% if c.fnd %}FND {{ fmt(c.desp)[:5] }}{% else %}{{ c.days }}d{% if c.corr == 'done' %} · CC{% elif c.corr == 'under' %} · UC{% endif %}{% endif %}</i></div>{% endmacro %}
+{% macro card(c, two=False) %}{% if c %}
+<div class="av-c{{ ' fnd' if c.fnd }}{{ ' cc' if c.cc }}{{ ' cond' if c.cond }}{{ ' heavy' if c.hrs != '' and c.hrs >= 500 }}"
+ data-q="{{ c.no }} {{ c.type }} {{ c.div }}"
+ data-tip="{{ c.type }} {{ c.no }}|Division: {{ c.div or '-' }}|Received: {{ c.recd or '-' }}{% if c.days is not none %} ({{ c.days }} days){% endif %}|Pre-survey hours: {{ c.hrs or '-' }}{% if c.corr %}|Corrosion: {{ c.corr }}{% endif %}{% if c.cpdc and not c.cc and not c.fnd %}|Corrosion PDC: {{ c.cpdc }}{% endif %}{% if c.pdc %}|Despatch PDC: {{ c.pdc }}{% endif %}{% if c.tfr %}|TFR: {{ c.tfr }}{% endif %}{% if c.rem %}|{{ c.rem }}{% endif %}">
+ <div class="av-top"><b>{{ c.no }}</b>{% if c.days is not none and not c.fnd %}<span class="av-days{{ ' late' if c.days > 30 }}">{{ c.days }}d</span>{% endif %}</div>
+ <div class="av-sub">{{ c.type }}{% if c.hrs != '' %} · <span class="{{ 'hv' if c.hrs >= 500 }}">{{ c.hrs }}h</span>{% endif %}</div>
+ <div class="av-tags">{% if c.fnd %}<i class="t-fnd">FND</i>{% elif c.cc %}<i class="t-cc">CC</i>{% elif c.corr[:2] == 'UC' %}<i class="t-uc">UC</i>{% endif %}{% if c.cond %}<i class="t-cond">COND</i>{% endif %}{% if c.orf %}<i class="t-or">OR</i>{% endif %}{% if c.pdc and not c.fnd %}<i class="t-pd">PD {{ c.pdc[:5] }}</i>{% endif %}</div>
+</div>{% else %}<div class="av-c empty"></div>{% endif %}{% endmacro %}
 {% block body %}
-<div class="cards no-print-cards">
-<div class="card"><b>{{ x.total }}</b><span>Physically inside (holding {{ x.n_hold }} + FND {{ x.n_fnd }})</span></div>
-<div class="card"><b>{{ x.n_shop }}</b><span>On shop pits</span></div>
-<div class="card"><b>{{ x.n_yard }}</b><span>In yard</span></div>
-<div class="card"><b>{{ x.n_km }}</b><span>Kumbh Mela coaches inside (HQ status{{ ' ' ~ x.km_updated if x.km_updated }})</span></div>
+<style>
+.av-head { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:4px 0 12px; }
+.av-k { background:#fff; border:1px solid #e3e6ea; border-radius:8px; padding:8px 14px; min-width:110px; }
+.av-k b { display:block; font-size:20px; color:#2b3138; } .av-k span { font-size:12px; color:#6b737d; }
+.av-tools { margin-left:auto; display:flex; gap:10px; align-items:center; font-size:12px; color:#6b737d; flex-wrap:wrap; }
+.av-tools input { padding:6px 9px; border:1px solid #d9dde2; border-radius:6px; font:inherit; width:170px; }
+.av-leg i { margin-left:4px; }
+.av-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start; }
+@media (max-width:1100px) { .av-grid { grid-template-columns:1fr; } }
+.av-col { display:flex; flex-direction:column; gap:14px; }
+.av-shop { background:#fff; border:1px solid #e3e6ea; border-radius:10px; overflow:hidden; }
+.av-sh { display:flex; justify-content:space-between; align-items:center; padding:9px 14px; background:#f4f5f7; border-bottom:1px solid #e3e6ea; }
+.av-sh b { font-size:14px; color:#3d4a57; } .av-sh span { font-size:12px; color:#6b737d; }
+.av-line { display:grid; grid-template-columns:92px 1fr; border-bottom:1px solid #f0f1f3; min-height:44px; }
+.av-line:last-child { border-bottom:none; }
+.av-ln { font-size:11.5px; color:#6b737d; padding:10px 8px 0 14px; background:#fafbfc; border-right:1px solid #f0f1f3; }
+.av-slots { display:flex; gap:8px; padding:6px 8px; flex-wrap:wrap; align-items:stretch;
+  background: repeating-linear-gradient(90deg, transparent 0 18px, #f3f4f6 18px 19px) center/100% 2px no-repeat; }
+.av-slots.two > .av-c { flex:1 1 0; }
+.av-c { background:#fff; border:1px solid #dfe3e8; border-left:4px solid #b9c2cc; border-radius:7px; padding:5px 9px; min-width:150px;
+  cursor:default; transition:box-shadow .15s, transform .15s; }
+.av-c:hover { box-shadow:0 3px 10px rgba(40,50,60,.14); transform:translateY(-1px); }
+.av-c.empty { border:1px dashed #e3e6ea; background:transparent; min-height:38px; box-shadow:none; transform:none; }
+.av-c.fnd { border-left-color:#6aa57f; background:#f2f8f4; }
+.av-c.cc { border-left-color:#d4b24a; background:#fcf8ea; }
+.av-c.cond { border-left-color:#c27b72; }
+.av-c.hit { outline:3px solid #55697d; outline-offset:1px; }
+.av-c.dim { opacity:.25; }
+.av-top { display:flex; justify-content:space-between; align-items:baseline; gap:6px; }
+.av-top b { font-size:14px; color:#2b3138; letter-spacing:.2px; }
+.av-days { font-size:11px; color:#6b737d; } .av-days.late { color:#9a4b45; font-weight:bold; }
+.av-sub { font-size:11.5px; color:#6b737d; } .av-sub .hv { color:#9a4b45; }
+.av-tags { display:flex; gap:4px; flex-wrap:wrap; margin-top:3px; min-height:2px; }
+.av-tags i, .av-leg i { font-style:normal; font-size:10px; font-weight:bold; padding:1px 6px; border-radius:9px; }
+.t-fnd { background:#dcefe2; color:#3f7253; } .t-cc { background:#f6ecc8; color:#7d6623; } .t-uc { background:#eef0f3; color:#55697d; }
+.t-cond { background:#f5e2df; color:#8a4a42; } .t-or { background:#f5e2df; color:#8a4a42; } .t-pd { background:#eef0f3; color:#55697d; }
+.av-list { display:grid; grid-template-columns:repeat(auto-fill, minmax(165px, 1fr)); gap:8px; padding:10px; }
+.av-mv { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:14px; }
+.av-mv div { background:#fff; border:1px solid #e3e6ea; border-radius:10px; padding:10px 14px; font-size:13px; }
+.av-mv b { color:#3d4a57; } .av-mv span { color:#6b737d; }
+#av-tip { position:fixed; z-index:50; pointer-events:none; background:#2f3a45; color:#f2f4f6; font-size:12px; line-height:1.55;
+  padding:8px 11px; border-radius:7px; box-shadow:0 6px 18px rgba(0,0,0,.2); max-width:280px; display:none; }
+#av-tip b { font-size:13px; }
+</style>
+
+<div class="av-head">
+  <div class="av-k"><b>{{ x.n_inside }}</b><span>Coaches inside</span></div>
+  <div class="av-k"><b>{{ x.n_shop }}</b><span>In shops / bays</span></div>
+  <div class="av-k"><b>{{ x.n_yard + x.n_inc }}</b><span>Yard + incoming</span></div>
+  <div class="av-k"><b>{{ x.n_fnd }}</b><span>FND</span></div>
+  <div class="av-tools">
+    <input id="av-q" placeholder="Find coach / type / division" oninput="avFind(this.value)">
+    <span class="av-leg"><i class="t-fnd">FND</i><i class="t-cc">CC</i><i class="t-uc">UC</i><i class="t-cond">COND</i><i class="t-pd">PD = despatch PDC</i></span>
+  </div>
 </div>
-<div class="aerial">
-<div class="ptitle">LW/PER – COACH POSITION (AERIAL) as on {{ as_on.strftime('%d-%m-%Y %H:%M') }} · Inside {{ x.total }} = Holding {{ x.n_hold }} (yard {{ x.n_yard }}) + FND {{ x.n_fnd }}</div>
-{% for shop, lines in x.shops.items() %}
-<div class="shop"><div class="shopname">{{ shop }}<small>{{ x.counts[shop] }}</small></div>
-<div class="lines">{% for ln, L in lines.items() %}<div class="line"><div class="lname">{{ L.label }}</div>
-{% for c in L.slots %}{% if c %}{{ chip(c) }}{% else %}<div class="chip empty"></div>{% endif %}{% endfor %}
-{% for c in L.extra %}{{ chip(c) }}{% endfor %}</div>{% endfor %}</div></div>
+
+<div class="av-grid">
+{% for col in [x.shops[0:1] + x.shops[3:5], x.shops[1:3] + x.shops[5:6]] %}{% set left = loop.first %}
+ <div class="av-col">
+ {% for s in col %}
+  <div class="av-shop"><div class="av-sh"><b>{{ s.name }}</b><span>{{ s.count }} coach{{ 'es' if s.count != 1 }}</span></div>
+  {% for l in s.lines %}<div class="av-line"><div class="av-ln">{{ l.label }}</div>
+   <div class="av-slots{{ ' two' if s.two }}">{% for c in l.slots %}{{ card(c) }}{% endfor %}</div></div>{% endfor %}
+  </div>
+  {% if left and loop.first and x.incoming %}
+  <div class="av-shop"><div class="av-sh"><b>Incoming</b><span>{{ x.incoming|length }}</span></div>
+   <div class="av-list">{% for c in x.incoming %}{{ card(c) }}{% endfor %}</div></div>
+  {% endif %}
+ {% endfor %}
+ </div>
 {% endfor %}
-<div class="shop"><div class="shopname">Yard / Incoming<small>{{ x.yard|length }}</small></div><div class="yard">{% for c in x.yard %}{{ chip(c) }}{% endfor %}</div></div>
-{% if x.other %}<div class="shop"><div class="shopname">Other locations<small>{{ x.other|length }}</small></div><div class="yard">{% for c in x.other %}{{ chip(c) }}{% endfor %}</div></div>{% endif %}
-{% if x.outside %}<div class="shop"><div class="shopname">Entered in ERP – still outside (not counted)<small>{{ x.outside|length }}</small></div><div class="yard">{% for c in x.outside %}{{ chip(c) }}{% endfor %}</div></div>{% endif %}
-<div class="legend"><span class="chip d0 lg">0–20 days</span><span class="chip d20 lg">21–30 days</span><span class="chip d30 lg">&gt;30 days</span><span class="chip fnd lg">FND (outturned, inside)</span>
-<span>KM = Kumbh Mela coach (HQ status{{ ' ' ~ x.km_updated if x.km_updated }}) · CC corrosion completed · UC under corrosion · days = since received</span></div>
 </div>
-<p class="note no-print"><button class="btn" onclick="window.print()">Print A4 (black &amp; white)</button> Two-slot lines show slot 1 above slot 2. Hover a coach for type, pit and hours.</p>
+
+<div class="av-shop" style="margin-top:14px"><div class="av-sh"><b>Yard</b><span>{{ x.yard|length }} coaches</span></div>
+ <div class="av-list">{% for c in x.yard %}{{ card(c) }}{% endfor %}</div></div>
+
+<div class="av-mv">
+ <div><b>Outturn {{ x.as_on.strftime('%d/%m') }}</b> <span>({{ x.outturn|length }})</span><br>{{ x.outturn|join(', ') or 'nil' }}</div>
+ <div><b>Despatched {{ x.as_on.strftime('%d/%m') }}</b> <span>({{ x.despatch|length }})</span><br>{{ x.despatch|join(', ') or 'nil' }}</div>
+</div>
+
+<div id="av-tip"></div>
+<script>
+(function(){
+  const tip=document.getElementById('av-tip');
+  document.addEventListener('mousemove',e=>{
+    const c=e.target.closest('.av-c[data-tip]');
+    if(!c){tip.style.display='none';return;}
+    const p=c.dataset.tip.split('|');
+    tip.innerHTML='<b>'+p[0].replace(/</g,'&lt;')+'</b><br>'+p.slice(1).map(x=>x.replace(/</g,'&lt;')).join('<br>');
+    tip.style.display='block';
+    const w=tip.offsetWidth,h=tip.offsetHeight;
+    let x=e.clientX+14,y=e.clientY+14;
+    if(x+w>innerWidth-8)x=e.clientX-w-14; if(y+h>innerHeight-8)y=e.clientY-h-14;
+    tip.style.left=x+'px'; tip.style.top=y+'px';
+  });
+  window.avFind=function(q){
+    q=q.trim().toUpperCase();
+    document.querySelectorAll('.av-c[data-q]').forEach(c=>{
+      const m=q&&c.dataset.q.toUpperCase().indexOf(q)>=0;
+      c.classList.toggle('hit',!!m); c.classList.toggle('dim',!!q&&!m);
+    });
+    const f=document.querySelector('.av-c.hit'); if(f&&q.length>=4)f.scrollIntoView({block:'center',behavior:'smooth'});
+  };
+})();
+</script>
+<p class="note no-print" style="margin-top:12px"><a href="/aerial/chips">Pit chip view</a></p>
 {% endblock %}

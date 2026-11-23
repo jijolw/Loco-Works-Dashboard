@@ -133,6 +133,8 @@ def apply(inp, as_on, m):
                                fy=f"{as_on.year if as_on.month > 3 else as_on.year - 1}-{(as_on.year + (1 if as_on.month > 3 else 0)) % 100:02d}",
                                **{k: wd.get(k, "") for k in ("month_completed", "month_total", "year_completed", "year_total")})
     tg = current_targets(m, as_on)
+    if "ICF - NMG POH/Conv" in tg and "ICF - NMG to NMGHS Conv" not in tg:     # old single NMG row (before 11-11-2026)
+        tg["ICF - NMG to NMGHS Conv"] = tg["ICF - NMG POH/Conv"]
     for key, label in DI.TARGET_ROWS:
         if label in tg:
             t = inp.setdefault("targets", {}).setdefault(key, {})

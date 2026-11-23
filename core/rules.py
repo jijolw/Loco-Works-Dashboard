@@ -103,6 +103,9 @@ def coach_type(d):
     return (d.get("_coachTypeDescription") or d.get("coachDesc") or d.get("coachType") or "").strip().upper()
 
 
+ART_CONV_REPAIRS = {"201", "221"}       # 201 = ARTConv, 221 = ARMV conversion (076358) - ERP repair types
+
+
 def classify(d):
     """-> (family, group, order). Repair-type rules first, then coach_groups.csv (exact before prefix)."""
     t = coach_type(d)
@@ -121,6 +124,13 @@ def classify(d):
     fam, grp, order = hit["family"], hit["group"], hit["order"]
     if grp == "NMG POH" and (rep in ("181", "2") or t.endswith("/C")):     # 281 = POH (JIJO 31-10)
         return fam, "NMG CONVERSION", order + 1
+    if grp in ("ART", "ARMV"):                        # ART / ARMV / ARME / SPART-ARMV: conversion vs POH (JIJO 10-11-2026)
+        base = "ARME" if t.startswith("ARME") else ("ARMV" if "ARM" in t else "ART")     # ARME own group (JIJO 10-11)
+        desc = str(d.get("repairDesc") or "").upper().replace(" ", "")
+        conv = rep in ART_CONV_REPAIRS or "CONV" in t or t.endswith("/C") or "CONV" in desc
+        if "POH" in desc and "CONV" not in desc:      # repair type ARMVPOH etc.
+            conv = False
+        return fam, f"{base} {'CONVERSION' if conv else 'POH'}", order + {"ART": 0.0, "ARMV": 0.0, "ARME": 0.2}[base] + ((0.5 if base == "ART" else 1) if conv else 0)
     return fam, grp, order
 
 

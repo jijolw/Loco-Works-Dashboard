@@ -120,10 +120,34 @@ def _load_meta():
         return {}
 
 
+META_V = 2      # 17-11-2026: keep the whole coach-master record (railway / base were not kept before)
+
+
+def _pick(m, *words):
+    """First short text value whose key contains one of the words (railway key name not known for sure)."""
+    for k, v in m.items():
+        if isinstance(v, str) and v.strip() and len(v) <= 12 and any(w in k.lower() for w in words):
+            return v.strip()
+    return ""
+
+
+# Zonal railway of a division / coaching base (ERP coach master has only divisionId; ERP's own report prints RLY from it).
+# Only divisions we are sure of; anything else stays blank and is listed for JIJO (17-11-2026).
+RLY_OF = {}
+for _rly, _divs in {
+        "SR": "PGT MAS TVC SA TPJ MDU ERMC MAQ BBQ", "SWR": "SBC HUB MYS UBL BNC ASK", "NR": "DLI FZR UMB DEE LKO BSB",
+        "NER": "GKP IZN LJN", "WCR": "JBP BPL KOTA", "SECR": "BSP NAG", "SCR": "SC BZA KCG TPTY GTL",
+        "ER": "HWH SDAH MLDT ASN", "SER": "KGP ADRA ADHA", "WR": "ADI BCT MMCT BVC", "CR": "CSTM PUNE BSL NGP",
+        "ECR": "DHN DNR", "ECoR": "KUR WAT PURI BBS", "NFR": "LMG APDY KIR GHY TSK", "NCR": "PRYJ", "NWR": "JU BKN AII",
+        "KRCL": "KRCL"}.items():
+    for _d in _divs.split():
+        RLY_OF[_d] = _rly
+
+
 def fetch_meta(sess, coaches):
     meta = _load_meta()
-    new = [c for c in coaches if c not in meta]
-    status["step"] = f"Coach type for {len(new)} new coaches..."
+    new = [c for c in coaches if (meta.get(c) or {}).get("_v") != META_V]
+    status["step"] = f"Coach details for {len(new)} coaches..."
 
     def one(c):
         try:
@@ -134,14 +158,22 @@ def fetch_meta(sess, coaches):
             pass
         return c, None
 
+    keys = set()
     with ThreadPoolExecutor(max_workers=30) as ex:
         for c, m in ex.map(one, new):
-            if m is not None:
-                meta[c] = {k: m.get(k) for k in ("coachTypeDescription", "yearBuilt", "yearOfBuilt",
-                                                  "builtYear", "railway", "ownRly")}
+            if isinstance(m, dict):
+                if isinstance(m.get("data"), dict):
+                    m = m["data"]
+                keys.update(m)
+                rec = {k: v for k, v in m.items() if isinstance(v, (str, int, float)) or v is None}
+                rec["_v"] = META_V
+                meta[c] = rec
     os.makedirs(os.path.dirname(META_CACHE), exist_ok=True)
     with open(META_CACHE, "w", encoding="utf-8") as f:
         json.dump(meta, f)
+    if keys:                                       # for Claude: which fields the coach master has
+        with open(os.path.join(os.path.dirname(META_CACHE), "coach_master_keys.txt"), "w", encoding="utf-8") as f:
+            f.write("\n".join(sorted(keys)))
     return meta
 
 
@@ -165,7 +197,8 @@ def build_export():
         rec["_coachTypeDescription"] = desc
         rec["_category"] = legacy_category(desc, it.get("repairType") or "") if desc else ""
         rec["_yearBuilt"] = m.get("yearBuilt") or m.get("yearOfBuilt") or m.get("builtYear") or ""
-        rec["_railway"] = m.get("railway") or m.get("ownRly") or ""
+        rec["_base"] = (m.get("divisionId") or m.get("divisionName") or "").strip()      # coach master division (17-11)
+        rec["_railway"] = RLY_OF.get(rec["_base"].upper(), "")
         rows.append(rec)
 
     stamp = datetime.now()
@@ -191,6 +224,14 @@ def build_export():
         acloco.fetch(sess)
     except Exception as e:
         status["ac_error"] = str(e)
+    try:                                                   # HQ OUT TURN physical despatch (read only, JIJO 10-11-2026)
+        from core import physical
+        status["step"] = "HQ OUT TURN (physical despatch)..."
+        _p, err = physical.refresh()
+        if err:
+            status["hq_outturn_error"] = err
+    except Exception as e:
+        status["hq_outturn_error"] = str(e)
     return payload
 
 
@@ -238,6 +279,8 @@ def refresh_in_background(push_online=True):
                     pass
                 from core import targets_store
                 snap["targets"] = targets_store.load()
+                from core import physical as _ph
+                snap["hq_outturn"] = _ph.load()            # physical despatch overlay for the online copy
                 online_store.upload_snapshot(snap)
             status["step"] = f"Done - {p['count']} demands in {time.time() - t0:.0f}s"
             status["done_at"] = datetime.now().strftime("%d-%m-%Y %H:%M")

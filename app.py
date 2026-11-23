@@ -208,9 +208,34 @@ def soon(name):
 
 @app.route("/aerial")
 def aerial():
+    # Aerial View = web page in the Daily Position page 1 layout (shops line by line, left / right), with hover
+    # details (JIJO 23-11-2026). No AC locos. The old pit-chip view stays at /aerial/chips.
+    from analysis import daily_report as DR
+    from core import daily_inputs as DI
+    D, ex = data.load()
+    if not D:
+        abort(503, "No data yet.")
+    as_on = ex.date() if ex else date.today()
+    try:
+        inp = DI.load()
+    except Exception:
+        inp = {}
+    cond = []
+    try:
+        from core import condemnation
+        c, _ = condemnation.load(live=False)
+        cond = [r["coach"] for r in (c or {}).get("rows", [])]
+    except Exception:
+        pass
+    x = DR.build(D, ex, inp, {}, cond, as_on=as_on, report_date=as_on, km={}, screen="data")
+    return render_template("aerial.html", x=x)
+
+
+@app.route("/aerial/chips")
+def aerial_chips():
     from analysis import aerial as A
     D, a = _as_on()
-    return render_template("aerial.html", x=A.aerial(D, a, data.km_status()))
+    return render_template("aerial_chips.html", x=A.aerial(D, a, data.km_status()))
 
 
 # ---------------------------------------------------------------- Excel downloads
@@ -447,6 +472,18 @@ def daily_report():
     html = DR.build(D, ex, inp, DI.working_days(as_on, inp), [r["coach"] for r in cond.get("rows", [])],
                     as_on=as_on, report_date=report_date)
     return html
+
+
+@app.route("/api/flash")
+def api_flash():
+    from core import flash
+    try:
+        payload = flash.get_flash_data()
+        resp = jsonify(payload)
+        resp.headers["Access-Control-Allow-Origin"] = "*"
+        return resp
+    except Exception as e:
+        return jsonify(status="error", message=str(e)), 500
 
 
 @app.route("/health")

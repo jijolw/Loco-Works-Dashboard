@@ -36,7 +36,7 @@ def holding(demands, as_on):
     for d in R.latest_per_coach(demands).values():
         if R.in_holding(d):
             rd = R.pdate(d.get("receivedDate"))
-            rows.append(dict(d, _loc=R.location(d), _days=(as_on - rd).days if rd else None,
+            rows.append(dict(d, _loc=R.location(d), _days=max(0, (as_on - rd).days) if rd else None,     # never -1 (10-11)
                              _lh=R.light_heavy(d)))
     return rows
 

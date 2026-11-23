@@ -4,11 +4,13 @@ REM Run once on JIJO's PC (it has Python). Output folder: D:\Coach_Position_Apps
 REM Copy that whole folder to the staff PC - no Python needed there.
 cd /d "%~dp0"
 echo Installing PyInstaller (only the first time)...
-python -m pip install --quiet --disable-pip-version-check pyinstaller
+python -m pip install --quiet --disable-pip-version-check pyinstaller pypdf
+REM move the old exe aside first, so a failed build can never copy the old one (Claude 19-11-2026)
+if exist dist\Daily_Position.exe move /y dist\Daily_Position.exe dist\Daily_Position_previous.exe >nul
 echo Building Daily_Position.exe (2-4 minutes)...
 python -m PyInstaller --noconfirm --clean --onefile --console --name Daily_Position ^
   --collect-submodules analysis --collect-submodules core --collect-submodules updaters ^
-  --hidden-import gspread --hidden-import google.oauth2.service_account --hidden-import openpyxl ^
+  --hidden-import gspread --hidden-import google.oauth2.service_account --hidden-import openpyxl --hidden-import pypdf ^
   daily_position_exe.py
 if not exist dist\Daily_Position.exe (
   echo.
@@ -32,6 +34,6 @@ if not exist "%OUT%\credentials.json" (
   if exist "D:\TypeWiseHoldingApp\credentials.json" copy /y "D:\TypeWiseHoldingApp\credentials.json" "%OUT%\credentials.json" >nul
 )
 echo.
-echo DONE: %OUT%\Daily_Position.exe
+echo DONE: %OUT%\Daily_Position.exe  (new build made just now)
 echo Double-click it to make today's Daily Position PDF.
 pause

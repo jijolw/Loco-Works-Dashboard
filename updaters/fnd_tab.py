@@ -1,7 +1,7 @@
 """
 updaters/fnd_tab.py - tab "FND" in the Workshop Coach Production Plan sheet (JIJO 04-11-2026).
 
-FND coaches = outturned in ERP (desp date) but not yet physically despatched (no actual desp date), ANY month.
+FND coaches = outturned in ERP (desp date) but not yet SHOP OUT (no ERP actual desp date), ANY month (11-11-2026).
 Corrosion is done, so only the remaining sections are tracked. Refreshed by Update_All every day:
  - rows come from ERP (coach, type, division, outturned on, days since outturn, despatch PDC);
  - what the shop typed is KEPT per coach: Revised PDC, the section columns and Remarks;
@@ -12,26 +12,29 @@ they are date-formatted so a typed date shows dd/mm/yyyy, and new rows start bla
 from datetime import datetime
 
 from core import rules as R
+from core import physical as P
+from core import sheet_dates as SD          # typed dates autocorrected, shown dd/mm/yy (JIJO 11-11-2026)
 
 SHEET_KEY = "1DWi99uWW0ReyblrXnT0MEBqzOPwYvhLCB9v9lWON0QQ"   # Workshop Coach Production Plan
 TAB = "FND"
-SECTIONS = ["Water Service", "Air Brake", "Train Lighting", "Trimming", "Carpentry",
-            "Painting / Lettering"]                 # Bio-toilet and Final Inspection removed (JIJO 04-11)
-HEAD = ["Sl. No", "Coach No", "Type", "Division", "Outturned On", "Days FND", "Despatch PDC (ERP)",
+SECTIONS = ["Water Service", "Air Brake", "Train Lighting", "Trimming", "Carpentry", "Painting / Lettering",
+            "Final Inspection"]                     # Bio-toilet removed (JIJO 04-11)
+HEAD = ["Sl. No", "Coach No", "Type", "Division", "Outturned On", "Days FND", "Despatch PDC",
         "Revised Despatch PDC"] + SECTIONS + ["Remarks"]
-NCOL = len(HEAD)                      # A..O
+NCOL = len(HEAD)                      # A..P
 FIRST = 3                             # row 1 title, row 2 headers
 
 
 def fnd_coaches(D):
     latest = R.latest_per_coach(D)
-    out = [d for d in latest.values()
-           if R.pdate(d.get("dispatchDate")) and not R.pdate(d.get("actualDispatchDate")) and not R.is_excluded(d)]
+    # shop view (JIJO 11-11-2026): FND = outturned and not yet SHOP OUT (ERP actual despatch). A coach shop-out but still
+    # in the yard (rubber / cleaning / VG / KM) is in the 'Shop Out - Yard' tab instead (updaters/yard_tab.py).
+    out = [d for d in latest.values() if P.shop_fnd(d)]
     return sorted(out, key=lambda d: (R.pdate(d.get("dispatchDate")), d.get("_order", 0)))
 
 
 def build(D, current):
-    """current = rows read from the tab (A1:O...) -> list of value rows for A3.. ."""
+    """current = rows read from the tab (A1:P...) -> list of value rows for A3.. ."""
     keep = {}
     for r in current[FIRST - 1:]:
         r = list(r) + [""] * NCOL
@@ -42,6 +45,7 @@ def build(D, current):
     for i, d in enumerate(fnd_coaches(D), 1):
         old = keep.get(R.coach_key(d))
         typed = old[7:NCOL] if old else [""] * (NCOL - 7)
+        typed = [SD.serial(v) for v in typed[:-1]] + [typed[-1]]   # a typed date (11.11.26 ...) -> real date; words kept
         out = R.pdate(d.get("dispatchDate"))
         pdc = R.pdate(d.get("pdcDate"))
         n = FIRST + i - 1
@@ -56,7 +60,7 @@ def preview_lines(rows, current):
     after = {r[1].lstrip("'") for r in rows}
     add, gone = sorted(after - before), sorted(before - after)
     return [f"    FND tab: {len(rows)} coaches" + (f" | new: {', '.join(add)}" if add else "")
-            + (f" | dropped (physically despatched): {', '.join(gone)}" if gone else "")]
+            + (f" | dropped (shop out): {', '.join(gone)}" if gone else "")]
 
 
 def read_current(sh):
@@ -73,7 +77,7 @@ def _col(n):
 def apply(sh, rows, log):
     titles = {w.title: w for w in sh.worksheets()}
     ws = titles.get(TAB) or sh.add_worksheet(title=TAB, rows=400, cols=NCOL)
-    title = f"FND COACHES - PENDING WORK (from ERP, updated {datetime.now():%d-%m-%Y %H:%M})"
+    title = f"FND COACHES - PENDING WORK (updated {datetime.now():%d-%m-%Y %H:%M})"
     ws.batch_clear([f"A{FIRST}:{_col(NCOL)}400"])
     ws.update(range_name=f"A1:{_col(NCOL)}2", values=[[title] + [""] * (NCOL - 1), HEAD], value_input_option="USER_ENTERED")
     if rows:
@@ -81,10 +85,12 @@ def apply(sh, rows, log):
     sid = ws.id
     rng = lambda c0, c1: {"sheetId": sid, "startRowIndex": FIRST - 1, "endRowIndex": 400, "startColumnIndex": c0, "endColumnIndex": c1}
     req = [
-        {"setDataValidation": {"range": rng(7, 8 + len(SECTIONS))}},          # no drop-down / picker rule
+        {"setDataValidation": {"range": rng(8, 8 + len(SECTIONS))}},          # sections: free typing, no drop-down
+        {"setDataValidation": {"range": rng(7, 8), "rule": {"condition": {"type": "DATE_IS_VALID"}, "strict": False,
+            "showCustomUi": True, "inputMessage": "Double-click to pick the date from the calendar (or type 11/11/26)"}}},
         {"repeatCell": {"range": {"sheetId": sid, "startRowIndex": FIRST - 1, "endRowIndex": 400, "startColumnIndex": 4,
                                   "endColumnIndex": 8 + len(SECTIONS)},
-                        "cell": {"userEnteredFormat": {"numberFormat": {"type": "DATE", "pattern": "dd/mm/yyyy"}}},
+                        "cell": {"userEnteredFormat": {"numberFormat": {"type": "DATE", "pattern": SD.PATTERN}}},
                         "fields": "userEnteredFormat.numberFormat"}},
         {"repeatCell": {"range": {"sheetId": sid, "startRowIndex": FIRST - 1, "endRowIndex": 400, "startColumnIndex": 5,
                                   "endColumnIndex": 6},
