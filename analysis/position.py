@@ -119,21 +119,28 @@ def holding_summary(demands, as_on):
     return dict(rows=out, total=tot, coaches=sorted(H, key=lambda h: (h["_order"], -(h["_days"] or 0))))
 
 
-def outturn_matrix(demands, fy):
-    """Group x month outturn for a financial year."""
-    d0, d1 = R.fy_start(fy), R.fy_end(fy)
-    months = [date(d0.year + (m < 4), m, 1) for m in (4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3)]
+def outturn_matrix(demands, fy, d0=None, d1=None):
+    """Group x month outturn for a financial year, or for any from-to period (months between)."""
+    if not (d0 and d1):
+        d0, d1 = R.fy_start(fy), R.fy_end(fy)
+    months, m = [], date(d0.year, d0.month, 1)
+    while m <= d1:
+        months.append(m)
+        m = date(m.year + (m.month == 12), m.month % 12 + 1, 1)
     cells = defaultdict(lambda: defaultdict(int))
+    items = defaultdict(list)
     for d in outturns(demands, d0, d1):
         dd = R.pdate(d["dispatchDate"])
         cells[d["_group"]][(dd.year, dd.month)] += 1
+        items[d["_group"]].append(d)
     fam = _family_of(demands)
     rows = []
     for g in _groups_sorted(cells.keys(), demands):
         vals = [cells[g].get((m.year, m.month), 0) for m in months]
-        rows.append(dict(group=g, family=fam.get(g, ""), vals=vals, total=sum(vals)))
-    totals = [sum(r["vals"][i] for r in rows) for i in range(12)]
-    return dict(fy=fy, months=months, rows=rows, totals=totals, grand=sum(totals))
+        rows.append(dict(group=g, family=fam.get(g, ""), vals=vals, total=sum(vals),
+                         items=sorted(items[g], key=lambda d: R.pdate(d["dispatchDate"]))))
+    totals = [sum(r["vals"][i] for r in rows) for i in range(len(months))]
+    return dict(fy=fy, months=months, rows=rows, totals=totals, grand=sum(totals), d0=d0, d1=d1)
 
 
 def available_fys(demands):

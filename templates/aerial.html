@@ -4,7 +4,7 @@
 {% macro card(c, two=False) %}{% if c %}
 <div class="av-c{{ ' fnd' if c.fnd }}{{ ' cc' if c.cc }}{{ ' cond' if c.cond }}{{ ' heavy' if c.hrs != '' and c.hrs >= 500 }}"
  data-q="{{ c.no }} {{ c.type }} {{ c.div }}"
- data-tip="{{ c.type }} {{ c.no }}|Division: {{ c.div or '-' }}|Received: {{ c.recd or '-' }}{% if c.days is not none %} ({{ c.days }} days){% endif %}|Pre-survey hours: {{ c.hrs or '-' }}{% if c.corr %}|Corrosion: {{ c.corr }}{% endif %}{% if c.cpdc and not c.cc and not c.fnd %}|Corrosion PDC: {{ c.cpdc }}{% endif %}{% if c.pdc %}|Despatch PDC: {{ c.pdc }}{% endif %}{% if c.tfr %}|TFR: {{ c.tfr }}{% endif %}{% if c.rem %}|{{ c.rem }}{% endif %}">
+ data-no="{{ c.no }}" style="cursor:pointer" data-tip="{{ c.type }} {{ c.no }}|Division: {{ c.div or '-' }}|Received: {{ c.recd or '-' }}{% if c.days is not none %} ({{ c.days }} days){% endif %}|Pre-survey hours: {{ c.hrs or '-' }}{% if c.corr %}|Corrosion: {{ c.corr }}{% endif %}{% if c.cpdc and not c.cc and not c.fnd %}|Corrosion PDC: {{ c.cpdc }}{% endif %}{% if c.pdc %}|Despatch PDC: {{ c.pdc }}{% endif %}{% if c.tfr %}|TFR: {{ c.tfr }}{% endif %}{% if c.rem %}|{{ c.rem }}{% endif %}|Click for coach history">
  <div class="av-top"><b>{{ c.no }}</b>{% if c.days is not none and not c.fnd %}<span class="av-days{{ ' late' if c.days > 30 }}">{{ c.days }}d</span>{% endif %}</div>
  <div class="av-sub">{{ c.type }}{% if c.hrs != '' %} · <span class="{{ 'hv' if c.hrs >= 500 }}">{{ c.hrs }}h</span>{% endif %}</div>
  <div class="av-tags">{% if c.fnd %}<i class="t-fnd">FND</i>{% elif c.cc %}<i class="t-cc">CC</i>{% elif c.corr[:2] == 'UC' %}<i class="t-uc">UC</i>{% endif %}{% if c.cond %}<i class="t-cond">COND</i>{% endif %}{% if c.orf %}<i class="t-or">OR</i>{% endif %}{% if c.pdc and not c.fnd %}<i class="t-pd">PD {{ c.pdc[:5] }}</i>{% endif %}</div>
@@ -106,6 +106,8 @@
     if(x+w>innerWidth-8)x=e.clientX-w-14; if(y+h>innerHeight-8)y=e.clientY-h-14;
     tip.style.left=x+'px'; tip.style.top=y+'px';
   });
+  document.addEventListener('click',e=>{const c=e.target.closest('.av-c[data-no]');
+    if(c&&c.dataset.no)location.href='/coach?q='+encodeURIComponent(c.dataset.no);});
   window.avFind=function(q){
     q=q.trim().toUpperCase();
     document.querySelectorAll('.av-c[data-q]').forEach(c=>{

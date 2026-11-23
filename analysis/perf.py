@@ -32,7 +32,9 @@ def _grouped(items, demands, build):
     for it in items:
         by[it["group"]].append(it)
     fam = _family_of(demands)
-    rows = [dict(group=g, family=fam.get(g, ""), **build(by[g])) for g in _groups_sorted(by.keys(), demands)]
+    # each row also carries its coaches (items) so the page can show what an average is made of (JIJO 23-11-2026)
+    rows = [dict(group=g, family=fam.get(g, ""), items=sorted(by[g], key=lambda i: i["desp"] or date.min), **build(by[g]))
+            for g in _groups_sorted(by.keys(), demands)]
     return rows, build(items) if items else None
 
 

@@ -42,4 +42,9 @@ document.addEventListener('click',e=>{const s=e.target.closest('svg.chart');
  if(e.target.id==='zoom')zoomClose();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')zoomClose();});
 </script>
+<script>
+document.addEventListener('click',e=>{const tr=e.target.closest('tr.grp');if(!tr||e.target.closest('a'))return;
+ const n=tr.nextElementSibling;if(n&&n.classList.contains('dd')){n.hidden=!n.hidden;tr.classList.toggle('open',!n.hidden);
+ const c=tr.cells[0];c.innerHTML=c.innerHTML.replace(n.hidden?'▾':'▸',n.hidden?'▸':'▾');}});
+</script>
 </body></html>

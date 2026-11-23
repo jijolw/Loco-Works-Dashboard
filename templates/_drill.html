@@ -1,0 +1,12 @@
+{# Coach lists behind a figure: click a coach-type row to open its coaches (JIJO 23-11-2026) #}
+{% macro coaches(items, kind, ncols) %}<tr class="dd" hidden><td colspan="{{ ncols }}"><div class="ddbox">
+<table class="ddt">
+{% if kind == 'cycle' %}<tr><th>Coach No</th><th>Type</th><th>Received</th><th>TFR</th><th>Outturn</th><th>Actual desp</th><th>Days entry→outturn</th><th>Days TFR→outturn</th><th>Pre hrs</th><th>Light/Heavy</th></tr>
+{% for i in items %}<tr><td>{{ cl(i.coach) }}</td><td>{{ i.group }}</td><td>{{ fmt(i.recd) }}</td><td>{{ fmt(i.tfr) }}</td><td>{{ fmt(i.desp) }}</td><td>{{ fmt(i.actual) }}</td><td class="hi">{{ i.total if i.total is not none else '' }}</td><td>{{ i.attn if i.attn is not none else '' }}</td><td>{{ i.pre or '' }}</td><td>{{ (i.lh or '')|title }}</td></tr>{% endfor %}
+{% elif kind == 'hours' %}<tr><th>Coach No</th><th>Type</th><th>Outturn</th><th>Pre-survey hrs</th><th>Final hrs</th><th>Final vs pre</th><th>Light/Heavy</th></tr>
+{% for i in items %}<tr><td>{{ cl(i.coach) }}</td><td>{{ i.group }}</td><td>{{ fmt(i.desp) }}</td><td>{{ i.pre or '' }}</td><td class="{{ '' if i.final else 'warn' }}">{{ i.final or 'not entered' }}</td><td>{{ ((i.final - i.pre) / i.pre * 100)|round(1) ~ '%' if i.pre and i.final else '' }}</td><td>{{ (i.lh or '')|title }}</td></tr>{% endfor %}
+{% elif kind == 'corr' %}<tr><th>Coach No</th><th>Type</th><th>Received</th><th>Corr start</th><th>Corr complete</th><th>Corr days</th><th>Entry→corr</th><th>Corr→outturn</th><th>Outturn</th></tr>
+{% for i in items %}<tr><td>{{ cl(i.coach) }}</td><td>{{ i.group }}</td><td>{{ fmt(i.recd) }}</td><td>{{ fmt(i.cs) }}</td><td>{{ fmt(i.cc) }}</td><td class="hi">{{ i.corr if i.corr is not none else '' }}</td><td>{{ i.to_corr if i.to_corr is not none else '' }}</td><td>{{ i.after_corr if i.after_corr is not none else '' }}</td><td>{{ fmt(i.desp) }}</td></tr>{% endfor %}
+{% elif kind == 'outturn' %}<tr><th>Coach No</th><th>Type</th><th>Received</th><th>Outturn</th><th>Actual desp</th><th>Days</th></tr>
+{% for d in items %}{% set rd = pdate(d.receivedDate) %}{% set dd = pdate(d.dispatchDate) %}<tr><td>{{ cl(d.coachNo) }}</td><td>{{ d._group }}</td><td>{{ fmt(rd) }}</td><td>{{ fmt(dd) }}</td><td>{{ fmt(pdate(d.actualDispatchDate)) }}</td><td>{{ (dd - rd).days if rd and dd else '' }}</td></tr>{% endfor %}
+{% endif %}</table></div></td></tr>{% endmacro %}

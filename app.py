@@ -30,7 +30,14 @@ READY = {"dashboard", "holding", "outturn", "coach", "cycle", "corrosion", "hour
 def _ctx():
     _, ex = data.load()
     return dict(NAV=NAV, READY=READY, IS_LOCAL=config.IS_LOCAL, as_on=ex,
-                fmt=R.fmt, pdate=R.pdate, page=request.endpoint)
+                fmt=R.fmt, pdate=R.pdate, page=request.endpoint, cl=_coach_link)
+
+
+def _coach_link(no):
+    """Coach number as a link to its history (Coach Search) - JIJO 23-11-2026."""
+    from markupsafe import Markup, escape
+    n = str(no or "").strip()
+    return Markup(f'<a class="cl" href="/coach?q={escape(n)}">{escape(n)}</a>') if n else ""
 
 
 def _as_on():
@@ -53,7 +60,8 @@ def dashboard():
 @app.route("/holding")
 def holding():
     D, a = _as_on()
-    return render_template("holding.html", h=P.holding_summary(D, a), bands=P.AGE_BANDS)
+    on = min(R.pdate(request.args.get("on")) or a, a)          # holding as on any past date (JIJO 23-11-2026)
+    return render_template("holding.html", h=P.holding_summary(D, on), bands=P.AGE_BANDS, on=on)
 
 
 @app.route("/outturn")
@@ -61,7 +69,8 @@ def outturn():
     D, a = _as_on()
     fys = P.available_fys(D)
     fy = request.args.get("fy") or R.fy_of(a)
-    return render_template("outturn.html", x=P.outturn_matrix(D, fy), fys=fys)
+    d0, d1 = R.pdate(request.args.get("from")), R.pdate(request.args.get("to"))   # from-to period (JIJO 23-11-2026)
+    return render_template("outturn.html", x=P.outturn_matrix(D, fy, d0, min(d1, a) if d1 else None), fys=fys)
 
 
 @app.route("/coach")
