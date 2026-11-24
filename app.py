@@ -61,7 +61,7 @@ def dashboard():
 def holding():
     D, a = _as_on()
     on = min(R.pdate(request.args.get("on")) or a, a)          # holding as on any past date (JIJO 23-11-2026)
-    return render_template("holding.html", h=P.holding_summary(D, on), bands=P.AGE_BANDS, on=on)
+    return render_template("holding.html", h=P.holding_summary(D, on, a), bands=P.AGE_BANDS, on=on)
 
 
 @app.route("/outturn")
@@ -256,9 +256,11 @@ def download(what):
         mon = request.args.get("month")
         bio, name = excel.month_position(P.month_position(D, a, R.pdate(mon + "-01") if mon else None), a)
     elif what == "holding":
-        bio, name = excel.holding(P.holding_summary(D, a), a)
+        on = min(R.pdate(request.args.get("on")) or a, a)
+        bio, name = excel.holding(P.holding_summary(D, on, a), on)
     elif what == "outturn":
-        bio, name = excel.outturn(P.outturn_matrix(D, request.args.get("fy") or R.fy_of(a)), a)
+        d0, d1 = R.pdate(request.args.get("from")), R.pdate(request.args.get("to"))
+        bio, name = excel.outturn(P.outturn_matrix(D, request.args.get("fy") or R.fy_of(a), d0, min(d1, a) if d1 else None), a)
     elif what in ("cycle", "corrosion", "hours", "prev_poh"):
         from analysis import perf
         d0, d1 = _period(a)

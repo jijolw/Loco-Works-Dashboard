@@ -4,7 +4,7 @@
 <div class="box"><h2>Outturn by desp date
 <form class="inline" style="float:right" method="get">FY <select name="fy" onchange="this.form.from.value='';this.form.to.value='';this.form.submit()">{% for f in fys %}<option {{ 'selected' if f==x.fy }}>{{ f }}</option>{% endfor %}</select>
  &nbsp;or From <input type="date" name="from" value="{{ x.d0.isoformat() }}"> to <input type="date" name="to" value="{{ x.d1.isoformat() }}"> <button class="btn light">Show</button>
-<a class="btn light" href="{{ url_for('download', what='outturn', fy=x.fy) }}">Excel</a></form></h2>
+<a class="btn light" href="{{ url_for('download', what='outturn', fy=x.fy, **{'from': x.d0.isoformat(), 'to': x.d1.isoformat()}) }}">Excel</a></form></h2>
 <p class="note" style="margin-top:0">{{ fmt(x.d0) }} – {{ fmt(x.d1) }} · click a coach type to see its coaches</p>
 <table><tr><th>Coach Type</th>{% for m in x.months %}<th>{{ m.strftime('%b-%y') }}</th>{% endfor %}<th>Total</th></tr>
 {% set ns = namespace(f=None) %}{% for r in x.rows %}{% if r.family != ns.f %}{% set ns.f = r.family %}<tr class="fam"><td colspan="{{ x.months|length + 2 }}">{{ r.family }}</td></tr>{% endif %}

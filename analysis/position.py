@@ -31,12 +31,31 @@ def outturns(demands, d0, d1):
     return out
 
 
-def holding(demands, as_on):
+def _held_on(d, on):
+    """Inside on a past date: received on/before it, not outturned by then (outturn = desp date), not
+    excluded. Yard/work area then = TFR given by that date. (JIJO 24-11-2026: holding "as on" any date)"""
+    rd, dd = R.pdate(d.get("receivedDate")), R.pdate(d.get("dispatchDate"))
+    return bool(rd) and rd <= on and (not dd or dd > on) and not R.is_excluded(d)
+
+
+def holding(demands, as_on, today=None):
     rows = []
-    for d in R.latest_per_coach(demands).values():
-        if R.in_holding(d):
+    past = today is not None and as_on < today
+    pool = [d for d in demands if _held_on(d, as_on)] if past else R.latest_per_coach(demands).values()
+    if past:                                                    # one visit per coach (latest received by then)
+        best = {}
+        for d in pool:
+            k = R.coach_key(d)
+            if k not in best or R.pdate(d["receivedDate"]) > R.pdate(best[k]["receivedDate"]):
+                best[k] = d
+        pool = best.values()
+    for d in pool:
+        if past or R.in_holding(d):
+            if past:
+                tf = R.pdate(d.get("tfr"))
+                d = dict(d, _locp="Work area" if tf and tf <= as_on else "Yard")
             rd = R.pdate(d.get("receivedDate"))
-            rows.append(dict(d, _loc=R.location(d), _days=max(0, (as_on - rd).days) if rd else None,     # never -1 (10-11)
+            rows.append(dict(d, _loc=d.get("_locp") or R.location(d), _days=max(0, (as_on - rd).days) if rd else None,     # never -1 (10-11)
                              _lh=R.light_heavy(d)))
     return rows
 
@@ -96,10 +115,10 @@ def month_position(demands, as_on, month=None):
 AGE_BANDS = [(0, 20, "0-20"), (21, 30, "21-30"), (31, 10 ** 6, ">30")]
 
 
-def holding_summary(demands, as_on):
+def holding_summary(demands, as_on, today=None):
     rows = defaultdict(lambda: {"yard": 0, "work": 0, "0-20": 0, "21-30": 0, ">30": 0,
                                 "LIGHT": 0, "HEAVY": 0, "max": 0})
-    H = holding(demands, as_on)
+    H = holding(demands, as_on, today)
     for h in H:
         r = rows[h["_group"]]
         r["yard" if h["_loc"] == "Yard" else "work"] += 1

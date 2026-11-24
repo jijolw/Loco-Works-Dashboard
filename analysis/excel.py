@@ -47,6 +47,27 @@ def _finish(wb, ws, name, bold_rows=()):
     return bio, name
 
 
+def _with_coaches(bio, header, rows, widths=13):
+    """Adds a 'Coach-wise' sheet (the coaches behind every figure - JIJO 24-11-2026). Coach no kept as text."""
+    wb = openpyxl.load_workbook(bio)
+    ws = wb.create_sheet("Coach-wise")
+    ws.append(header)
+    for c in ws[1]:
+        c.font = Font(bold=True)
+        c.border = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
+    for r in rows:
+        ws.append(r)
+        for c in ws[ws.max_row]:
+            c.border = Border(left=THIN, right=THIN, top=THIN, bottom=THIN)
+        ws.cell(ws.max_row, 2).number_format = "@"
+    for col in range(1, len(header) + 1):
+        ws.column_dimensions[get_column_letter(col)].width = widths
+    ws.freeze_panes = "A2"
+    ws.auto_filter.ref = f"A1:{get_column_letter(len(header))}{ws.max_row}"
+    out = io.BytesIO(); wb.save(out); out.seek(0)
+    return out
+
+
 def month_position(pos, as_on):
     hdr = ["Coach Type", "Outturn", "Despatched", "FND", "Holding Yard", "Holding Work Area", "Total Holding"]
     wb, ws = _sheet(f"LW/PER - COACH POSITION {pos['month']:%B %Y} (as on {as_on:%d.%m.%Y})", hdr)
@@ -68,6 +89,7 @@ def month_position(pos, as_on):
 
 
 def holding(h, as_on):
+    """as_on = the 'as on' date shown (may be a past date)."""
     hdr = ["Coach Type", "Yard", "Work Area", "Total", "0-20 days", "21-30 days", ">30 days",
            "Light (<500 h)", "Heavy (>=500 h)", "Max days"]
     wb, ws = _sheet(f"LW/PER - TYPE-WISE POH HOLDING as on {as_on:%d.%m.%Y}", hdr)
@@ -77,16 +99,30 @@ def holding(h, as_on):
     t = h["total"]
     ws.append(["TOTAL", t["yard"], t["work"], t["total"], t["0-20"], t["21-30"], t[">30"],
                t["LIGHT"], t["HEAVY"], t["max"]])
-    return _finish(wb, ws, f"TypeWise_Holding_{as_on:%d%m%Y}.xlsx", [ws.max_row])
+    bio, name = _finish(wb, ws, f"TypeWise_Holding_{as_on:%d%m%Y}.xlsx", [ws.max_row])
+    rows = [[d["_group"], str(d.get("coachNo") or ""), d.get("divisionId") or "", _fmt(R.pdate(d.get("receivedDate"))),
+             d["_days"], d["_loc"], _fmt(R.pdate(d.get("tfr"))), _fmt(R.pdate(d.get("corrPlace"))),
+             _fmt(R.pdate(d.get("corrComp"))), R.hours(d, "preSurveyHrs"), (d["_lh"] or "").title()] for d in h["coaches"]]
+    return _with_coaches(bio, ["Coach Type", "Coach No", "Division", "Received", "Days inside", "Location", "TFR",
+                               "Corr start", "Corr complete", "Pre hrs", "Light/Heavy"], rows), name
 
 
 def outturn(x, as_on):
     hdr = ["Coach Type"] + [f"{m:%b-%y}" for m in x["months"]] + ["Total"]
-    wb, ws = _sheet(f"LW/PER - MONTH-WISE OUTTURN {x['fy']} (desp date; as on {as_on:%d.%m.%Y})", hdr)
+    wb, ws = _sheet(f"LW/PER - MONTH-WISE OUTTURN {_fmt(x['d0'])} to {_fmt(x['d1'])} (by desp date)", hdr)
     for r in x["rows"]:
         ws.append([r["group"]] + r["vals"] + [r["total"]])
     ws.append(["TOTAL"] + x["totals"] + [x["grand"]])
-    return _finish(wb, ws, f"Outturn_Monthwise_{x['fy']}.xlsx", [ws.max_row])
+    bio, _ = _finish(wb, ws, "", [ws.max_row])
+    rows = []
+    for r in x["rows"]:
+        for d in r["items"]:
+            rd, dd = R.pdate(d.get("receivedDate")), R.pdate(d.get("dispatchDate"))
+            rows.append([d["_group"], str(d.get("coachNo") or ""), d.get("divisionId") or "", _fmt(rd), _fmt(dd),
+                         _fmt(R.pdate(d.get("actualDispatchDate"))), (dd - rd).days if rd and dd else None,
+                         R.hours(d, "preSurveyHrs"), R.hours(d, "finalHrs")])
+    return _with_coaches(bio, ["Coach Type", "Coach No", "Division", "Received", "Outturn", "Physical desp", "Days",
+                               "Pre hrs", "Final hrs"], rows), f"Outturn_{x['d0']:%d%m%Y}_to_{x['d1']:%d%m%Y}.xlsx"
 
 
 def _fmt(d):
@@ -127,7 +163,11 @@ def corrosion(k, d0, d1, as_on):
     bold.append(ws.max_row)
     for r in k["month_rows"]:
         ws.append([r["group"], r["done"], r["carry"], r["under"]])
-    return _finish(wb, ws, f"Corrosion_Cycle_{d0:%d%m%Y}_to_{d1:%d%m%Y}.xlsx", bold)
+    bio, name = _finish(wb, ws, f"Corrosion_Cycle_{d0:%d%m%Y}_to_{d1:%d%m%Y}.xlsx", bold)
+    rows = [[i["group"], str(i["coach"] or ""), _fmt(i["recd"]), _fmt(i["cs"]), _fmt(i["cc"]), i["corr"], i["to_corr"],
+             i["after_corr"], _fmt(i["desp"])] for r in k["rows"] for i in r["items"] if i["corr"] is not None]
+    return _with_coaches(bio, ["Coach Type", "Coach No", "Received", "Corr start", "Corr complete", "Corr days",
+                               "Entry->corr", "Corr->outturn", "Outturn"], rows), name
 
 
 def hours(h, d0, d1, as_on):
@@ -143,7 +183,12 @@ def hours(h, d0, d1, as_on):
     bold.append(ws.max_row)
     for i in h["missing"]:
         ws.append([i["group"], i["coach"], _fmt(i["desp"]), i["pre"]])
-    return _finish(wb, ws, f"Man_Hours_{d0:%d%m%Y}_to_{d1:%d%m%Y}.xlsx", bold)
+    bio, name = _finish(wb, ws, f"Man_Hours_{d0:%d%m%Y}_to_{d1:%d%m%Y}.xlsx", bold)
+    rows = [[i["group"], str(i["coach"] or ""), _fmt(i["desp"]), i["pre"], i["final"],
+             round((i["final"] - i["pre"]) / i["pre"] * 100, 1) if i["pre"] and i["final"] else None,
+             (i["lh"] or "").title()] for r in h["rows"] for i in r["items"]]
+    return _with_coaches(bio, ["Coach Type", "Coach No", "Outturn", "Pre-survey hrs", "Final hrs", "Final vs pre %",
+                               "Light/Heavy"], rows), name
 
 
 def prev_poh(p, d0, d1, as_on):
@@ -159,7 +204,11 @@ def prev_poh(p, d0, d1, as_on):
         bold.append(ws.max_row)
         for g, s in p["sched"].items():
             ws.append([g] + list(s.values()))
-    return _finish(wb, ws, f"Previous_POH_{d0:%d%m%Y}_to_{d1:%d%m%Y}.xlsx", bold)
+    bio, name = _finish(wb, ws, f"Previous_POH_{d0:%d%m%Y}_to_{d1:%d%m%Y}.xlsx", bold)
+    rows = [[i["group"], str(i["coach"] or ""), r["wks"], _fmt(R.pdate(i["d"].get("lastPohDate"))), _fmt(i["recd"]),
+             i.get("gap"), i["pre"], (i["lh"] or "").title(), i["final"], _fmt(i["desp"])] for r in p["rows"] for i in r["items"]]
+    return _with_coaches(bio, ["Coach Type", "Coach No", "Last POH at", "Last POH date", "Received", "Months since last POH",
+                               "Pre-survey hrs", "Light/Heavy", "Final hrs", "Outturn"], rows), name
 
 
 def targets(t, as_on, s=None):

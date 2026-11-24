@@ -7,7 +7,7 @@
 <div class="card"><b>{{ h.total.work }}</b><span>In work area</span></div>
 <div class="card"><b>{{ h.total['>30'] }}</b><span>Held more than 30 days</span></div>
 </div>
-<div class="box"><h2>By coach type – as on {{ fmt(on) }} <form class="inline" style="float:right" method="get">As on <input type="date" name="on" value="{{ on.isoformat() }}"> <button class="btn light">Show</button> <a class="btn light" href="{{ url_for('download', what='holding') }}">Excel</a></form></h2>
+<div class="box"><h2>By coach type – as on {{ fmt(on) }} <form class="inline" style="float:right" method="get">As on <input type="date" name="on" value="{{ on.isoformat() }}"> <button class="btn light">Show</button> <a class="btn light" href="{{ url_for('download', what='holding', on=on.isoformat()) }}">Excel</a></form></h2>
 <table><tr><th rowspan="2">Coach Type</th><th colspan="3">Location</th><th colspan="3">Days held</th><th colspan="2">Pre-survey hours</th><th rowspan="2">Max days</th></tr>
 <tr><th>Yard</th><th>Work area</th><th>Total</th><th>0-20</th><th>21-30</th><th>&gt;30</th><th>Light &lt;500</th><th>Heavy ≥500</th></tr>
 {{ famrows(h.rows, ['yard','work','total','0-20','21-30','>30','LIGHT','HEAVY','max'], 10) }}
