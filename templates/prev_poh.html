@@ -1,4 +1,4 @@
-{% extends "base.html" %}{% from "_period.html" import period, v %}
+{% extends "base.html" %}{% from "_period.html" import period, v %}{% from "_drill.html" import coaches with context %}
 {% block h1 %}Previous POH Analysis{% endblock %}
 {% block body %}
 {% set fsel %}<select name="family">{% for f in ['ALL'] + families %}<option {{ 'selected' if f==family }}>{{ f }}</option>{% endfor %}</select>{% endset %}
@@ -7,7 +7,7 @@
 {% for w in wm %}<h3 class="sub">{{ w.family }} – {{ w.n }} coaches</h3>
 <div><div>
 <table style="width:auto"><tr><th>Last POH at</th><th>Coaches</th><th>Avg pre hrs</th><th>Median</th><th>Heavy %</th><th>Months since last POH</th><th>Pre hrs / month</th><th>Avg final hrs</th></tr>
-{% for r in w.rows %}<tr{% if r.own %} style="font-weight:700"{% endif %}><td>{{ r.wks }}{{ ' (ours)' if r.own }}</td><td>{{ r.n }}</td><td>{{ v(r.pre) }}</td><td>{{ v(r.pre_med) }}</td><td>{{ v(r.heavy_pct, '%') }}</td><td>{{ v(r.gap) }}</td><td>{{ v(r.per_month) }}</td><td>{{ v(r.final) }}</td></tr>{% endfor %}</table>
+{% for r in w.rows %}<tr class="grp" title="Click to see the coaches"{% if r.own %} style="font-weight:700"{% endif %}><td>▸ {{ r.wks }}{{ ' (ours)' if r.own }}</td><td>{{ r.n }}</td><td>{{ v(r.pre) }}</td><td>{{ v(r.pre_med) }}</td><td>{{ v(r.heavy_pct, '%') }}</td><td>{{ v(r.gap) }}</td><td>{{ v(r.per_month) }}</td><td>{{ v(r.final) }}</td></tr>{{ coaches(r['items'], 'prev', 8) }}{% endfor %}</table>
 </div><div style="margin-top:6px">{{ w.chart|safe }}</div></div>{% endfor %}</div>{% endif %}
 {% if ch.count %}<div class="box"><h2>Charts – by workshop of last POH <span class="note">(workshops with 3 or more coaches)</span></h2>
 <div class="chart-grid"><div><h3 class="sub">Coaches received (share of outturns)</h3>{{ ch.count|safe }}</div>
@@ -15,8 +15,8 @@
 <div><h3 class="sub">Average cycle days (entry → outturn)</h3>{{ ch.cycle|safe }}</div></div></div>{% endif %}
 <div class="box"><h2>By workshop of last POH ({{ p.n }} outturns) {{ period(d0, d1, 'prev_poh', fsel) }}</h2>
 <table><tr><th>Last POH workshop</th><th>Coaches</th><th>Avg pre-survey hrs</th><th>Heavy % (of those with pre hrs)</th><th>Avg final hrs</th><th>Avg cycle days</th><th>Avg months since last POH</th></tr>
-{% for r in p.rows %}<tr><td>{{ r.wks }}</td><td>{{ r.n }}</td><td>{{ v(r.pre) }}</td><td>{{ v(r.heavy_pct, '%') }}</td><td>{{ v(r.final) }}</td><td>{{ v(r.cycle) }}</td><td>{{ v(r.gap) }}</td></tr>{% endfor %}</table>
-<p class="note">Workshop and date of last POH as recorded in ERP for each visit. Heavy = pre-survey ≥ 500 hrs.</p></div>
+{% for r in p.rows %}<tr class="grp" title="Click to see the coaches"><td>▸ {{ r.wks }}</td><td>{{ r.n }}</td><td>{{ v(r.pre) }}</td><td>{{ v(r.heavy_pct, '%') }}</td><td>{{ v(r.final) }}</td><td>{{ v(r.cycle) }}</td><td>{{ v(r.gap) }}</td></tr>{{ coaches(r['items'], 'prev', 7) }}{% endfor %}</table>
+<p class="note">Click a workshop to see its coaches. Workshop and date of last POH as recorded for each visit. Heavy = pre-survey ≥ 500 hrs.</p></div>
 {% if p.sched %}<div class="box"><h2>LHB schedules done (outturned in period)</h2>
 <table><tr><th>Coach Type</th><th>SS1</th><th>SS2</th><th>SS3</th><th>Other</th></tr>
 {% for g, s in p.sched.items() %}<tr><td>{{ g }}</td>{% for k, n in s.items() %}<td class="{{ 'z' if not n }}">{{ n }}</td>{% endfor %}</tr>{% endfor %}</table>

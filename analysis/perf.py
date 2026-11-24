@@ -140,11 +140,15 @@ def previous_poh(demands, d0, d1, family="ALL"):
         items = [i for i in items if i["d"]["_family"] == family]
     by = defaultdict(list)
     for i in items:
-        by[(i["d"].get("lastPoh") or "Not in ERP").strip().upper()].append(i)
+        by[(i["d"].get("lastPoh") or "Not recorded").strip().upper()].append(i)
     rows = []
     for wks, L in by.items():
         p = [i["pre"] for i in L if i["pre"]]
-        rows.append(dict(wks=wks, n=len(L), pre=round(_avg(p)) if p else None,
+        for i in L:
+            lp = R.pdate(i["d"].get("lastPohDate"))
+            i["gap"] = round((i["recd"] - lp).days / 30.4, 1) if lp and i["recd"] and i["recd"] > lp else None
+        rows.append(dict(wks=wks, n=len(L), items=sorted(L, key=lambda i: (i["d"]["_order"], i["desp"] or date.min)),
+                         pre=round(_avg(p)) if p else None,
                          heavy=sum(1 for i in L if i["lh"] == "HEAVY"), with_pre=len(p),
                          heavy_pct=round(100 * sum(1 for i in L if i["lh"] == "HEAVY") / len(p)) if p else None,
                          final=round(_avg([i["final"] for i in L if i["final"]]) or 0) or None,
@@ -312,7 +316,7 @@ def workmanship(demands, d0, d1, min_n=5):
     months since that POH, so our own coaches can be compared fairly with PWP / GOC etc."""
     fams = defaultdict(lambda: defaultdict(list))
     for i in (visit_facts(d) for d in outturns(demands, d0, d1)):
-        w = (i["d"].get("lastPoh") or "").strip().upper() or "Not in ERP"
+        w = (i["d"].get("lastPoh") or "").strip().upper() or "Not recorded"
         lp = R.pdate(i["d"].get("lastPohDate"))
         i["gap"] = round((i["recd"] - lp).days / 30.4, 1) if lp and i["recd"] and i["recd"] > lp else None
         fams[i["d"]["_family"]][w].append(i)
@@ -330,6 +334,7 @@ def workmanship(demands, d0, d1, min_n=5):
             per_m = [i["pre"] / i["gap"] for i in L if i["pre"] and i["gap"]]
             fin = [i["final"] for i in L if i["final"]]
             res.append(dict(wks=w, own=w in OWN_SHOPS, n=len(L), with_pre=len(pre),
+                            items=sorted(L, key=lambda i: (i["d"]["_order"], -(i["pre"] or 0))),
                             pre=round(_avg(pre)) if pre else None, pre_med=round(_med(pre)) if pre else None,
                             heavy_pct=round(100 * sum(p >= R.HEAVY_HOURS for p in pre) / len(pre)) if pre else None,
                             gap=_avg(gaps), per_month=_avg(per_m), final=round(_avg(fin)) if fin else None))
