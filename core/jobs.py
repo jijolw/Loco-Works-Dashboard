@@ -29,13 +29,13 @@ JOBS = OrderedDict([
                "No Google Sheet is written.", False,
                [(APP, "daily_sync.py", []), (_p("09_Drive_Sync"), "project_files_to_drive.py", [])])),
     # JIJO 12-11-2026: Production Plan is daily work - Update all also runs the planner (new ERP coaches, later ERP PDCs
-    # into the sheet) and then PDC to ERP (later sheet PDCs into ERP). Farthest date wins both ways. Each step: preview + YES.
+    # into the sheet). PDC to ERP removed from Update all 25-11-2026 (JIJO): ERP PDCs are entered by hand, the plan web
+    # page flags "Pending update" where Revised Despatch PDC differs from the ERP Despatch PDC.
     ("update_all", ("Update all sheets", "KM tab, YARD / ICF NAC / LHB, PDC sheet, Achieved columns, online snapshot; "
-                    "then Production Plan (planner) - one YES covers both - then PDC to ERP (own YES). Ends with a summary "
+                    "then Production Plan (planner) - one YES covers both. Ends with a summary "
                     "of which steps were written.", True,
                     [(APP, "update_all.py", ["--no-pause"]),
-                     (_p("10_Claude_Reports"), "update_production_plan_holding.py", ["--no-pause", "--if-confirmed"]),
-                     (_p("16_PDC_to_ERP"), "pdc_to_erp.py", ["--apply", "--no-pause"])])),
+                     (_p("10_Claude_Reports"), "update_production_plan_holding.py", ["--no-pause", "--if-confirmed"])])),
     ("planner", ("Planner (Production Plan) update", "Plan tabs ICF / LHB / DEMU TC / EMU MEMU TC / ART / NMG from ERP "
                  "(typed entries and Physical Despatch kept) + Condemnation tab. Preview first - type YES to write.", True,
                  [(_p("10_Claude_Reports"), "update_production_plan_holding.py", ["--no-pause"])])),
@@ -53,10 +53,8 @@ JOBS = OrderedDict([
                         [(_p("13_Fix_Actual_Despatch"), "fix_actual_desp.py", ["--apply"])])),
     ("fix_status", ("Fix status (Return / Running)", "Reads status_list.txt (below), preview, then YES to change ERP.", True,
                     [(_p("14_Fix_Status"), "fix_status.py", [])])),
-    ("pdc_erp_preview", ("PDC to ERP - preview", "Production Plan sheet PDCs (Despatch / Revised / Corrosion) vs ERP. "
-                         "Nothing written.", False, [(_p("16_PDC_to_ERP"), "pdc_to_erp.py", ["--no-pause"])])),
-    ("pdc_erp_apply", ("PDC to ERP - apply", "Writes the sheet PDCs to ERP (pdcDate, planDate, corrPd). YES, first coach "
-                       "verified alone, YES again.", True, [(_p("16_PDC_to_ERP"), "pdc_to_erp.py", ["--apply", "--no-pause"])])),
+    ("pdc_erp_preview", ("PDC check - sheet vs ERP", "Lists Production Plan PDCs that differ from ERP, to enter in ERP "
+                         "by hand. Nothing written.", False, [(_p("16_PDC_to_ERP"), "pdc_to_erp.py", ["--no-pause"])])),
     ("claude_setup", ("Claude - check / set up", "Checks Claude Code on this PC; installs it and opens the one-time "
                       "sign-in after YES. Needed only for the 'Ask Claude' box.", False,
                       [(APP, "claude_helper.py", ["--setup"])])),
@@ -118,7 +116,7 @@ def summary_lines(path):
         return ["UPDATE ALL SUMMARY: no status found - check the messages above."]
     out = ["", "=" * 60, f"UPDATE ALL SUMMARY (started {st.get('started', '?')})"]
     bad = False
-    for k in ("1 Sheets", "2 Production Plan", "3 PDC to ERP"):
+    for k in ("1 Sheets", "2 Production Plan"):
         s = (st.get(k) or {}).get("state", "NOT DONE - no YES / closed before it finished")
         part = s.split(" written")[0].split(" of ") if " of " in s else None
         bad = bad or not (s.startswith("written") or s.startswith("nothing") or (part and part[0] == part[1]))

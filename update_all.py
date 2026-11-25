@@ -339,7 +339,7 @@ def main():
         _retry(online_store.upload_snapshot, snap)
         log("  Online snapshot uploaded")
     step_status("1 Sheets", "written")
-    log(f"\nDONE (step 1 of 3). Log: {LOG}")
+    log(f"\nDONE (step 1 of 2). Log: {LOG}")
 
 
 if __name__ == "__main__":
